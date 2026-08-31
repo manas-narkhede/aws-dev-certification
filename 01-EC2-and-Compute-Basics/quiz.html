@@ -1,0 +1,390 @@
+<title>Compute Basics Quiz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eceeec; --ink:#141a1f; --muted:#5c6670;
+  --border:#dde1de; --accent:#0d7377; --accent-ink:#ffffff; --accent-soft:#e3f1f0;
+  --success:#1f8a44; --success-bg:#e5f6ea; --success-border:#a9dfb8;
+  --danger:#c8402f; --danger-bg:#fbe9e6; --danger-border:#f0b8ac;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+    --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+    --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+    --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+  --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+  --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+  --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+}
+*{box-sizing:border-box;}
+body{background:var(--bg); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;}
+.wrap{max-width:760px; margin:0 auto; padding:28px 20px 80px;}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600;}
+h1{font-size:22px; font-weight:800; margin:4px 0 18px; text-wrap:balance; letter-spacing:-.01em;}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px; flex-wrap:wrap;}
+.stat{display:flex; flex-direction:column; align-items:flex-end;}
+.stat .num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:18px; font-weight:600;}
+.stat .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+.progress-track{height:8px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin:14px 0 28px; border:1px solid var(--border);}
+.progress-fill{height:100%; background:var(--accent); border-radius:999px; transition:width .35s ease;}
+@media (prefers-reduced-motion: reduce){ .progress-fill{transition:none;} }
+
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px; box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.qnum{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin-bottom:10px;}
+.qtext{font-size:16.5px; font-weight:600; line-height:1.55; margin-bottom:20px; text-wrap:balance;}
+.multi-hint{display:inline-block; font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:999px; padding:3px 10px; margin-bottom:14px;}
+
+.opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:13px 14px; margin-bottom:10px; cursor:pointer; font:inherit; color:var(--ink); font-size:14.5px; line-height:1.5; transition:border-color .15s, background .15s;}
+.opt:hover{border-color:var(--accent);}
+.opt:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+.opt .mark{flex:0 0 22px; height:22px; border-radius:6px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--muted); margin-top:1px;}
+.opt.selected{border-color:var(--accent); background:var(--accent-soft);}
+.opt.selected .mark{border-color:var(--accent); color:var(--accent);}
+.opt.correct{border-color:var(--success-border); background:var(--success-bg);}
+.opt.correct .mark{border-color:var(--success); color:var(--success); background:var(--success-bg);}
+.opt.incorrect{border-color:var(--danger-border); background:var(--danger-bg);}
+.opt.incorrect .mark{border-color:var(--danger); color:var(--danger); background:var(--danger-bg);}
+.opt:disabled{cursor:default;}
+.opt:disabled:hover{border-color:var(--border);}
+.opt.correct:hover, .opt.incorrect:hover{border-color:inherit;}
+
+.actions{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+button.btn{font:inherit; font-weight:700; font-size:14px; border-radius:9px; padding:11px 18px; cursor:pointer; border:1.5px solid transparent;}
+.btn-primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+.btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+.btn-ghost{background:transparent; color:var(--ink); border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--accent);}
+button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+.explain{margin-top:16px; padding:14px 16px; border-radius:10px; font-size:14px; line-height:1.55; border:1px solid var(--border); background:var(--surface-2);}
+.explain b{color:var(--accent);}
+
+.summary{text-align:center; padding:10px 0 20px;}
+.score-big{font-family:"IBM Plex Mono",monospace; font-size:52px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+.score-pct{color:var(--muted); font-size:15px; margin-top:2px;}
+.pass{color:var(--success);} .fail{color:var(--danger);}
+.miss-list{text-align:left; margin-top:22px; border-top:1px solid var(--border); padding-top:18px;}
+.miss-list h3{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:10px;}
+.miss-item{font-size:14px; padding:8px 0; border-bottom:1px dashed var(--border);}
+.miss-item b{font-family:"IBM Plex Mono",monospace;}
+
+.footer-note{text-align:center; color:var(--muted); font-size:12px; margin-top:22px;}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Module 01 · AWS Certified Developer – Associate</div>
+  <h1>EC2 &amp; Compute Basics</h1>
+  <div class="topbar">
+    <div class="stat">
+      <span class="num" id="posNum">1 / 116</span>
+      <span class="lbl">Question</span>
+    </div>
+    <div class="stat">
+      <span class="num" id="scoreNum">0</span>
+      <span class="lbl">Correct</span>
+    </div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <div id="quizArea"></div>
+  <div class="footer-note">Progress is saved automatically in this browser. Use 1–5 or A–E on your keyboard to answer.</div>
+</div>
+
+<script>
+const QUESTIONS = [
+{q:"A team runs a nightly batch job that performs heavy video transcoding for exactly 45 minutes, requiring high sustained CPU throughput, then sits idle for the rest of the day. Cost efficiency matters, but so does finishing the transcoding quickly. Which EC2 instance family is the best fit for the compute profile during the active window?",o:["T-family (burstable)","C-family (compute-optimized)","R-family (memory-optimized)","D-family (dense storage)"],a:[1],e:"Sustained heavy CPU throughput for a defined window favors compute-optimized C-family over burstable or memory-optimized options."},
+{q:"A company runs an in-memory session cache on EC2 that requires a very large amount of RAM relative to CPU, supporting millions of small session lookups per minute. Which instance family should they choose to match this profile?",o:["C-family","R-family (memory-optimized)","T-family","G-family"],a:[1],e:"R-family is memory-optimized, ideal for large in-memory caches."},
+{q:"A platform team wants to standardize new microservices on ARM-based EC2 instances to take advantage of better price-performance for compatible workloads, after confirming their container base images support the architecture. Which instance type naming element identifies an ARM-based (Graviton) instance?",o:["A \"g\" suffix in the instance type, such as m6g.large","A \"d\" suffix, such as m6d.large","An \"n\" suffix, such as m6n.large","An \"a\" suffix, such as m6a.large"],a:[0],e:"The \"g\" suffix (e.g., m6g) denotes Graviton (ARM) processors."},
+{q:"A developer builds and fully configures an EC2 instance with custom software, security patches, and application dependencies, and wants every new instance launched by their Auto Scaling group to start from this exact, pre-baked state rather than repeating lengthy configuration via user data at every boot. What should they create from the configured instance?",o:["A security group","A custom AMI (a \"golden AMI\")","A new VPC","An IAM role"],a:[1],e:"A custom golden AMI captures the fully configured state for fast, consistent launches."},
+{q:"Which EC2 instance family is purpose-built for GPU-accelerated machine learning model training workloads?",o:["T-family","P-family","M-family","I-family"],a:[1],e:"P-family is GPU-accelerated, used for ML training workloads."},
+{q:"A NoSQL database cluster running on self-managed EC2 nodes needs extremely high local disk IOPS for its working data set, and the team has already designed the application to tolerate node replacement without data loss (data is replicated elsewhere). Which instance family's local NVMe storage is best suited to this need?",o:["T-family","I-family (storage-optimized)","R-family","C-family"],a:[1],e:"I-family offers high local NVMe IOPS, matching this data-tolerant, high-performance need."},
+{q:"A web application has generally low, unpredictable CPU usage throughout the day with brief spikes during business hours, and the team wants the most cost-effective instance family for this bursty-but-mostly-idle profile.",o:["C-family","T-family (burstable)","I-family","P-family"],a:[1],e:"T-family suits low, bursty CPU usage cost-effectively."},
+{q:"Which of the following is an accurate description of what an Amazon Machine Image (AMI) contains?",o:["Only network routing rules","The operating system, pre-installed software, and configuration used as a template to launch EC2 instances","Only IAM role definitions","Only a billing profile"],a:[1],e:"An AMI is the OS + software + configuration template for launching instances."},
+{q:"A team stops an EC2 instance that has data stored only on its instance store volume (no EBS volumes attached for that data), intending to resume work the next day. What happens to that data when the instance is stopped?",o:["It persists indefinitely, since instance store survives any stop/start cycle","It is lost, because instance store is ephemeral and does not survive a stop (though it does survive a simple reboot)","It automatically migrates to S3","It is preserved only if the instance has an IAM role attached"],a:[1],e:"Instance store is ephemeral and does not survive a stop (though it survives reboot)."},
+{q:"A company wants a general-purpose instance family with a balanced ratio of compute, memory, and network performance for a typical web application with no unusual resource skew. Which family should be the default starting point?",o:["M-family (general purpose)","G-family","I-family","Dedicated Hosts"],a:[0],e:"M-family is the balanced, general-purpose default."},
+{q:"Which of the following is NOT a legitimate source from which an EC2 AMI can originate?",o:["AWS-provided public AMIs","AWS Marketplace","A community-published AMI","An IAM policy document"],a:[3],e:"An IAM policy document is not a source for an AMI."},
+{q:"A cost-conscious engineering team decides to standardize on Graviton (ARM-based) instances wherever their workloads are compatible, after benchmarking shows equivalent performance. What is the primary justification typically cited for this kind of migration?",o:["Graviton instances have no compute limitations of any kind","Better price-performance for compatible workloads compared to equivalent x86 instances","Graviton instances are required for Auto Scaling to function","Graviton instances cannot use EBS storage"],a:[1],e:"Better price-performance for compatible workloads is the typical Graviton migration justification."},
+{q:"A company runs a fleet of on-call engineers' load-testing scripts that spin up compute for a few hours at unpredictable times, with no ability to forecast when they'll run next. Which EC2 pricing model best matches this usage pattern?",o:["Standard Reserved Instances","On-Demand Instances","Dedicated Hosts","3-year Savings Plans"],a:[1],e:"On-Demand suits unpredictable, short-notice usage with no forecast."},
+{q:"A finance team commits to running a steady fleet of application servers for the next three years in exchange for the deepest possible discount, and is comfortable locking into a specific instance family without flexibility to change it later. Which purchasing option fits?",o:["Convertible Reserved Instances","Standard Reserved Instances","Spot Instances","On-Demand Instances"],a:[1],e:"Standard RIs trade flexibility for the deepest discount on a long-term commitment."},
+{q:"A company runs commercial relational database software under a license that is billed per physical CPU socket and requires visibility into the specific physical server the software runs on for compliance auditing. Which EC2 purchasing option satisfies this licensing model?",o:["Spot Instances","Dedicated Hosts","Savings Plans","On-Demand Instances"],a:[1],e:"Dedicated Hosts expose the physical server, satisfying socket-based licensing audits."},
+{q:"A distributed video-rendering farm processes jobs from a queue, checkpoints progress periodically, and can tolerate a node being reclaimed with two minutes' notice, resuming the job elsewhere. The team wants to minimize compute cost as aggressively as possible for this workload.",o:["On-Demand Instances","Spot Instances","Standard Reserved Instances","Dedicated Hosts"],a:[1],e:"Spot Instances suit checkpointable, interruption-tolerant workloads prioritizing lowest cost."},
+{q:"Which of the following EC2 pricing models is LEAST appropriate for a single-node, non-clustered production database with no automated failover configured?",o:["On-Demand Instances","Standard Reserved Instances","Spot Instances","Savings Plans"],a:[2],e:"Spot is the worst fit for a single-node database with no failover."},
+{q:"A team wants a compute discount that flexibly applies across a changing mix of EC2 instance families and AWS Fargate usage over the commitment period, rather than locking into one specific configuration. Which purchasing option is designed for this flexibility?",o:["Standard Reserved Instances","Compute Savings Plans","Dedicated Instances","Spot Instances"],a:[1],e:"Compute Savings Plans flexibly apply across EC2 families and Fargate."},
+{q:"An application running on Spot Instances needs to gracefully drain in-flight requests and checkpoint its work before the underlying instance is reclaimed. Where can the application detect an impending Spot interruption before it happens?",o:["By polling the instance metadata service for a Spot interruption notice","By subscribing to an RDS event notification","By checking the EC2 console manually every few minutes","Spot interruptions cannot be detected in advance under any circumstance"],a:[0],e:"The instance metadata service surfaces a Spot interruption notice before reclamation."},
+{q:"Which two statements accurately distinguish Savings Plans from Reserved Instances?",o:["Savings Plans commit to a consistent dollar-per-hour spend applied flexibly across eligible usage, rather than one fixed instance configuration","Standard Reserved Instances commit to a specific instance family in exchange for their discount, trading away some flexibility","Savings Plans are only available with a 6-month minimum term","Reserved Instances automatically convert to Spot pricing when unused","Savings Plans and Reserved Instances are functionally identical with no differences"],a:[0,1],multi:true,e:"Savings Plans commit to flexible $/hour spend; Standard RIs commit to a specific family for their discount."},
+{q:"A company purchases Reserved Instances in one member account of an AWS Organization with consolidated billing enabled. Can the RI discount benefit matching instance usage running in a different, linked member account?",o:["No, RI discounts are strictly locked to the purchasing account","Yes, RI (and Savings Plan) discounts can be shared across linked accounts under AWS Organizations consolidated billing","Only if both accounts are in the same Availability Zone","Only if the second account also purchases identical RIs"],a:[1],e:"RI/Savings Plan discounts can share across linked accounts under consolidated billing."},
+{q:"Dedicated Instances differ from Dedicated Hosts primarily in that:",o:["Dedicated Instances provide visibility into the physical server layout, while Dedicated Hosts do not","Dedicated Instances run on hardware dedicated to a single customer but without visibility into or control over the specific physical server, unlike Dedicated Hosts","Dedicated Instances are always more expensive than Spot Instances","Dedicated Instances cannot be launched in any VPC"],a:[1],e:"Dedicated Instances lack the physical server visibility/control that Dedicated Hosts provide."},
+{q:"A CI/CD build fleet processes short-lived, independent build jobs that can simply be retried from scratch if interrupted, and the team's top priority is minimizing compute spend for this fleet. Which purchasing option best matches this priority and workload shape?",o:["Standard Reserved Instances","Spot Instances","Dedicated Hosts","On-Demand exclusively, to guarantee zero interruptions"],a:[1],e:"Retryable, short-lived build jobs are a strong Spot fit for minimizing cost."},
+{q:"A team is evaluating three separate workloads for EC2 purchasing strategy: a 24/7 steady-state production fleet, an unpredictable ad-hoc analytics workload with no fixed schedule, and a fault-tolerant nightly ETL batch job. Which pairing of pricing models correctly matches each workload in that order?",o:["Spot, On-Demand, Reserved Instances","Reserved Instances/Savings Plans, On-Demand, Spot Instances","On-Demand, Reserved Instances, Dedicated Hosts","All three should use the same pricing model for simplicity"],a:[1],e:"Reserved/Savings Plans for steady-state, On-Demand for unpredictable ad-hoc, Spot for fault-tolerant batch."},
+{q:"A developer wants to pass a startup script to an EC2 instance that installs required packages and starts the application service automatically the first time the instance boots, without baking those steps permanently into a custom AMI. Which EC2 feature is designed for this?",o:["A security group rule","EC2 user data, executed once on first boot via cloud-init on typical Linux AMIs","An IAM permissions boundary","A VPC endpoint policy"],a:[1],e:"User data runs a bootstrap script once on first boot via cloud-init."},
+{q:"A penetration test finds that a web application running on an EC2 instance with IMDSv1 enabled can be tricked, via a server-side request forgery (SSRF) vulnerability, into fetching and returning the contents of the instance metadata service, including the attached IAM role's temporary credentials. What configuration change most directly closes this specific attack path?",o:["Disabling the IAM role entirely","Enforcing IMDSv2 by setting HttpTokens to required, which requires an initial token-granting PUT request that a simple SSRF redirect typically cannot perform","Rotating the EC2 key pair","Switching the instance to a larger instance type"],a:[1],e:"Enforcing IMDSv2 (HttpTokens required) closes this SSRF-to-credential-theft path since it requires a token PUT first."},
+{q:"Application code running on an EC2 instance needs to determine its own instance ID and the IAM role currently attached to it, at runtime, without any hardcoded configuration. Where does this information come from?",o:["A CloudFormation output value","The EC2 instance metadata service, queried locally from the instance itself","An IAM policy document stored in S3","The Route 53 hosted zone for the VPC"],a:[1],e:"The instance metadata service exposes properties like instance ID and role information locally."},
+{q:"How does an EC2 instance profile actually make temporary IAM credentials available to an AWS SDK running in application code on that instance?",o:["The credentials are baked permanently into the AMI at build time","The SDK automatically retrieves temporary, auto-rotated credentials from the instance metadata service based on the attached role","A developer must manually run aws configure on the instance after every reboot","The credentials are emailed to the instance's root account"],a:[1],e:"The SDK automatically retrieves temporary, auto-rotated credentials from the metadata service."},
+{q:"A security team wants to enforce, account-wide, that all new EC2 instances only accept instance metadata requests that first obtain a session token via a PUT request, rather than allowing simple unauthenticated GET requests to the metadata endpoint. Which setting accomplishes this?",o:["Disabling the metadata service entirely","Setting the instance metadata option HttpTokens to required, enforcing IMDSv2","Attaching a stricter security group","Enabling EBS encryption"],a:[1],e:"HttpTokens required enforces IMDSv2-only access account-wide via launch template/instance settings."},
+{q:"Which of the following pieces of information can typically be retrieved from the EC2 instance metadata service by code running on that instance?",o:["Only the instance's public IP address and nothing else","Instance ID, AMI ID, attached security groups, and the temporary credentials of any attached IAM role, among other properties","Only billing information for the AWS account","The root user's console password"],a:[1],e:"Metadata includes instance/AMI/security group details and attached role credentials, among other data."},
+{q:"A developer notices their application logs occasionally include the full raw JSON response returned by a call to the instance metadata service, for debugging purposes. What security risk does this practice introduce?",o:["No risk; the metadata response never contains sensitive information","Potential leakage of the instance's temporary IAM role credentials into log storage, which may be less tightly access-controlled than the credentials themselves","It could cause the EC2 instance to restart unexpectedly","It only matters for Windows-based instances"],a:[1],e:"Logging the raw metadata response risks leaking the instance's temporary IAM credentials."},
+{q:"Which of the following correctly describes typical EC2 user data behavior on a standard Linux AMI using cloud-init?",o:["The user data script re-executes on every stop/start cycle","The user data script executes once, on the instance's first boot after launch","User data replaces the AMI's operating system entirely","User data requires an S3 bucket to function"],a:[1],e:"Standard cloud-init behavior runs user data once, on first boot."},
+{q:"A developer wants to supply a database connection string to an application at launch time without hardcoding it into the AMI or into user data in plaintext. Following AWS best practice, what should the application do instead?",o:["Hardcode the connection string in the AMI","At boot, use the instance's IAM role to retrieve the connection string at runtime from a secrets/configuration service such as Secrets Manager or Parameter Store","Email the connection string to the instance after launch","Store the connection string as the instance's IAM role name"],a:[1],e:"Retrieve secrets at runtime via the instance role from Secrets Manager/Parameter Store, not hardcoding."},
+{q:"What HTTP method must a client first send to the IMDSv2 endpoint in order to obtain the session token required for subsequent metadata GET requests?",o:["DELETE","PUT","PATCH","OPTIONS"],a:[1],e:"IMDSv2 requires an initial PUT to obtain a session token before GETs succeed."},
+{q:"Is the EC2 instance metadata endpoint at 169.254.169.254 reachable over the public internet?",o:["Yes, it is publicly routable from anywhere","No, it is a link-local address reachable only from within the instance itself, not routed over the public internet","Only in the us-east-1 Region","Only if a public IP is attached to the instance"],a:[1],e:"169.254.169.254 is link-local, reachable only from the instance itself, not the public internet."},
+{q:"A company's security policy mandates that IMDSv1 be disabled account-wide for all new EC2 launches going forward, while allowing existing workloads time to migrate. Which configuration achieves the \"disabled for new launches\" requirement most directly at the instance level?",o:["Deleting all existing IAM roles","Setting the instance metadata option HttpTokens to required on new launch templates/configurations","Disabling all security groups","Switching all new instances to Spot pricing"],a:[1],e:"Setting HttpTokens to required on new launch templates enforces IMDSv2 for new launches."},
+{q:"Which two of the following are true regarding EC2 user data and the instance metadata service?",o:["User data can be used to run a bootstrap script once on first boot","The metadata service can expose the credentials of the instance's attached IAM role","User data and the metadata service are the exact same feature with different names","The metadata service is only accessible via the AWS Management Console","User data must always contain valid IAM policy JSON"],a:[0,1],multi:true,e:"User data supports one-time bootstrap scripts, and the metadata service can expose role credentials."},
+{q:"A company migrating a legacy application to EC2 wants the application, once running, to automatically retrieve a rotating database password without any developer intervention after each rotation. Which combination of AWS capabilities supports this pattern?",o:["A hardcoded password baked into the AMI, updated manually after every rotation","An IAM role attached to the instance, used at runtime to retrieve the current secret value from Secrets Manager, which handles rotation independently","Storing the password as EC2 user data, which is re-read on every application request","Emailing the new password to the operations team after each rotation"],a:[1],e:"An attached IAM role retrieving secrets at runtime from Secrets Manager supports automatic, code-transparent rotation."},
+{q:"A team needs an EBS volume type where IOPS and throughput can be provisioned independently of the volume's storage size, for a workload with variable performance needs that doesn't justify Provisioned IOPS pricing. Which volume type fits?",o:["gp2","gp3","st1","sc1"],a:[1],e:"gp3 decouples IOPS/throughput provisioning from volume size."},
+{q:"Which AWS storage option is physically attached to the host and is lost when the instance is stopped or terminated, though it survives a simple reboot?",o:["Amazon EBS","Instance store","Amazon EFS","Amazon S3"],a:[1],e:"Instance store is ephemeral, tied to the host, lost on stop/terminate."},
+{q:"A financial services company runs a relational database on EC2 requiring consistently high, predictable IOPS regardless of variable workload spikes, and is willing to pay a premium for that consistency. Which EBS volume type should they provision?",o:["sc1 (Cold HDD)","st1 (Throughput Optimized HDD)","io1/io2 (Provisioned IOPS SSD)","gp2 only, since all SSD types perform identically"],a:[2],e:"io1/io2 provide consistent, high provisioned IOPS for demanding databases."},
+{q:"Where are Amazon EBS snapshots stored, and how does incremental snapshotting behave?",o:["Snapshots are stored only on the source instance and are always full copies","Snapshots are stored in Amazon S3, and after the first snapshot, subsequent snapshots are incremental (storing only changed blocks) while still representing a complete restorable point-in-time","Snapshots are stored in Glacier exclusively and cannot be used to create new volumes","Snapshots are stored on a separate EC2 instance dedicated to backups"],a:[1],e:"Snapshots live in S3, are incremental after the first, and each represents a complete restore point."},
+{q:"A company needs a shared file system that can be mounted concurrently, over NFS, by dozens of EC2 instances spread across multiple Availability Zones within a Region, growing elastically without manual capacity provisioning. Which storage service fits this requirement?",o:["Amazon EBS","Amazon EFS","Instance store","A single gp3 volume shared via a script"],a:[1],e:"EFS is a shared, elastic, multi-AZ POSIX file system mountable by many instances."},
+{q:"Which EBS volume type is optimized for high-throughput, sequential workloads such as big data processing and log processing, but cannot be used as a boot volume?",o:["gp3","st1 (Throughput Optimized HDD)","io2","Instance store"],a:[1],e:"st1 is throughput-optimized for big data/log workloads and is not bootable."},
+{q:"A team needs the cheapest possible EBS storage tier for archival data that is accessed only a few times per year and does not require fast random-access performance. Which volume type fits?",o:["io1","gp3","sc1 (Cold HDD)","Instance store"],a:[2],e:"sc1 is the cheapest EBS tier, suited for infrequently accessed archival data."},
+{q:"Can an EBS volume created in Availability Zone us-east-1a be directly attached to an EC2 instance running in us-east-1b?",o:["Yes, EBS volumes can attach across any AZ in the same Region","No, EBS volumes are AZ-scoped and can only attach to instances within that same AZ","Yes, but only for gp3 volumes","Yes, but only if both AZs share a subnet"],a:[1],e:"EBS volumes only attach to instances within their own AZ."},
+{q:"A team needs to increase the size of a live, in-use gp3 EBS volume attached to a production instance, without incurring downtime. Is this possible, and what follow-up step is typically needed?",o:["It is not possible; the volume must be detached and recreated","Yes, gp3 volumes can be resized live without detaching; the OS/filesystem may then need to be extended to make use of the additional space","Yes, but only if the instance is first terminated","Yes, but the data is erased during the resize"],a:[1],e:"gp3 volumes can be resized live; the filesystem may need a follow-up extend step."},
+{q:"Which is the best-practice default choice for a general-purpose EC2 boot volume today, balancing cost and performance for most workloads?",o:["sc1","st1","gp3","Instance store only, for cost savings"],a:[2],e:"gp3 is the modern default general-purpose boot volume choice."},
+{q:"A workload needs extremely high local IOPS for temporary scratch/cache data, is designed to tolerate data loss on instance replacement (data is not the source of truth), and wants to avoid the network overhead of EBS. Which storage option fits?",o:["EFS","Instance store","sc1","A cross-Region EBS volume"],a:[1],e:"Instance store offers very high local IOPS for temporary/cache data tolerant of loss."},
+{q:"Which two statements correctly describe the durability relationship between EBS and instance store?",o:["EBS volumes persist independently of the instance's lifecycle until explicitly deleted","Instance store data does not survive an instance stop or terminate action","Instance store is more durable than EBS in every scenario","EBS volumes are lost whenever the instance is rebooted","Instance store and EBS have identical durability guarantees"],a:[0,1],multi:true,e:"EBS persists independently until deleted; instance store does not survive stop/terminate."},
+{q:"A team wants to migrate a legacy NFS file server used by multiple on-premises and EC2-based applications to a fully managed AWS service with elastic capacity and POSIX file semantics, avoiding manual volume resizing. Which service is the natural fit?",o:["Amazon EBS","Amazon EFS","Amazon S3","Instance store"],a:[1],e:"EFS provides fully managed, elastic, POSIX-compliant shared file storage."},
+{q:"Which of the following is a valid reason to prefer instance store over EBS for a specific EC2 workload component?",o:["The data must persist for years regardless of instance lifecycle","The workload needs extremely low-latency local disk access for temporary/cache data and can tolerate loss on instance replacement","The data needs to be shared across multiple Availability Zones simultaneously","The team wants the lowest possible cost for long-term archival"],a:[1],e:"Instance store fits low-latency, temporary/cache data tolerant of loss on replacement."},
+{q:"A company restoring from an EBS snapshot to create a new volume in a different Availability Zone within the same Region — is this supported?",o:["No, snapshots can only restore to the original AZ","Yes, EBS snapshots are stored in S3 (Region-level durability) and can be used to create a new volume in any AZ within that Region","No, snapshots can only be restored in a different Region","Yes, but only for io2 volumes"],a:[1],e:"Snapshots reside in S3 (Region-durable) and can create volumes in any AZ within that Region."},
+{q:"Which two of the following statements about EBS snapshot behavior are accurate?",o:["The first snapshot of a volume is a full copy; subsequent snapshots only store changed blocks","Each snapshot, regardless of being incremental in storage, represents a complete, independently restorable point-in-time image","Snapshots cannot be copied across Regions under any circumstance","Deleting an intermediate snapshot in a chain always deletes all data needed for later snapshots too","Snapshots are billed identically to full standalone copies regardless of incremental storage"],a:[0,1],multi:true,e:"First snapshot is full, later ones incremental in storage, but each is a fully restorable point-in-time."},
+{q:"A company runs a microservices application where requests to /orders should route to one backend service and requests to /accounts should route to a different backend service, all over HTTPS with a single public endpoint. Which AWS load balancer type is designed for this content-based routing?",o:["Network Load Balancer","Application Load Balancer","Gateway Load Balancer","A single EC2 instance running as a reverse proxy, since no ELB supports this"],a:[1],e:"Path-based routing over HTTPS is a defining ALB capability."},
+{q:"A trading platform requires extremely low-latency TCP handling capable of millions of requests per second, along with a static IP address for allowlisting by downstream partners. Which load balancer type is the best fit?",o:["Application Load Balancer","Network Load Balancer","Classic Load Balancer","Gateway Load Balancer"],a:[1],e:"NLB suits extreme-performance TCP with static IP support."},
+{q:"A security team wants to transparently insert third-party virtual security appliances (such as intrusion detection/prevention systems) into the traffic path between the internet and their application, without redesigning the application's own load balancing. Which AWS load balancer type is purpose-built for this pattern?",o:["Application Load Balancer","Network Load Balancer","Gateway Load Balancer","Classic Load Balancer"],a:[2],e:"Gateway Load Balancer is purpose-built for transparent third-party appliance insertion."},
+{q:"Besides EC2 instances, which of the following can an Application Load Balancer's target group route traffic to?",o:["Only EC2 instances, nothing else","IP addresses, AWS Lambda functions, and ECS tasks, among other target types","Only S3 buckets","Only RDS database instances"],a:[1],e:"ALB target groups can route to IPs, Lambda functions, and ECS tasks, not just EC2."},
+{q:"Which load balancer type is generally considered legacy and is not recommended for new application designs on the exam or in practice?",o:["Application Load Balancer","Network Load Balancer","Classic Load Balancer","Gateway Load Balancer"],a:[2],e:"Classic Load Balancer is legacy and not recommended for new designs."},
+{q:"A request from a client reaches the target's Security Group successfully (inbound allowed), but the client never receives a response, and the target's application logs show the request was processed correctly. After confirming the Security Group is correctly configured, what should be checked next?",o:["The AMI version of the target instance","The subnet's Network ACL rules, since NACLs are stateless and might be silently blocking the return traffic even though the Security Group allowed the inbound request","The Region's list of Availability Zones","The IAM role attached to the load balancer"],a:[1],e:"Stateless NACLs can silently block the return leg even when the Security Group allowed the request."},
+{q:"A real-time multiplayer game backend needs to load balance a UDP-based protocol used for low-latency game state updates. Which AWS load balancer type supports UDP traffic?",o:["Application Load Balancer","Network Load Balancer","Classic Load Balancer","None of the ELB types support UDP"],a:[1],e:"NLB supports UDP; ALB does not."},
+{q:"A team wants to terminate TLS at the client-facing edge for compliance visibility, while passing the raw, unmodified TCP stream through to backend targets that perform their own additional processing. Which capability, tied to a specific load balancer type, supports this pattern?",o:["ALB path-based routing","NLB TLS passthrough","Gateway Load Balancer inline inspection only","Classic Load Balancer sticky sessions"],a:[1],e:"NLB TLS passthrough delivers the raw TCP stream to backend targets unmodified."},
+{q:"Which ELB feature allows a client's subsequent requests during a session to consistently reach the same backend target, useful for applications that store session state locally on the instance rather than in an external store?",o:["Cross-zone load balancing","Sticky sessions","Path-based routing","TLS passthrough"],a:[1],e:"Sticky sessions route a client's requests to the same target for session duration."},
+{q:"A company wants to gradually shift 10% of production traffic to a new application version deployed in a separate target group, increasing the percentage over time if no errors are observed, without redeploying the load balancer itself. Which ALB capability supports this canary-style pattern?",o:["Cross-zone load balancing","Weighted target group routing rules on a listener rule","A Network Load Balancer TLS listener","Gateway Load Balancer appliance routing"],a:[1],e:"Weighted routing rules on ALB listener rules enable canary-style traffic shifting."},
+{q:"What does enabling cross-zone load balancing on an ELB accomplish?",o:["It encrypts traffic between the load balancer and targets","It distributes incoming traffic evenly across targets in all enabled Availability Zones, rather than only among targets in the AZ that received the request","It disables health checks for improved performance","It is exclusively a Network Load Balancer feature with no equivalent elsewhere"],a:[1],e:"Cross-zone load balancing spreads traffic evenly across targets in all enabled AZs."},
+{q:"Which AWS resource must be configured on an Application Load Balancer to allow clients to connect over HTTPS using a valid, AWS-managed TLS certificate?",o:["A Network ACL rule referencing the certificate","An HTTPS listener referencing a certificate issued or imported through AWS Certificate Manager (ACM)","A Security Group rule containing the certificate","A Route 53 alias record containing the certificate"],a:[1],e:"An HTTPS listener referencing an ACM certificate enables HTTPS termination on ALB."},
+{q:"What determines whether a specific backend target receives traffic from a load balancer at any given moment?",o:["The instance's billing tier","The target's current health check status within its target group","The Availability Zone's total instance count","The AMI used to launch the target"],a:[1],e:"A target's health check status determines whether it currently receives traffic."},
+{q:"A company needs WebSocket support for a real-time chat application behind a load balancer, in addition to standard HTTP/HTTPS routing. Which load balancer type natively supports WebSockets?",o:["Application Load Balancer","Gateway Load Balancer exclusively","Classic Load Balancer exclusively","No AWS load balancer supports WebSockets"],a:[0],e:"ALB natively supports WebSockets."},
+{q:"A team troubleshoots intermittent connection failures to a load-balanced application and confirms both the Security Group and Network ACL rules correctly allow the traffic in both directions. Health checks on the target group show the target as healthy. Which of the following is the LEAST likely remaining cause, given the checks already performed?",o:["An application-level bug causing intermittent 5xx errors under load","Target group deregistration delay during a deployment causing brief connection drops","The Security Group is blocking inbound traffic (already ruled out by the scenario)","Insufficient target capacity causing connection queuing under peak load"],a:[2],e:"That cause is explicitly ruled out by the scenario, making it the least likely remaining explanation."},
+{q:"Which two of the following are accurate statements about Application Load Balancers?",o:["They operate at Layer 7 and support content-based routing using path or host rules","They can route traffic to Lambda functions as a target type","They support raw TCP passthrough with no visibility into HTTP semantics","They cannot use HTTPS listeners under any configuration","They are limited to a single target group with no routing rules"],a:[0,1],multi:true,e:"ALB operates at Layer 7 with content-based routing and supports Lambda as a target type."},
+{q:"A team is configuring a new Auto Scaling group and wants the most current, flexible way to define what gets launched, including support for mixing instance types and versioning the launch configuration over time. Which resource should they use?",o:["A Launch Configuration (legacy)","A Launch Template","A raw AMI reference with no template","A CloudFormation parameter file only"],a:[1],e:"Launch Templates are the modern, versioned option supporting mixed instance types."},
+{q:"A team wants the simplest Auto Scaling policy that automatically adjusts capacity to keep average CPU utilization near a target value, without manually defining step thresholds. Which scaling policy type fits?",o:["Scheduled scaling","Target tracking scaling","Step scaling","Manual scaling only"],a:[1],e:"Target tracking automatically maintains a target metric value without manual step thresholds."},
+{q:"An Auto Scaling group needs to run a custom script to gracefully deregister an instance from an internal service registry before that instance is actually terminated during a scale-in event. Which ASG feature supports running custom logic at this specific point in the instance lifecycle?",o:["A scheduled scaling action","A lifecycle hook","A target tracking policy","A Launch Template version"],a:[1],e:"Lifecycle hooks allow custom actions at defined points in the launch/terminate lifecycle."},
+{q:"An Auto Scaling group is configured with only EC2 status checks (not ELB health checks) as its health check type. An application process on one instance crashes due to an unhandled exception, but the underlying instance and OS remain healthy. What will the ASG do?",o:["Immediately replace the instance, since EC2 status checks detect application-level failures","Take no action, since EC2 status checks only detect infrastructure-level failures (like a hardware or OS failure), not application-level crashes","Automatically switch the health check type to ELB checks","Terminate the entire Auto Scaling group"],a:[1],e:"EC2 status checks catch infrastructure failures, not application-level crashes."},
+{q:"A retail company knows from historical data that traffic reliably spikes every weekday morning at 9 AM as stores open, and wants capacity to increase just before that predictable spike rather than reactively after load increases. Which scaling approach fits best?",o:["Target tracking scaling only","Scheduled scaling, timed just ahead of the known daily spike","Step scaling triggered only by memory alarms","Manual scaling performed by an on-call engineer each morning"],a:[1],e:"Scheduled scaling proactively adds capacity ahead of a known, predictable spike."},
+{q:"What do the minimum, desired, and maximum capacity settings on an Auto Scaling group collectively define?",o:["Only the billing tier for the group","The boundaries within which the ASG will automatically scale the number of instances","The number of Availability Zones available to the account","The maximum number of Load Balancers that can attach to the group"],a:[1],e:"Min/desired/max define the boundaries within which the ASG scales automatically."},
+{q:"Which AWS Auto Scaling capability uses machine learning on historical load patterns to proactively provision capacity ahead of anticipated demand, rather than reacting to real-time metrics alone?",o:["Step scaling","Predictive scaling","Scheduled scaling","Target tracking scaling"],a:[1],e:"Predictive scaling uses ML on historical patterns to proactively provision capacity."},
+{q:"Why is it recommended to configure an Auto Scaling group's instances across multiple subnets in different Availability Zones rather than a single subnet in one AZ?",o:["It is required to use Spot Instances","It provides high availability, allowing the workload to tolerate the loss of a single Availability Zone","It disables health checks by default","It is only relevant for Network Load Balancers"],a:[1],e:"Multi-AZ spread provides high availability against a single AZ's failure."},
+{q:"An unhealthy instance managed by an Auto Scaling group is terminated and replaced. The application stored active user session data only in that instance's local memory, with no external session store. What happens to that session data?",o:["It is automatically migrated to the replacement instance","It is lost, illustrating why stateless application design or an external session store (such as ElastiCache) matters for ASG-managed fleets","It is preserved in the instance's EBS root volume permanently","The ASG pauses replacement until the data is manually backed up"],a:[1],e:"In-memory session data is lost on replacement without an external store; design for statelessness."},
+{q:"Comparing step scaling to target tracking scaling, which statement is accurate?",o:["Step scaling requires manually defined capacity increments tied to CloudWatch alarm thresholds, offering more granular control at the cost of more manual tuning than target tracking","Step scaling and target tracking are functionally identical","Step scaling cannot use CloudWatch alarms","Step scaling is deprecated and cannot be configured in new Auto Scaling groups"],a:[0],e:"Step scaling uses manually tuned, alarm-driven increments, offering more control at more manual cost."},
+{q:"A team wants to balance cost savings with a guaranteed baseline of availability for a variable-traffic web tier. Which Auto Scaling / EC2 purchasing combination achieves both goals simultaneously?",o:["A fixed-size fleet of On-Demand instances only, with no scaling","An Auto Scaling group using a Launch Template's mixed instances policy, combining a baseline of On-Demand capacity with Spot Instances for the remainder, scaled via target tracking","A single large Dedicated Host with no Auto Scaling","Manually launched instances added and removed by an engineer as needed"],a:[1],e:"Mixed instances policy blending On-Demand and Spot under target tracking balances cost and availability."},
+{q:"What triggers a scaling action under a target tracking Auto Scaling policy?",o:["A human manually clicking \"scale up\" in the console every time","A CloudWatch metric (such as average CPU utilization) crossing the configured target value, evaluated automatically","A Lambda function that must be manually invoked on a fixed schedule","A Route 53 health check failure with no relation to the ASG's own metrics"],a:[1],e:"A CloudWatch metric crossing the target value automatically triggers target tracking scaling actions."},
+{q:"During a scale-in event, an Auto Scaling group must choose which specific instance to terminate among several eligible candidates. What determines this choice?",o:["The ASG's termination policy, which can consider factors like instance age or proximity to the next billing hour","A purely random selection with no configurable logic","Always the instance with the highest instance ID","Always the first instance that was ever launched, regardless of configuration"],a:[0],e:"The ASG's termination policy determines which instance is chosen during scale-in."},
+{q:"Which of the following can a Launch Template specify for instances an Auto Scaling group launches?",o:["An IAM instance profile, AMI ID, instance type, and security groups","The literal JSON content of an entirely new IAM policy authored inline within the template","A permanent Reserved Instance discount applied retroactively","A manually assigned static private IP shared across all launched instances"],a:[0],e:"Launch Templates specify instance profile, AMI, instance type, security groups, and similar launch parameters."},
+{q:"Which two of the following are true about AWS Auto Scaling lifecycle hooks?",o:["They allow custom actions (such as draining connections or deregistering from a service) to run before an instance is terminated or before it's put into service","They can pause an instance in a wait state until a custom action completes or a timeout is reached","They are only usable with Network Load Balancers","They automatically rewrite the AMI used by the Launch Template","They eliminate the need for any health checks"],a:[0,1],multi:true,e:"Lifecycle hooks support custom pre-transition actions and can pause an instance in a wait state."},
+{q:"A company observes that during a sudden, brief traffic spike, their target-tracking Auto Scaling group takes a few minutes to add capacity, resulting in temporary degraded performance before scaling catches up. Which combination of adjustments would most directly help absorb the spike more quickly without switching away from target tracking?",o:["Lowering the target metric threshold and/or increasing the ASG's minimum baseline capacity to provide more headroom before scaling is needed","Switching the health check type to EC2 status checks only","Removing the Launch Template entirely","Disabling CloudWatch metrics for the group"],a:[0],e:"Lowering the target threshold or raising baseline minimum capacity provides more headroom to absorb spikes faster."},
+{q:"Which statement correctly describes AWS Security Groups?",o:["They are stateless and support explicit Deny rules","They are stateful (return traffic is automatically allowed) and support only Allow rules, with anything not explicitly allowed being implicitly denied","They operate at the subnet level, not the instance/ENI level","They are a global resource, not scoped to a VPC"],a:[1],e:"Security Groups are stateful and allow-only, with implicit deny for anything unlisted."},
+{q:"Which statement correctly describes Network ACLs?",o:["They are stateful, like Security Groups","They are stateless, meaning return traffic must be explicitly allowed by a separate rule in the opposite direction, and they support both Allow and Deny rules evaluated in numbered order","They can only be applied at the instance level","They evaluate all rules simultaneously with no defined order"],a:[1],e:"NACLs are stateless, support Allow and Deny, and are evaluated in numbered order."},
+{q:"A request from a client is permitted by the target instance's Security Group, but the client never receives a response. Investigation reveals the subnet's Network ACL has no explicit outbound rule allowing return traffic on the ephemeral port range back to the client. What is the most likely explanation?",o:["Security Groups always override NACL behavior, so this shouldn't be possible","Because NACLs are stateless, the missing outbound rule for return traffic blocks the response even though the Security Group allowed the original inbound request","IAM permissions are blocking the response","The AMI does not support responding to requests"],a:[1],e:"The stateless NACL's missing return-traffic rule blocks the response despite the Security Group's allow."},
+{q:"Which of the following correctly distinguishes the scope at which Security Groups and Network ACLs operate?",o:["Both operate at the VPC level with no distinction","Security Groups operate at the instance/ENI level; Network ACLs operate at the subnet level","Security Groups operate at the subnet level; Network ACLs operate at the instance level","Both operate only at the Region level"],a:[1],e:"Security Groups are instance/ENI-scoped; NACLs are subnet-scoped."},
+{q:"Can a Security Group contain an explicit rule that denies specific traffic?",o:["Yes, Security Groups support both Allow and Deny rules equally","No, Security Groups only support Allow rules; any traffic not explicitly allowed is implicitly denied","Only for outbound traffic","Only when attached to a NAT Gateway"],a:[1],e:"Security Groups support only Allow rules; everything else is implicitly denied."},
+{q:"A subnet's Network ACL has an explicit Deny rule blocking inbound traffic on port 22 (SSH), while the target instance's Security Group explicitly allows inbound port 22. What is the actual result when someone attempts to SSH into the instance?",o:["SSH access is allowed, because the Security Group's Allow takes precedence","SSH access is blocked, because the NACL's explicit Deny takes effect at the subnet boundary regardless of what the instance's Security Group allows","The result is undefined and varies by request","SSH access alternates between allowed and blocked randomly"],a:[1],e:"The NACL's explicit Deny blocks the traffic at the subnet boundary regardless of the Security Group's Allow."},
+{q:"What is the typical default behavior of a newly created custom Security Group before any rules are added?",o:["It allows all inbound and outbound traffic from any source","It denies all inbound traffic by default while typically allowing all outbound traffic by default, until inbound rules are explicitly added","It blocks all traffic in both directions permanently with no way to change it","It behaves identically to a Network ACL"],a:[1],e:"A new custom Security Group denies inbound by default and typically allows outbound by default."},
+{q:"When troubleshooting a connectivity failure to an EC2 instance inside a VPC, which combination of checks is necessary to confirm network-layer access is not the blocker?",o:["Only the Security Group needs to be checked; NACLs are irrelevant","Both the instance's Security Group rules AND the subnet's Network ACL rules (in both directions, given NACL statelessness) must permit the traffic","Only the Network ACL needs to be checked; Security Groups are irrelevant","Only IAM policies need to be checked; network configuration is irrelevant to connectivity"],a:[1],e:"Both Security Group and NACL rules (bidirectionally, due to NACL statelessness) must permit the traffic."},
+{q:"Which two of the following statements about Security Groups and Network ACLs are correct?",o:["Security Groups evaluate all applicable rules together, with the most permissive matching rule effectively governing the outcome (since only Allow rules exist)","Network ACL rules are evaluated in numbered order, and the first matching rule (Allow or Deny) is applied","Network ACLs are stateful, requiring no return-traffic rule","Security Groups can include explicit Deny rules alongside Allow rules","Security Groups and NACLs are the exact same resource type under different names"],a:[0,1],multi:true,e:"SGs combine Allow rules permissively; NACL rules are evaluated in numbered order, first match applies."},
+{q:"A company wants an extra layer of subnet-level defense that can explicitly block traffic from a known-malicious IP range, in addition to their existing Security Group rules. Which resource is best suited to add an explicit Deny for this specific IP range at the subnet level?",o:["A Security Group Deny rule, since Security Groups support Deny","A Network ACL rule explicitly denying that IP range, since NACLs (unlike Security Groups) support explicit Deny rules","An IAM permissions boundary","A Route 53 DNS filtering rule"],a:[1],e:"Only NACLs support explicit Deny rules, making them the tool for blocking a specific IP range at the subnet level."},
+{q:"A company wants to eliminate SSH access entirely from their EC2 fleet's Security Groups, closing port 22, while still allowing engineers to open a shell on an instance when needed, with every session centrally logged for audit purposes. Which AWS capability satisfies this?",o:["A bastion host with a shared SSH key","AWS Systems Manager Session Manager, which provides IAM-governed shell access without requiring any inbound ports to be open","Disabling all remote access permanently","A VPN concentrator requiring a static IP allowlist"],a:[1],e:"Session Manager provides IAM-governed, portless shell access with centralized session logging."},
+{q:"What must be present on an EC2 instance for Systems Manager Session Manager and Run Command to function?",o:["Nothing beyond a running operating system","The SSM Agent running on the instance, along with an IAM role attached to the instance granting the necessary Systems Manager permissions","A permanently open SSH port","A dedicated bastion host in the same subnet"],a:[1],e:"Requires the SSM Agent running plus an IAM role granting the needed Systems Manager permissions."},
+{q:"A team needs to apply the same patch script across 300 EC2 instances simultaneously, without SSH access to any of them, using IAM-controlled API calls rather than manual login. Which Systems Manager capability is designed for this?",o:["Systems Manager Parameter Store","Systems Manager Run Command","Systems Manager Session Manager, for scripted fleet-wide changes","EC2 Auto Scaling termination policies"],a:[1],e:"Run Command executes scripts across many instances via IAM-controlled API calls, no SSH needed."},
+{q:"Why does the exam favor Systems Manager Session Manager over a traditional bastion host with SSH key distribution for secure instance access?",o:["It requires no IAM configuration whatsoever","It avoids exposing any inbound SSH port and centralizes access control and audit logging through IAM and CloudTrail","It disables CloudWatch logging entirely","It only works for Windows instances"],a:[1],e:"It avoids open SSH ports and centralizes access control/audit logging through IAM and CloudTrail."},
+{q:"Systems Manager Parameter Store SecureString parameter values are encrypted using which AWS service?",o:["A hardcoded key embedded in the AMI","AWS Key Management Service (KMS)","No encryption is actually applied; \"SecureString\" is only a label","TLS only, with no encryption at rest"],a:[1],e:"SecureString parameters are encrypted using AWS KMS."},
+{q:"A developer wants to retrieve a piece of non-secret application configuration (such as a feature flag value) at runtime from a centralized, hierarchical key-value store, without paying for a full secrets-management service. Which AWS capability is well suited and cost-effective for this use case?",o:["AWS Secrets Manager exclusively","Systems Manager Parameter Store (Standard tier, at no additional charge)","Amazon Cognito","AWS CodeArtifact"],a:[1],e:"Parameter Store Standard tier is free and well suited to non-secret hierarchical configuration."},
+{q:"Which two of the following are accurate about AWS Systems Manager Session Manager?",o:["It requires opening inbound port 22 or 3389 to function","Session activity can be logged to CloudWatch Logs or S3 for auditing","Access to start a session is governed by IAM policy","It requires a shared SSH key distributed to every engineer","It cannot be used for Linux instances, only Windows"],a:[1,2],multi:true,e:"Session activity can be logged, and starting sessions is governed by IAM policy."},
+{q:"A fleet of EC2 instances is missing the SSM Agent, and attempts to use Run Command against them fail silently with no response. What is the most likely root cause?",o:["The instances are using the wrong instance family","The SSM Agent is not installed/running, or the instance's IAM role lacks the required Systems Manager permissions","Security Groups always block Systems Manager regardless of configuration","Run Command requires a Reserved Instance purchase"],a:[1],e:"Missing/inactive SSM Agent or insufficient IAM role permissions are the most likely causes."},
+{q:"Which of the following is a security benefit of Systems Manager Run Command over manually SSHing into each instance to run an identical command?",o:["It requires storing a shared SSH private key on every engineer's laptop","Every invocation is authorized via IAM and recorded, without needing to distribute or manage SSH keys at all","It bypasses all IAM permission checks for speed","It disables logging to reduce noise"],a:[1],e:"Every invocation is IAM-authorized and recorded without distributing or managing SSH keys."},
+{q:"A team wants Parameter Store to automatically rotate a stored secret's value on a schedule, similar to native rotation available elsewhere. What should they be aware of regarding Parameter Store's native capabilities?",o:["Parameter Store natively provides scheduled automatic rotation identical to Secrets Manager, with zero extra configuration","Parameter Store does not provide native automatic rotation; achieving scheduled rotation typically requires custom automation (e.g., a Lambda function on an EventBridge schedule), whereas Secrets Manager offers this natively for supported services","Parameter Store cannot store any value related to secrets under any circumstance","Rotation is only possible for parameters tagged as \"SecureString\" and never for Standard strings"],a:[1],e:"Parameter Store lacks native automatic rotation; Secrets Manager provides this natively for supported services."},
+{q:"A company needs to process short-lived, event-driven work triggered by S3 object uploads, with unpredictable and bursty invocation rates, and wants zero server management overhead. Which compute option best fits, compared to provisioning EC2 with Auto Scaling?",o:["EC2 with a large fixed fleet","AWS Lambda","EC2 Dedicated Hosts","EC2 Spot Fleet permanently sized at maximum capacity"],a:[1],e:"Short-lived, event-driven, bursty, zero-server-management work is a strong Lambda fit."},
+{q:"A team wants to deploy a web application quickly with minimal day-to-day operations overhead, while still retaining the ability to inspect and occasionally tune the underlying EC2 instances, load balancer, and Auto Scaling group the platform provisions on their behalf. Which compute option best matches this balance?",o:["AWS Lambda exclusively","AWS Elastic Beanstalk","Manually provisioned EC2 with no automation whatsoever","Dedicated Hosts"],a:[1],e:"Elastic Beanstalk offers quick deployment while retaining visibility into the underlying provisioned resources."},
+{q:"Which phrase, when it appears in a DVA-C02 scenario's requirements, most strongly signals that the correct answer favors a managed or serverless compute option over raw EC2?",o:["\"Full control over the underlying operating system is required\"","\"Least operational overhead\"","\"Custom kernel modules must be installed\"","\"Persistent local state on the instance is required\""],a:[1],e:"\"Least operational overhead\" signals a managed/serverless answer over raw EC2 management."},
+{q:"A batch workload requires full operating system access, runs for approximately 45 minutes per job, and needs to scale to hundreds of concurrent jobs at peak. Because 45 minutes exceeds Lambda's maximum execution duration, which compute approach is appropriate instead?",o:["AWS Lambda regardless of the duration limit, since limits can be waived on request","EC2 (potentially orchestrated via AWS Batch) or a container-based service like ECS/Fargate designed for longer-running, full-OS-access workloads","Amazon API Gateway","Amazon Route 53"],a:[1],e:"Exceeding Lambda's duration limit with full-OS needs points to EC2/Batch or container-based compute."},
+{q:"A team is deciding between attaching an IAM role to an EC2 instance versus embedding an IAM user's access keys in the instance's user data script, for an application that calls S3 and DynamoDB. Which two considerations support choosing the IAM role?",o:["The role provides temporary, automatically rotated credentials with no long-term secret stored on the instance","User data is visible to anyone who can call the EC2 DescribeInstanceAttribute API for that instance (with appropriate permissions), making embedded long-term keys there a greater exposure risk than role-derived temporary credentials","IAM roles are always free while access keys always incur a cost","Access keys embedded in user data automatically rotate every 24 hours","IAM roles cannot be used by EC2 instances, only by Lambda"],a:[0,1],multi:true,e:"Role-derived temporary credentials avoid long-term secrets, and user data can be read via the EC2 API, increasing exposure of embedded keys."},
+{q:"A company's ASG is scaling reactively but too slowly during sudden traffic spikes, causing brief performance degradation, and separately, their T3 instances used for the compute-heavy portion of the workload are being throttled under sustained load. Which two changes together address both issues?",o:["Increase the ASG's minimum baseline capacity or lower the target tracking threshold to add headroom, and switch the compute-heavy workload from a T-family (burstable) instance to a non-burstable family like C or M","Switch to EC2 status checks only and keep the T3 instances unchanged","Disable Auto Scaling entirely and rely on a single large instance","Move the compute-heavy workload to Spot Instances with no On-Demand baseline","Increase the T3 instance's storage size, which resolves CPU credit exhaustion"],a:[0],multi:false,e:"Adding ASG headroom and moving the CPU-heavy workload off burstable T-family both directly address the two described issues."},
+{q:"A security review of an EC2-based application finds: IMDSv1 still enabled account-wide, an ASG using only EC2 status checks, hardcoded IAM user access keys in application code, and a Network ACL with no explicit rules beyond the default allow-all. Which of the following changes correctly addresses each finding, in order?",o:["Enforce IMDSv2, add ELB health checks to the ASG, replace hardcoded keys with an IAM role, and review/tighten the NACL rules as an additional layer of defense","Disable the metadata service entirely, remove the ASG, delete the IAM role, and delete the NACL","Only fix the hardcoded keys; the other three findings are not real risks","Only fix the NACL; Security Groups alone are always sufficient"],a:[0],e:"Enforce IMDSv2, add ELB health checks, replace hardcoded keys with a role, and tighten NACL rules as defense-in-depth."},
+{q:"A company wants to run a fleet of EC2 instances that automatically replace themselves on both infrastructure failure and application-level failure, are spread across multiple Availability Zones for resilience, cost-optimize by blending Spot and On-Demand capacity, and expose a single HTTPS endpoint that performs path-based routing to multiple backend services. Which combination of AWS features together satisfies all of these requirements?",o:["A single EC2 instance with a Security Group and no load balancer","An Auto Scaling group (with ELB health checks and a mixed instances policy) spanning multiple AZs, behind an Application Load Balancer configured with HTTPS listeners and path-based routing rules","A Network Load Balancer alone with no Auto Scaling group","Dedicated Hosts with manual instance replacement"],a:[1],e:"A multi-AZ ASG with ELB health checks and mixed instances, behind an ALB with HTTPS and path-based routing, satisfies every stated requirement."},
+{q:"Which of the following best explains why a candidate should check both the Security Group AND the Network ACL when troubleshooting a connectivity issue to an EC2 instance in a custom VPC, rather than assuming a Security Group Allow rule guarantees the traffic will succeed?",o:["Only the Security Group matters; NACLs are irrelevant to instance connectivity","Both layers must independently permit the traffic; a NACL's stateless nature means even a fully permissive Security Group can still be undermined by a missing or blocking NACL rule in either traffic direction","NACLs only apply to traffic leaving the VPC entirely, never to intra-VPC traffic","Security Groups are deprecated in favor of NACLs"],a:[1],e:"Both layers must independently permit traffic; a stateless NACL can undermine an otherwise-permissive Security Group."},
+{q:"Summarizing this module's exam-relevant EC2 concepts for a teammate studying separately, which single sentence best captures the recurring theme across instance metadata security, health check configuration, storage AZ-scoping, and IAM role usage?",o:["EC2 is largely irrelevant to the DVA-C02 exam and can be skipped","Nearly every EC2 \"gotcha\" on this exam involves either a security misconfiguration (long-lived credentials, open metadata access) or a scope mismatch (AZ-bound resources, infrastructure-only health checks) that a more correctly-configured, still-EC2-based setup would have avoided","Only pricing model selection matters for EC2 questions; everything else is untested","EC2 questions never involve IAM at all"],a:[1],e:"The recurring theme is security misconfiguration or AZ/health-check scope mismatches, not EC2 itself being flawed."}
+];
+
+let idx = 0, score = 0, answered = new Array(QUESTIONS.length).fill(false), correctFlags = new Array(QUESTIONS.length).fill(false), missed = [];
+const STORAGE_KEY = "aws-dva-quiz-01";
+
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({idx, score, answered, correctFlags}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(d && Array.isArray(d.answered) && d.answered.length === QUESTIONS.length){
+      idx = d.idx; score = d.score; answered = d.answered; correctFlags = d.correctFlags;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+const quizArea = document.getElementById("quizArea");
+const posNum = document.getElementById("posNum");
+const scoreNum = document.getElementById("scoreNum");
+const progressFill = document.getElementById("progressFill");
+
+function updateTop(){
+  posNum.textContent = (idx+1) + " / " + QUESTIONS.length;
+  scoreNum.textContent = score;
+  const answeredCount = answered.filter(Boolean).length;
+  progressFill.style.width = (answeredCount / QUESTIONS.length * 100) + "%";
+}
+
+function renderQuestion(){
+  const item = QUESTIONS[idx];
+  const isMulti = !!item.multi;
+  const done = answered[idx];
+  let html = "";
+  html += '<div class="card">';
+  html += '<div class="qnum">Question ' + (idx+1) + '</div>';
+  if(isMulti) html += '<div class="multi-hint">Select all that apply</div><br>';
+  html += '<div class="qtext">' + escapeHtml(item.q) + '</div>';
+  item.o.forEach((optText, i)=>{
+    const letter = String.fromCharCode(65+i);
+    let cls = "opt";
+    if(done){
+      if(item.a.includes(i)) cls += " correct";
+      else if(item.picked && item.picked.includes(i)) cls += " incorrect";
+    } else if(item.picked && item.picked.includes(i)){
+      cls += " selected";
+    }
+    html += '<button class="' + cls + '" data-i="' + i + '" ' + (done?'disabled':'') + '>' +
+      '<span class="mark">' + letter + '</span><span>' + escapeHtml(optText) + '</span></button>';
+  });
+  if(done){
+    html += '<div class="explain"><b>' + (correctFlags[idx] ? "Correct. " : "Not quite. ") + '</b>' + escapeHtml(item.e) + '</div>';
+  }
+  html += '<div class="actions">';
+  if(isMulti && !done){
+    html += '<button class="btn btn-primary" id="submitBtn" disabled>Submit answer</button>';
+  }
+  if(done){
+    if(idx < QUESTIONS.length - 1){
+      html += '<button class="btn btn-primary" id="nextBtn">Next question</button>';
+    } else {
+      html += '<button class="btn btn-primary" id="finishBtn">See results</button>';
+    }
+  }
+  html += '<button class="btn btn-ghost" id="resetBtn">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  updateTop();
+  wireOptions(item, isMulti, done);
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function wireOptions(item, isMulti, done){
+  const opts = quizArea.querySelectorAll(".opt");
+  opts.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(done) return;
+      const i = parseInt(btn.dataset.i, 10);
+      if(isMulti){
+        item.picked = item.picked || [];
+        const pos = item.picked.indexOf(i);
+        if(pos >= 0) item.picked.splice(pos,1); else item.picked.push(i);
+        renderQuestion();
+        const submitBtn = document.getElementById("submitBtn");
+        if(submitBtn) submitBtn.disabled = !(item.picked && item.picked.length > 0);
+      } else {
+        item.picked = [i];
+        commitAnswer(item);
+      }
+    });
+  });
+  const submitBtn = document.getElementById("submitBtn");
+  if(submitBtn){
+    submitBtn.disabled = !(item.picked && item.picked.length > 0);
+    submitBtn.addEventListener("click", ()=> commitAnswer(item));
+  }
+  const nextBtn = document.getElementById("nextBtn");
+  if(nextBtn) nextBtn.addEventListener("click", ()=>{ idx++; save(); renderQuestion(); });
+  const finishBtn = document.getElementById("finishBtn");
+  if(finishBtn) finishBtn.addEventListener("click", renderSummary);
+  const resetBtn = document.getElementById("resetBtn");
+  if(resetBtn) resetBtn.addEventListener("click", resetAll);
+}
+
+function commitAnswer(item){
+  if(answered[idx]) return;
+  answered[idx] = true;
+  const correct = item.picked.length === item.a.length && item.picked.every(p => item.a.includes(p));
+  correctFlags[idx] = correct;
+  if(correct) score++; else missed.push(idx);
+  save();
+  renderQuestion();
+}
+
+function renderSummary(){
+  const pct = Math.round(score / QUESTIONS.length * 100);
+  const passed = pct >= 72;
+  let html = '<div class="card summary">';
+  html += '<div class="eyebrow">Results</div>';
+  html += '<div class="score-big">' + score + ' / ' + QUESTIONS.length + '</div>';
+  html += '<div class="score-pct ' + (passed?'pass':'fail') + '">' + pct + '% — ' + (passed ? "Solid, above the ~72% pass bar" : "Below the ~72% pass bar — revisit the notes") + '</div>';
+  const missedList = answered.map((_,i)=>i).filter(i => !correctFlags[i]);
+  if(missedList.length){
+    html += '<div class="miss-list"><h3>Review these questions</h3>';
+    missedList.forEach(i=>{
+      html += '<div class="miss-item"><b>Q' + (i+1) + '.</b> ' + escapeHtml(QUESTIONS[i].q) + '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="actions" style="justify-content:center; margin-top:22px;">';
+  html += '<button class="btn btn-primary" id="restartBtn">Restart quiz</button>';
+  html += '<button class="btn btn-ghost" id="resetBtn2">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  document.getElementById("restartBtn").addEventListener("click", resetAll);
+  document.getElementById("resetBtn2").addEventListener("click", resetAll);
+}
+
+function resetAll(){
+  idx = 0; score = 0; missed = [];
+  answered = new Array(QUESTIONS.length).fill(false);
+  correctFlags = new Array(QUESTIONS.length).fill(false);
+  QUESTIONS.forEach(q => { delete q.picked; });
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  renderQuestion();
+}
+
+document.addEventListener("keydown", (e)=>{
+  const map = {"1":0,"2":1,"3":2,"4":3,"5":4,"a":0,"b":1,"c":2,"d":3,"e":4,"A":0,"B":1,"C":2,"D":3,"E":4};
+  if(e.key in map){
+    const opts = quizArea.querySelectorAll(".opt:not(:disabled)");
+    const i = map[e.key];
+    if(opts[i]) opts[i].click();
+  } else if(e.key === "Enter"){
+    const nb = document.getElementById("nextBtn") || document.getElementById("finishBtn") || document.getElementById("submitBtn");
+    if(nb && !nb.disabled) nb.click();
+  }
+});
+
+if(load()){
+  if(answered.every(Boolean)) renderSummary(); else renderQuestion();
+} else {
+  renderQuestion();
+}
+</script>
