@@ -83,7 +83,7 @@ Status legend: ✅ complete (all 3 files) · 🟡 partial (see note) · ⬜ not 
 - [x] ✅ 14 — Security Deep Dive (IAM, KMS, Secrets Manager, Cognito, STS, ACM, WAF)
 - [x] ✅ 15 — Networking for Developers (VPC, Route 53, CloudFront)
 - [x] ✅ 16 — Monitoring, Logging & Observability (CloudWatch, X-Ray, CloudTrail, CodeGuru)
-- [ ] ⬜ 17 — Well-Architected & Exam Strategy — not started
+- [x] ✅ 17 — Well-Architected & Exam Strategy
 - [ ] ⬜ 18 — Mock Exams (×2) — build last, once 00-17 are complete
 
 Tick a box in either checklist as you finish it — it's your progress tracker for the sprint.

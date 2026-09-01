@@ -1,0 +1,1784 @@
+<title>Well-Architected & Exam Strategy Quiz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eceeec; --ink:#141a1f; --muted:#5c6670;
+  --border:#dde1de; --accent:#0d7377; --accent-ink:#ffffff; --accent-soft:#e3f1f0;
+  --success:#1f8a44; --success-bg:#e5f6ea; --success-border:#a9dfb8;
+  --danger:#c8402f; --danger-bg:#fbe9e6; --danger-border:#f0b8ac;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+    --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+    --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+    --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+  --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+  --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+  --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+}
+*{box-sizing:border-box;}
+body{background:var(--bg); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;}
+.wrap{max-width:760px; margin:0 auto; padding:28px 20px 80px;}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600;}
+h1{font-size:22px; font-weight:800; margin:4px 0 18px; text-wrap:balance; letter-spacing:-.01em;}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px; flex-wrap:wrap;}
+.stat{display:flex; flex-direction:column; align-items:flex-end;}
+.stat .num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:18px; font-weight:600;}
+.stat .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+.progress-track{height:8px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin:14px 0 28px; border:1px solid var(--border);}
+.progress-fill{height:100%; background:var(--accent); border-radius:999px; transition:width .35s ease;}
+@media (prefers-reduced-motion: reduce){ .progress-fill{transition:none;} }
+
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px; box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.qnum{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin-bottom:10px;}
+.qtext{font-size:16.5px; font-weight:600; line-height:1.55; margin-bottom:20px; text-wrap:balance;}
+.multi-hint{display:inline-block; font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:999px; padding:3px 10px; margin-bottom:14px;}
+
+.opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:13px 14px; margin-bottom:10px; cursor:pointer; font:inherit; color:var(--ink); font-size:14.5px; line-height:1.5; transition:border-color .15s, background .15s;}
+.opt:hover{border-color:var(--accent);}
+.opt:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+.opt .mark{flex:0 0 22px; height:22px; border-radius:6px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--muted); margin-top:1px;}
+.opt.selected{border-color:var(--accent); background:var(--accent-soft);}
+.opt.selected .mark{border-color:var(--accent); color:var(--accent);}
+.opt.correct{border-color:var(--success-border); background:var(--success-bg);}
+.opt.correct .mark{border-color:var(--success); color:var(--success); background:var(--success-bg);}
+.opt.incorrect{border-color:var(--danger-border); background:var(--danger-bg);}
+.opt.incorrect .mark{border-color:var(--danger); color:var(--danger); background:var(--danger-bg);}
+.opt:disabled{cursor:default;}
+.opt:disabled:hover{border-color:var(--border);}
+.opt.correct:hover, .opt.incorrect:hover{border-color:inherit;}
+
+.actions{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+button.btn{font:inherit; font-weight:700; font-size:14px; border-radius:9px; padding:11px 18px; cursor:pointer; border:1.5px solid transparent;}
+.btn-primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+.btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+.btn-ghost{background:transparent; color:var(--ink); border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--accent);}
+button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+.explain{margin-top:16px; padding:14px 16px; border-radius:10px; font-size:14px; line-height:1.55; border:1px solid var(--border); background:var(--surface-2);}
+.explain b{color:var(--accent);}
+
+.summary{text-align:center; padding:10px 0 20px;}
+.score-big{font-family:"IBM Plex Mono",monospace; font-size:52px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+.score-pct{color:var(--muted); font-size:15px; margin-top:2px;}
+.score-pct.pass{color:var(--success); font-weight:700;}
+.score-pct.fail{color:var(--danger); font-weight:700;}
+.miss-list{margin-top:28px; text-align:left; border-top:1px solid var(--border); padding-top:20px;}
+.miss-list h3{font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:12px; font-family:"IBM Plex Mono",monospace;}
+.miss-item{padding:10px 12px; background:var(--surface-2); border-radius:8px; margin-bottom:8px; font-size:13.5px; line-height:1.45; border-left:3px solid var(--danger);}
+.miss-item b{color:var(--ink);}
+
+.footer-note{text-align:center; color:var(--muted); font-size:12px; margin-top:24px; font-family:"IBM Plex Mono",monospace;}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Module 17 • Capstone Quiz</div>
+      <h1>Well-Architected & Exam Strategy Quiz</h1>
+    </div>
+    <div class="stat">
+      <span class="num" id="posNum">1 / 115</span>
+      <span class="lbl">Question</span>
+    </div>
+    <div class="stat">
+      <span class="num" id="scoreNum">0</span>
+      <span class="lbl">Correct</span>
+    </div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <div id="quizArea"></div>
+  <div class="footer-note">Progress is saved automatically in this browser. Use 1–5 or A–E on your keyboard to answer.</div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    "q": "A development team wants to adopt the Operational Excellence pillar of the AWS Well-Architected Framework. Which practice directly aligns with the principle of \"performing operations as code\"?",
+    "o": [
+      "Defining all application infrastructure, serverless functions, and CI/CD pipelines in AWS CloudFormation or AWS SAM templates checked into version control",
+      "Manually provisioning EC2 instances and databases through the AWS Management Console",
+      "Writing bash scripts on local developer laptops that configure live production databases",
+      "Disabling AWS CloudTrail logging to reduce operational noise"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Defining infrastructure in version-controlled CloudFormation or SAM templates directly aligns with \"perform operations as code.\""
+  },
+  {
+    "q": "A company experiences sudden traffic spikes during marketing campaigns. The developer wants to follow the Reliability pillar to ensure the system automatically handles unpredictable load without manual intervention or over-provisioning compute instances. Which architecture satisfies this requirement?",
+    "o": [
+      "Deploying an Application Load Balancer in front of an Auto Scaling group of EC2 instances with a Target Tracking Scaling Policy based on ALB request count per target",
+      "Provisioning a single large `m5.24xlarge` EC2 instance that runs continuously",
+      "Disabling Auto Scaling and relying on manual instance launches during sales",
+      "Moving all databases onto an EC2 instance in a single public subnet"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ALB with an Auto Scaling group using Target Tracking automatically matches compute capacity to demand."
+  },
+  {
+    "q": "An e-commerce platform wants to optimize performance efficiency by reducing database read load on an Amazon RDS MySQL database for product catalog queries that change infrequently. Which two caching solutions should the developer consider? (Select TWO.)",
+    "o": [
+      "Amazon ElastiCache for Redis in front of the RDS database to cache query results",
+      "Amazon CloudFront with appropriate TTL cache headers to cache API responses at edge locations",
+      "Amazon S3 Glacier Flexible Archive",
+      "AWS Secrets Manager",
+      "AWS Systems Manager Session Manager"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "ElastiCache caches database query results, and CloudFront caches API responses at the edge, offloading the database."
+  },
+  {
+    "q": "A startup wants to minimize cloud expenditure while developing a proof-of-concept application with sporadic, unpredictable traffic. According to the Cost Optimization pillar, which compute and database model should the startup select?",
+    "o": [
+      "Serverless compute using AWS Lambda and Amazon DynamoDB in On-Demand capacity mode, paying only for exact execution time and read/write requests",
+      "Pre-purchasing three-year Standard Reserved EC2 instances and provisioned DynamoDB capacity",
+      "Running an Amazon RDS Multi-AZ DB cluster 24/7 with provisioned IOPS",
+      "Deploying an Amazon Redshift cluster"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Serverless compute (Lambda) and DynamoDB On-Demand charge only for actual executions and requests, ideal for unpredictable workloads."
+  },
+  {
+    "q": "Scale automatically with zero server management. Which architecture fulfills all requirements with the LEAST operational overhead?",
+    "o": [
+      "Amazon API Gateway (REST API) with direct AWS Service Integration to Amazon Kinesis Data Streams -> AWS Lambda consumer -> Amazon DynamoDB (On-Demand mode)",
+      "Amazon EC2 Auto Scaling group behind an ALB running custom Python ingestion scripts -> MySQL on EC2",
+      "API Gateway -> AWS Step Functions Standard Workflow -> Amazon S3 Glacier",
+      "Amazon Route 53 -> Amazon RDS PostgreSQL single-AZ instance"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Serverless compute (Lambda) and DynamoDB On-Demand charge only for actual executions and requests, ideal for unpredictable workloads."
+  },
+  {
+    "q": "Direct unencrypted HTTP uploads must be rejected. Which combination of configurations achieves full compliance?",
+    "o": [
+      "Create a Customer Managed Key (CMK) in AWS KMS with Automatic Key Rotation enabled + Enable default bucket encryption with SSE-KMS using this CMK + Add an S3 bucket policy with `Effect: Deny` on `s3:PutObject` when `aws:SecureTransport: false`",
+      "Use SSE-S3 default encryption with no bucket policy",
+      "Use SSE-C customer-provided keys and disable CloudTrail",
+      "Download all files to on-premises hard drives"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Serverless compute (Lambda) and DynamoDB On-Demand charge only for actual executions and requests, ideal for unpredictable workloads."
+  },
+  {
+    "q": "Automatically roll back if CloudWatch alarms detect elevated error rates. Which deployment configuration file must be present in the source repository to configure CodeDeploy for this Lambda deployment?",
+    "o": [
+      "`appspec.yaml` (specifying the Lambda function name, alias, and pre/post traffic validation hooks)",
+      "`buildspec.yml`",
+      "`template.json`",
+      "`dockerrun.aws.json`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Serverless compute (Lambda) and DynamoDB On-Demand charge only for actual executions and requests, ideal for unpredictable workloads."
+  },
+  {
+    "q": "A developer is designing a microservice architecture. The team needs to choose between synchronous REST API calls (API Gateway -> Lambda -> DynamoDB) and asynchronous event-driven messaging (API Gateway -> SQS -> Lambda -> DynamoDB). What is the primary architectural advantage of the asynchronous SQS approach?",
+    "o": [
+      "It decouples the frontend ingestion from backend processing, smoothing out sudden traffic spikes and preventing backend database throttling or timeout failures",
+      "It guarantees sub-millisecond response times to the client",
+      "It eliminates the need for IAM execution roles",
+      "It converts all JSON payloads into XML"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Asynchronous SQS buffering decouples ingestion from processing, absorbing traffic spikes and protecting downstream databases."
+  },
+  {
+    "q": "A financial services application requires strict data protection at rest and in transit to satisfy the Security pillar. Which combination of controls implements these protections?",
+    "o": [
+      "Enforcing HTTPS (TLS 1.2+) using an ACM certificate on the Application Load Balancer and enabling Server-Side Encryption with AWS KMS Customer Managed Keys (SSE-KMS) on all S3 buckets and databases",
+      "Using unencrypted HTTP on port 80 and relying on VPC private subnets only",
+      "Storing database credentials in plaintext in the application Dockerfile",
+      "Disabling IAM policies and using root credentials"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ACM SSL/TLS certificates enforce in-transit encryption, while KMS Customer Managed Keys (SSE-KMS) enforce at-rest encryption."
+  },
+  {
+    "q": "Full distributed tracing with X-Ray and structured JSON logging with EMF. Which of the six AWS Well-Architected Framework pillars does this architecture satisfy?",
+    "o": [
+      "All six pillars: Operational Excellence (IaC/EMF/X-Ray), Security (WAF/Cognito/KMS/Secrets), Reliability (SQS decoupling/Multi-AZ/DynamoDB), Performance (CloudFront/Lambda), Cost Optimization (Serverless/On-Demand), and Sustainability (Scale to zero)",
+      "Security only",
+      "Cost Optimization only",
+      "None of the pillars"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ACM SSL/TLS certificates enforce in-transit encryption, while KMS Customer Managed Keys (SSE-KMS) enforce at-rest encryption."
+  },
+  {
+    "q": "A team is designing a serverless data processing pipeline. In accordance with the Sustainability pillar of the Well-Architected Framework, which design choice minimizes environmental impact and optimizes resource utilization?",
+    "o": [
+      "Using AWS Graviton-based (ARM64) AWS Lambda functions and configuring functions to scale to zero when idle, avoiding idle energy consumption",
+      "Running underutilized x86 EC2 instances 24/7 at 5% CPU utilization",
+      "Storing uncompressed raw log files in S3 indefinitely without lifecycle policies",
+      "Polling external APIs continuously in an infinite while loop"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Graviton processors deliver higher energy efficiency, and serverless architectures scale to zero to prevent idle energy waste."
+  },
+  {
+    "q": "An application needs to perform complex, multi-step business transactions involving multiple microservices. If any step fails, the system must execute compensating transactions to roll back previous steps. Which AWS service orchestrates this Saga pattern with visual workflow management?",
+    "o": [
+      "AWS Step Functions",
+      "Amazon SQS FIFO queues",
+      "AWS CodePipeline",
+      "Amazon EventBridge Pipes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Step Functions coordinates multi-step Saga transactions with visual state machines, retries, and compensation rollbacks."
+  },
+  {
+    "q": "What is a key architectural trade-off when implementing caching with Amazon ElastiCache or CloudFront to improve read performance?",
+    "o": [
+      "Data in the cache is eventually consistent and may be stale until the Time to Live (TTL) expires or an explicit cache invalidation occurs",
+      "Caching increases database write latency by 500%",
+      "Cached data is automatically encrypted with public keys only",
+      "Caching requires running all compute on-premises"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Caching introduces eventual consistency where cached data may be slightly stale until the TTL expires or cache is invalidated."
+  },
+  {
+    "q": "A developer wants to ensure that a Lambda function can recover gracefully from transient downstream API failures without overwhelming the failing service. Which design pattern should be implemented in the client code?",
+    "o": [
+      "Exponential backoff with full jitter on retries",
+      "Immediate retries in a tight while loop with zero delay",
+      "Disabling error handling so the function crashes and restarts",
+      "Increasing Lambda memory to 10 GB"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Exponential backoff with full jitter spreads out retry attempts, preventing retry storms on struggling downstream dependencies."
+  },
+  {
+    "q": "According to the Reliability pillar, what is the best practice for deploying application tiers across an AWS Region?",
+    "o": [
+      "Distributing compute resources across at least two or three Availability Zones within the Region behind a multi-AZ load balancer",
+      "Placing all EC2 instances in a single Availability Zone for lower internal networking latency",
+      "Running one EC2 instance per AWS account",
+      "Deploying all instances in a public subnet without security groups"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Multi-AZ deployments distribute resources across multiple independent data centers for regional fault tolerance."
+  },
+  {
+    "q": "A developer is choosing a database strategy for an application with unpredictable read and write spikes. Under the Cost Optimization and Reliability pillars, which DynamoDB capacity mode should be selected?",
+    "o": [
+      "On-Demand Capacity Mode",
+      "Provisioned Capacity Mode with auto-scaling disabled",
+      "Reserved Capacity Mode",
+      "Fixed 1 RCU / 1 WCU"
+    ],
+    "a": [
+      0
+    ],
+    "e": "DynamoDB On-Demand capacity mode automatically scales up and down to handle unpredictable spikes without throttling."
+  },
+  {
+    "q": "An organization wants to enforce that all developer IAM roles cannot grant permissions beyond a specific set of allowable AWS services. Which IAM feature implements this upper limit guardrail?",
+    "o": [
+      "IAM Permissions Boundary",
+      "IAM User Group",
+      "KMS Key Policy",
+      "Route 53 Health Check"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Permissions Boundaries set the maximum permissible permissions that identity-based policies can grant to an IAM entity."
+  },
+  {
+    "q": "What is the fundamental operational difference between Amazon CloudWatch Alarms and Amazon EventBridge rules when designing automated alerts?",
+    "o": [
+      "CloudWatch Alarms evaluate numeric metric thresholds over time (e.g., CPU > 80%); EventBridge matches discrete state-change events (e.g., EC2 state change or CodePipeline failure) in near real-time",
+      "CloudWatch Alarms are for email only; EventBridge is for SMS only",
+      "EventBridge cannot trigger Lambda functions",
+      "CloudWatch Alarms only work with S3"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Alarms evaluate numeric metric thresholds; EventBridge matches discrete state-change events in real-time."
+  },
+  {
+    "q": "A developer is designing a containerized application that requires running long-running background batch jobs (taking 45 minutes per execution). Why is AWS Fargate (or Amazon ECS on EC2) chosen over AWS Lambda for this use case?",
+    "o": [
+      "AWS Lambda has a hard maximum execution timeout of 15 minutes (900 seconds), whereas Fargate container tasks have no execution time limit",
+      "Lambda does not support containers",
+      "Fargate is completely free of charge",
+      "Lambda cannot access S3 buckets"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Lambda has a hard 15-minute execution limit; long-running batch jobs (45 mins) require Fargate or ECS on EC2."
+  },
+  {
+    "q": "In accordance with the Operational Excellence pillar, what is the recommended approach for testing infrastructure changes before releasing them to production?",
+    "o": [
+      "Provisioning an identical, isolated staging environment using CloudFormation/CDK templates, running automated integration tests, and tearing down the environment afterward",
+      "Applying changes directly to production during off-peak hours",
+      "Testing code on a developer laptop without deploying to AWS",
+      "Disabling CloudWatch alarms during deployments"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Testing in an identical, isolated environment provisioned via IaC and tearing it down afterwards is a core Operational Excellence practice."
+  },
+  {
+    "q": "A media company wants to distribute video content globally. How does combining Amazon S3 with Amazon CloudFront and Origin Access Control (OAC) fulfill both the Security and Performance Efficiency pillars?",
+    "o": [
+      "CloudFront caches video content at global edge locations for low-latency delivery, while OAC ensures that only CloudFront can retrieve objects from S3, keeping the S3 bucket private",
+      "CloudFront makes the S3 bucket publicly readable by all internet users",
+      "OAC converts video files to MP4 format automatically",
+      "CloudFront eliminates the need for Route 53"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront edge caching optimizes performance, while Origin Access Control (OAC) keeps S3 origin access secure and private."
+  },
+  {
+    "q": "A developer wants to implement automated zero-downtime database credential rotation for an application using Amazon RDS PostgreSQL. Which solution aligns with the Security and Operational Excellence pillars?",
+    "o": [
+      "Storing database credentials in AWS Secrets Manager and enabling built-in automated rotation using an AWS Lambda rotation template",
+      "Hardcoding database passwords in the application's configuration file",
+      "Storing the password in a public GitHub repository",
+      "Manually changing the master password in the RDS console once a year"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Secrets Manager provides native, automated password rotation using AWS Lambda rotation templates with zero downtime."
+  },
+  {
+    "q": "An application processes incoming sensor data. The developer needs to ensure that sensor readings are processed in the exact order they were received, with strict deduplication. Which AWS messaging service satisfies this requirement?",
+    "o": [
+      "Amazon SQS FIFO queue (or Amazon SNS FIFO topic)",
+      "Amazon SQS Standard queue",
+      "Amazon SNS Standard topic",
+      "Amazon EventBridge default bus"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SQS FIFO queues ensure strict first-in, first-out message ordering with message deduplication IDs."
+  },
+  {
+    "q": "A company has an application running on EC2 instances that experiences read bottlenecks on an Amazon Aurora PostgreSQL database. Which two architectural changes improve read throughput? (Select TWO.)",
+    "o": [
+      "Adding Aurora Read Replicas (up to 15 replicas) and directing read traffic to the Aurora Reader Endpoint",
+      "Implementing Amazon ElastiCache (Redis) to cache frequent query results in memory",
+      "Converting the Aurora database to an S3 Glacier vault",
+      "Reducing the database instance size",
+      "Disabling database indexes"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Aurora Read Replicas scale SQL read throughput horizontally, and ElastiCache caches frequent query results in memory."
+  },
+  {
+    "q": "A developer wants to implement tracing across a distributed microservices application composed of API Gateway, Lambda, SQS, and DynamoDB. Which AWS service provides end-to-end visual request tracing and identifies latency bottlenecks?",
+    "o": [
+      "AWS X-Ray",
+      "Amazon CloudWatch Metrics",
+      "AWS CloudTrail",
+      "AWS Trusted Advisor"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS X-Ray provides end-to-end distributed tracing across API Gateway, Lambda, SQS, and DynamoDB."
+  },
+  {
+    "q": "What is the primary benefit of deploying an Amazon RDS database with Multi-AZ deployment enabled, according to the Reliability pillar?",
+    "o": [
+      "Synchronous data replication to a standby instance in a different Availability Zone with automated failover in the event of primary database failure or AZ outage",
+      "Increasing read performance by allowing applications to query the standby instance directly",
+      "Reducing database storage costs by 50%",
+      "Providing multi-region disaster recovery automatically"
+    ],
+    "a": [
+      0
+    ],
+    "e": "RDS Multi-AZ synchronously replicates to a standby instance in another AZ for automated failover during outages."
+  },
+  {
+    "q": "A developer needs to choose an AWS service to run a Node.js web API container with automatic scaling, zero server management, and automatic HTTPS certificate provisioning directly from a container image. Which service provides this PaaS capability with the lowest operational overhead?",
+    "o": [
+      "AWS App Runner",
+      "Amazon EC2 with manual Docker installation",
+      "AWS CloudHSM",
+      "AWS Storage Gateway"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS AppRunner provides a fully managed container-to-HTTPS PaaS with zero server configuration and automatic scaling."
+  },
+  {
+    "q": "In accordance with the Cost Optimization pillar, how can a company automatically transition infrequently accessed Amazon S3 objects to cheaper storage tiers and delete old temporary files after 90 days?",
+    "o": [
+      "Configuring Amazon S3 Lifecycle Configuration rules",
+      "Writing a nightly Lambda cron job that scans the bucket and deletes objects",
+      "Changing bucket permissions to private",
+      "Enabling S3 Transfer Acceleration"
+    ],
+    "a": [
+      0
+    ],
+    "e": "S3 Lifecycle Configuration rules automate tier transitions (e.g., S3 Standard to Glacier) and object expirations."
+  },
+  {
+    "q": "What is the key advantage of using AWS Systems Manager Parameter Store Standard Tier for storing application configuration flags compared to AWS Secrets Manager?",
+    "o": [
+      "Standard parameters in Parameter Store have zero monthly storage cost, whereas Secrets Manager charges $0.40 per secret per month",
+      "Parameter Store provides automatic RDS password rotation",
+      "Parameter Store allows storing files up to 5 TB",
+      "Parameter Store only works with DynamoDB"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SSM Parameter Store Standard Tier stores configuration parameters and static secrets with zero monthly storage fees."
+  },
+  {
+    "q": "A developer needs to choose between Amazon SQS and Amazon Kinesis Data Streams for ingesting clickstream data. Which requirement makes Amazon Kinesis the superior choice?",
+    "o": [
+      "The need for multiple independent consumer applications (e.g., real-time analytics, fraud detection, and S3 archival) to read the same streaming data concurrently with replay capability up to 365 days",
+      "The need to process each message exactly once and delete it immediately upon acknowledgment",
+      "The need for zero-latency point-to-point queuing",
+      "The requirement to use standard SQL syntax for queue polling"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Kinesis Data Streams supports multiple concurrent consumers with 24h to 365d data replay capabilities."
+  },
+  {
+    "q": "According to the Security pillar, how should sensitive customer data (such as Social Security Numbers) be protected in application log files emitted to Amazon CloudWatch Logs?",
+    "o": [
+      "Implement application-level log sanitization and enable CloudWatch Logs Data Protection Policies with managed data identifier masking",
+      "Delete the CloudWatch log group",
+      "Grant all IAM users administrator privileges to view the logs",
+      "Encode the logs using Base64 without encryption"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Application-level sanitization and CloudWatch Data Protection Policies prevent sensitive PII from leaking into logs."
+  },
+  {
+    "q": "An application needs to run automated unit tests, static code analysis, and build Docker container images on every code commit. Which managed serverless CI/CD service executes these build steps based on a `buildspec.yml` file?",
+    "o": [
+      "AWS CodeBuild",
+      "AWS CodeDeploy",
+      "AWS CodeArtifact",
+      "AWS Cloud9"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS CodeBuild is a fully managed build service that compiles code, runs tests, and produces deployable artifacts."
+  },
+  {
+    "q": "A developer is designing an API that must support full-text search, autocomplete, and complex aggregations over millions of product catalog documents. Which specialized AWS service should be added to the architecture?",
+    "o": [
+      "Amazon OpenSearch Service",
+      "Amazon S3 Glacier",
+      "Amazon ElastiCache Memcached",
+      "Amazon SQS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon OpenSearch Service is purpose-built for full-text search, autocomplete, and log analytics."
+  },
+  {
+    "q": "A team wants to implement blue/green deployments for an application running on Amazon ECS. Which AWS service orchestrates traffic shifting between the blue and green task sets with automated rollback support?",
+    "o": [
+      "AWS CodeDeploy",
+      "AWS CodeCommit",
+      "Amazon Route 53 simple routing",
+      "AWS Systems Manager Run Command"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS CodeDeploy orchestrates blue/green traffic shifting with automated health checks and instant rollback."
+  },
+  {
+    "q": "In the AWS Well-Architected Framework, what is the purpose of the AWS Well-Architected Tool in the AWS Management Console?",
+    "o": [
+      "It provides a formal review process to measure your cloud architectures against AWS best practices, producing an action plan to remediate high-risk issues (HRIs)",
+      "It automatically writes application code in Python",
+      "It deletes underutilized EC2 instances",
+      "It generates SSL certificates"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The AWS Well-Architected Tool reviews workloads against AWS best practices and provides remediation guidance."
+  },
+  {
+    "q": "A developer wants to decouple two microservices. Service A emits order events, and Service B, Service C, and Service D all need to receive a copy of every event. Which AWS service pattern implements this pub/sub fan-out architecture with the lowest operational overhead?",
+    "o": [
+      "Amazon SNS Topic fanning out to multiple Amazon SQS Queues subscribed to the topic",
+      "Service A writing to an EC2 text file and other services reading via SSH",
+      "Creating an SSH tunnel between all instances",
+      "Using Route 53 weighted records"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SNS Topic pub/sub fanning out to multiple SQS queues provides reliable, decoupled event distribution."
+  },
+  {
+    "q": "An application needs to store user session state for a web application running on an Auto Scaling group of EC2 instances. Where should session state be stored to make the application stateless and resilient to instance termination?",
+    "o": [
+      "In Amazon ElastiCache (Redis) or an Amazon DynamoDB table",
+      "In the local `/tmp` directory of the EC2 instance",
+      "In the EC2 instance RAM memory",
+      "On the root EBS volume of each instance"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Storing session state in ElastiCache or DynamoDB makes the compute tier stateless and resilient to instance termination."
+  },
+  {
+    "q": "A developer needs to execute database schema migrations before traffic is routed to a newly deployed AWS Lambda function version. Which deployment hook in AWS CodeDeploy for Lambda executes scripts prior to traffic shifting?",
+    "o": [
+      "`BeforeAllowTraffic`",
+      "`AfterAllowTraffic`",
+      "`ValidateService`",
+      "`ApplicationStart`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `BeforeAllowTraffic` hook in CodeDeploy for Lambda executes pre-traffic validation or database migration scripts."
+  },
+  {
+    "q": "What is the primary difference between Amazon SQS Visibility Timeout and SQS Message Retention Period?",
+    "o": [
+      "Visibility Timeout is the period during which a message is invisible to other consumers after being received; Message Retention Period is the total duration SQS retains a message (up to 14 days) before deleting it if unprocessed",
+      "Visibility Timeout deletes the message; Retention Period hides it",
+      "Visibility Timeout is for FIFO queues only",
+      "Both terms are identical"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Visibility Timeout hides messages during processing; Message Retention Period is the total storage lifespan in SQS (up to 14 days)."
+  },
+  {
+    "q": "An application processes payment transactions that must be idempotent (re-submitting the same transaction request multiple times produces the exact same outcome without duplicate charges). How can a developer implement idempotency using DynamoDB?",
+    "o": [
+      "Use Conditional Writes (`attribute_not_exists(TransactionId)`) with a unique client-generated idempotency key",
+      "Disable DynamoDB encryption",
+      "Use DynamoDB Scan operations",
+      "Create an S3 lifecycle rule"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Conditional writes with client idempotency keys prevent duplicate database updates from retried requests."
+  },
+  {
+    "q": "A developer is designing an asynchronous image processing workflow where an S3 upload triggers an image resizing task. The task can take up to 2 minutes to complete. What is the most cost-effective and scalable serverless architecture?",
+    "o": [
+      "S3 Event Notification -> Amazon SQS Queue -> AWS Lambda (processing the resize) -> S3 Processed Bucket",
+      "Running an EC2 `c5.9xlarge` instance 24/7 running a polling script",
+      "S3 Event Notification triggering an on-premises physical server",
+      "Storing images directly in DynamoDB items"
+    ],
+    "a": [
+      0
+    ],
+    "e": "S3 Event Notifications triggering SQS and Lambda provides a decoupled, resilient, and cost-effective image processing pipeline."
+  },
+  {
+    "q": "According to the Security pillar, what is the best practice for authenticating and authorizing third-party SaaS tools that need temporary access to AWS resources across accounts?",
+    "o": [
+      "Creating an IAM Role with a trust policy requiring an `ExternalId` condition to prevent the Confused Deputy problem",
+      "Emailing the AWS account root credentials to the SaaS vendor",
+      "Creating a permanent IAM user with administrator access",
+      "Generating an S3 pre-signed URL with a 10-year expiration"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An IAM Role requiring an `ExternalId` in its trust policy prevents the Confused Deputy problem for third-party cross-account access."
+  },
+  {
+    "q": "A company needs to deploy a global application with active-active deployments in `us-east-1` and `eu-west-1`. Users must be routed to the closest healthy region with automatic failover if a region becomes unhealthy. Which Route 53 routing policy should be configured?",
+    "o": [
+      "Latency Routing policy with Route 53 Health Checks enabled",
+      "Simple Routing policy",
+      "Multivalue Answer routing without health checks",
+      "Weighted routing with 100% weight on one region"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Route 53 Latency routing with health checks directs users to the lowest-latency healthy AWS Region."
+  },
+  {
+    "q": "An application on EC2 needs to call AWS APIs (such as S3 and DynamoDB). What is the AWS-recommended method for managing credentials?",
+    "o": [
+      "Attach an IAM Role to the EC2 instance via an Instance Profile, allowing the AWS SDK to retrieve temporary credentials automatically via IMDSv2",
+      "Hardcode access keys in the application source code",
+      "Store access keys in a public S3 bucket",
+      "Store the root user password in an unencrypted configuration file --- ### Part 2: Multi-Service Integrative Scenarios & Exam Mechanics (41–115)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Attaching an IAM Role via an Instance Profile provides secure, automatically rotated temporary credentials via IMDSv2."
+  },
+  {
+    "q": "A company's web application allows users to upload PDF documents. After upload, a machine learning workflow extracts text, generates thumbnails, and updates an Elasticsearch index. The entire extraction pipeline takes 3 to 5 minutes per document. Which architecture decouples the upload from the processing and ensures no document jobs are lost?",
+    "o": [
+      "S3 upload -> S3 Event Notification sends message to Amazon SQS Queue -> AWS Lambda (or ECS Fargate task) polls SQS, processes the document, and deletes the message upon completion",
+      "Synchronous API Gateway call to a Lambda function with a 30-second timeout",
+      "Storing the PDF directly in a DynamoDB string attribute",
+      "EC2 instance polling S3 using an infinite bash while loop"
+    ],
+    "a": [
+      0
+    ],
+    "e": "S3 Event Notifications to SQS with Lambda/Fargate workers ensures asynchronous processing without lost jobs."
+  },
+  {
+    "q": "A developer is designing a serverless backend for a mobile gaming application. The application requires: - Player authentication with Google, Apple, and custom guest accounts. - Direct player photo uploads to S3 with fine-grained access control so players can only access their own uploads folder. - Real-time leaderboard updates with microsecond read latency. Which combination of AWS services implements this architecture?",
+    "o": [
+      "Amazon Cognito User Pools & Identity Pools (for auth and temporary scoped S3 IAM credentials) + S3 with `${cognito-identity.amazonaws.com:sub}` bucket prefix policy + Amazon DynamoDB with DynamoDB Accelerator (DAX) for leaderboards",
+      "IAM Users for every player + S3 public bucket + Amazon RDS MySQL",
+      "AWS Secrets Manager for auth + Amazon S3 Glacier + Amazon Redshift",
+      "AWS CodeArtifact + Amazon CloudWatch Dashboards + Amazon Route 53"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cognito for auth/scoped IAM credentials, S3 prefix policies for isolation, and DynamoDB + DAX for microsecond leaderboards."
+  },
+  {
+    "q": "A company operates an e-commerce platform. During flash sales, thousands of customers attempt to purchase limited-quantity items simultaneously. The system must prevent inventory over-selling (race conditions) while maintaining high write throughput. How should the developer implement inventory deduction in DynamoDB?",
+    "o": [
+      "Use DynamoDB TransactWriteItems (or `UpdateItem` with a `ConditionExpression: \"InventoryCount >= :qty\"`) to atomically deduct inventory only if sufficient stock exists",
+      "Perform a standard `GetItem` followed by a separate `PutItem` without condition expressions",
+      "Use DynamoDB Scan operations across the entire table",
+      "Disable DynamoDB transactions and write to a local CSV file"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Atomic conditional updates (`ConditionExpression: \"InventoryCount >= :qty\"`) prevent race conditions and overselling."
+  },
+  {
+    "q": "An organization has an application running on Amazon ECS on AWS Fargate that needs to retrieve database credentials from AWS Secrets Manager. What two IAM configurations are required? (Select TWO.)",
+    "o": [
+      "The ECS Task Execution Role must have permissions `secretsmanager:GetSecretValue` and `kms:Decrypt` (on the secret's KMS key)",
+      "The ECS Task Definition must reference the secret ARN under the `secrets` array in the container definition",
+      "The EC2 instance root volume must be formatted with ext4",
+      "The ECS Cluster must be deployed in a public subnet",
+      "The Fargate task must run with `privileged: true`"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "The Task Execution Role requires `secretsmanager:GetSecretValue` and `kms:Decrypt`, referenced in the `secrets` array."
+  },
+  {
+    "q": "A developer needs to deploy a serverless REST API using AWS SAM. The SAM template must define an API Gateway, a Lambda function, and an Amazon DynamoDB table. Which SAM resource types should be declared in `template.yaml`?",
+    "o": [
+      "`AWS::Serverless::Function`, `AWS::Serverless::Api`, and `AWS::Serverless::SimpleTable`",
+      "`AWS::EC2::Instance`, `AWS::RDS::DBInstance`, and `AWS::S3::Bucket`",
+      "`AWS::CodePipeline::Pipeline` only",
+      "`AWS::IAM::User` and `AWS::IAM::AccessKey`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SAM declares serverless components with `AWS::Serverless::Function`, `AWS::Serverless::Api`, and `AWS::Serverless::SimpleTable`."
+  },
+  {
+    "q": "A developer is troubleshooting an intermittent issue where Lambda functions in a VPC fail to connect to an external payment API. The Lambda function subnets are private subnets. What is the root cause and the correct resolution?",
+    "o": [
+      "Attaching Lambda to private subnets removes default internet access; add a NAT Gateway in a public subnet and add a route `0.0.0.0/0` targeting the NAT Gateway in the private subnet route table",
+      "Lambda functions cannot run in VPCs",
+      "The payment API must be moved into the same VPC",
+      "The Lambda execution role must be granted `AdministratorAccess`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Attaching Lambda to private subnets removes internet access; a NAT Gateway in a public subnet restores external connectivity."
+  },
+  {
+    "q": "A company is redesigning a monolithic application into microservices. Service A needs to notify multiple independent downstream services (Billing, Notifications, Analytics) whenever an order is completed. Downstream services should be able to fail and retry independently without affecting Service A or other services. Which architectural pattern fulfills this requirement?",
+    "o": [
+      "Amazon SNS topic with multiple Amazon SQS queues subscribed (Fan-Out Pattern)",
+      "Direct synchronous HTTP REST calls from Service A to each downstream service sequentially",
+      "Writing orders to a shared local text file on an EC2 instance",
+      "Pointing all downstream services to a single shared SQS Standard queue"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SNS Fan-Out to multiple SQS queues allows each downstream microservice to process events independently at its own pace."
+  },
+  {
+    "q": "An application using Amazon DynamoDB receives frequent `ProvisionedThroughputExceededException` errors during flash sales. Monitoring shows that overall consumed capacity is well below the table's total provisioned limit. What is the root cause and the best architectural solution?",
+    "o": [
+      "A hot partition caused by poor partition key design; resolve by redesigning the partition key with high-cardinality values or implementing key salting, or deploy DynamoDB Accelerator (DAX)",
+      "DynamoDB is experiencing an AWS regional outage",
+      "The table has too many Global Secondary Indexes",
+      "The IAM policy lacks `dynamodb:PutItem` permission"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A hot partition is caused by uneven access keys; redesigning keys with high cardinality or adding DAX solves throughput bottlenecks."
+  },
+  {
+    "q": "A developer is building a serverless real-time chat application. Mobile clients need to maintain persistent, bidirectional two-way communication with the backend to send and receive chat messages instantly. Which AWS service and protocol is designed for this architecture?",
+    "o": [
+      "Amazon API Gateway WebSocket APIs integrated with AWS Lambda and Amazon DynamoDB",
+      "Amazon API Gateway REST APIs using HTTP polling every 100 milliseconds",
+      "Amazon S3 static website hosting",
+      "Amazon Route 53 DNS queries"
+    ],
+    "a": [
+      0
+    ],
+    "e": "API Gateway WebSocket APIs maintain persistent bidirectional connections for real-time chat applications."
+  },
+  {
+    "q": "An application running on EC2 instances processes sensitive health records. The application needs to encrypt records locally before storing them in DynamoDB. The records vary in size from 10 KB to 2 MB. Which encryption approach should the developer implement?",
+    "o": [
+      "Envelope Encryption using the AWS Encryption SDK, calling KMS `GenerateDataKey` to get a data key, encrypting records in memory, and storing the encrypted data key alongside the ciphertext",
+      "Calling KMS `Encrypt` directly for every record",
+      "Base64 encoding the data",
+      "Storing the KMS master key in the EC2 instance root directory"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Envelope Encryption with the AWS Encryption SDK encrypts payloads up to 2 MB locally using data keys protected by KMS."
+  },
+  {
+    "q": "A developer wants to automate the deployment of a full multi-tier web application stack (VPC, subnets, ALB, Auto Scaling group, RDS database) in a single command. The architecture must be repeatable across multiple AWS accounts and Regions. Which AWS service should be used?",
+    "o": [
+      "AWS CloudFormation (or AWS CDK)",
+      "AWS Systems Manager Session Manager",
+      "AWS Shield",
+      "Amazon Inspector"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS CloudFormation (or CDK) automates multi-tier stack provisioning reproducibly across accounts and Regions."
+  },
+  {
+    "q": "A developer wants to optimize a high-traffic Lambda function that reads user settings from an Amazon RDS MySQL database. Currently, each Lambda invocation establishes a new TCP connection to MySQL, resulting in database connection exhaustion under load. Which service resolves this connection management bottleneck?",
+    "o": [
+      "Amazon RDS Proxy",
+      "Amazon DynamoDB Accelerator (DAX)",
+      "AWS Systems Manager Parameter Store",
+      "Amazon Route 53 Resolver"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon RDS Proxy pools and multiplexes database connections, preventing Lambda concurrency spikes from overwhelming MySQL."
+  },
+  {
+    "q": "An application hosted on Amazon ECS on AWS Fargate needs to securely communicate with an Amazon DynamoDB table and an Amazon S3 bucket. How should AWS credentials be provided to the containerized application?",
+    "o": [
+      "Assign an IAM Role with least-privilege permissions to the ECS Task Definition's `taskRoleArn` (ECS Task Role)",
+      "Hardcode AWS Access Keys in the Docker container image",
+      "Store credentials in an unencrypted environment variable in the task definition",
+      "Embed the root account password in the container startup script"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The ECS Task Role (`taskRoleArn`) grants container application code temporary credentials to access DynamoDB and S3."
+  },
+  {
+    "q": "A media company wants to serve static website assets (HTML, CSS, JS, images) with low latency worldwide and enforce HTTPS. The company wants to minimize hosting and compute costs. Which serverless architecture is the MOST cost-effective?",
+    "o": [
+      "Amazon S3 bucket configured as an origin behind an Amazon CloudFront distribution with an ACM SSL/TLS certificate and Origin Access Control (OAC)",
+      "An EC2 instance running Nginx in `us-east-1` with an Elastic IP",
+      "AWS Elastic Beanstalk single-instance deployment",
+      "Amazon EKS cluster with 10 worker nodes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "S3 static website hosting behind CloudFront with ACM and OAC provides global low-latency delivery at minimal cost."
+  },
+  {
+    "q": "A developer is implementing an API that allows users to download private, paid digital audiobooks through Amazon CloudFront. Access must expire after 4 hours and be restricted to the specific authorized purchaser. Which CloudFront feature should the backend use?",
+    "o": [
+      "CloudFront Signed URLs (generated using a private key from a trusted CloudFront Key Group)",
+      "S3 Bucket ACLs set to public-read",
+      "Route 53 Geolocation routing",
+      "AWS WAF IP Blacklist"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Signed URLs grant temporary, authenticated access to individual private files for authorized users."
+  },
+  {
+    "q": "A developer is investigating an issue where an application receives HTTP 504 Gateway Timeout errors when calling an Amazon API Gateway endpoint backed by an AWS Lambda function. What is the most likely cause?",
+    "o": [
+      "The Lambda function execution duration exceeded the API Gateway integration timeout limit (maximum 29 seconds)",
+      "The Lambda function returned invalid JSON syntax",
+      "The client sent an invalid query parameter",
+      "API Gateway ran out of disk space"
+    ],
+    "a": [
+      0
+    ],
+    "e": "HTTP 504 Gateway Timeout occurs when the backend Lambda function exceeds the API Gateway 29-second timeout."
+  },
+  {
+    "q": "An application generates 50,000 log events per second. The developer needs to extract custom metrics (such as payment processing latency and failure counts) without paying per-call `PutMetricData` API fees or adding network latency to the request path. Which logging pattern meets these requirements?",
+    "o": [
+      "CloudWatch Embedded Metric Format (EMF) outputting structured JSON with an `_aws` metadata object to standard output",
+      "Calling `PutMetricData` synchronously in a loop for each transaction",
+      "Writing logs to a local text file and uploading to S3 once a month",
+      "Sending metrics via email using Amazon SES"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Embedded Metric Format (EMF) extracts custom metrics asynchronously from JSON logs without `PutMetricData` API fees or latency."
+  },
+  {
+    "q": "A company needs to run a daily batch data transformation job that takes 4 hours to complete. The job requires 32 GB of RAM and 8 vCPUs. The job should execute automatically at 2:00 AM every night. Which serverless architecture has the LEAST operational overhead?",
+    "o": [
+      "Amazon EventBridge Scheduler triggering an AWS Batch job running on AWS Fargate",
+      "AWS Lambda function with a 4-hour timeout",
+      "A dedicated EC2 instance running 24/7 with a Linux cron job",
+      "Amazon S3 Lifecycle rule"
+    ],
+    "a": [
+      0
+    ],
+    "e": "EventBridge Scheduler triggering an AWS Batch job on Fargate runs 4-hour compute tasks with zero server management."
+  },
+  {
+    "q": "A developer wants to publish a new version of an AWS Lambda function and test it with 10% of production traffic for 10 minutes before routing 100% of traffic to the new version. If errors occur, traffic must automatically roll back. Which AWS service combination manages this deployment?",
+    "o": [
+      "AWS CodeDeploy with a `LambdaCanary10Percent10Minutes` deployment configuration and CloudWatch Alarm rollback triggers",
+      "Amazon Route 53 Simple Routing",
+      "AWS Elastic Beanstalk All-at-Once deployment",
+      "CloudFormation stack update with no rollback alarms"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CodeDeploy manages canary deployments (`LambdaCanary10Percent10Minutes`) with automated CloudWatch alarm rollbacks."
+  },
+  {
+    "q": "An application needs to process incoming orders from an Amazon SQS queue. If a worker Lambda function encounters a processing error due to a corrupted message payload, the message returns to the queue. After 3 failed attempts, the corrupted message must be isolated for developer debugging without blocking other orders. Which SQS feature implements this?",
+    "o": [
+      "Dead-Letter Queue (DLQ) with a `maxReceiveCount` set to 3",
+      "SQS Delay Queue set to 15 minutes",
+      "Increasing SQS Message Retention Period to 14 days",
+      "Deleting the queue automatically"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SQS Dead-Letter Queues (DLQs) isolate poison pill messages after a configured number of failed receive attempts (`maxReceiveCount`)."
+  },
+  {
+    "q": "A developer is designing a microservice backend that must execute a workflow consisting of 8 sequential steps with branching logic, error retries, and parallel execution branches. Which AWS service should coordinate this workflow?",
+    "o": [
+      "AWS Step Functions",
+      "Amazon SQS",
+      "Amazon SNS",
+      "Amazon CloudWatch Alarms"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Step Functions coordinates multi-step branching, retries, and parallel execution with serverless state machines."
+  },
+  {
+    "q": "A developer is building an application that needs to store and query user profiles in Amazon DynamoDB. The query pattern requires searching by `EmailAddress` (which is not the table's partition key). Which DynamoDB feature enables efficient querying on non-key attributes across the entire table?",
+    "o": [
+      "Global Secondary Index (GSI)",
+      "Local Secondary Index (LSI)",
+      "DynamoDB Scan with client-side filtering",
+      "DynamoDB Streams"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Global Secondary Index (GSI) allows querying DynamoDB tables on non-key attributes (like `EmailAddress`)."
+  },
+  {
+    "q": "What is the fundamental difference between a DynamoDB Global Secondary Index (GSI) and a Local Secondary Index (LSI)?",
+    "o": [
+      "A GSI can be created at any time, has a different partition key and sort key from the base table, and has its own provisioned/on-demand capacity; an LSI must be created at table creation time and must share the same partition key as the base table",
+      "LSIs can have up to 20 indexes; GSIs are limited to 5",
+      "GSIs are free of charge; LSIs carry hourly fees",
+      "LSIs support strongly consistent reads across regions"
+    ],
+    "a": [
+      0
+    ],
+    "e": "GSIs can be created anytime with distinct partition/sort keys and dedicated capacity; LSIs must be created with the table."
+  },
+  {
+    "q": "A developer is creating a continuous integration pipeline in AWS CodeBuild. The build process requires downloading proprietary private npm packages from a centralized repository within the AWS organization. Which AWS service securely stores, manages, and publishes private software packages?",
+    "o": [
+      "AWS CodeArtifact",
+      "AWS CodeCommit",
+      "AWS CodeDeploy",
+      "Amazon ECR"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS CodeArtifact is a secure, managed artifact repository for publishing and sharing private software packages."
+  },
+  {
+    "q": "A developer needs to inspect the detailed execution timing of individual database queries and third-party HTTP calls made inside an AWS Lambda function. What AWS X-Ray construct breaks down the duration of operations within a segment?",
+    "o": [
+      "Subsegment",
+      "Trace Header",
+      "Sampling Rule",
+      "Service Map"
+    ],
+    "a": [
+      0
+    ],
+    "e": "X-Ray Subsegments provide granular timing breakdowns of specific database queries and HTTP calls within a segment."
+  },
+  {
+    "q": "An application running on EC2 instances in an Auto Scaling group needs to receive a webhook notification whenever an instance is about to be terminated by Auto Scaling, allowing the application 5 minutes to gracefully finish in-flight requests and drain connections. Which Auto Scaling feature provides this capability?",
+    "o": [
+      "Auto Scaling Lifecycle Hooks (terminating lifecycle hook with an SNS/EventBridge notification)",
+      "Auto Scaling Target Tracking Policy",
+      "CloudWatch Metric Math",
+      "EC2 Instance Recovery"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Auto Scaling Lifecycle Hooks pause termination, allowing instances time to drain connections and complete tasks."
+  },
+  {
+    "q": "A company wants to run a containerized microservice on Amazon ECS. The team wants zero server management, automatic OS patching, and per-second billing based on CPU and memory allocated to tasks. Which ECS launch type should be selected?",
+    "o": [
+      "AWS Fargate",
+      "EC2 Launch Type",
+      "On-Premises VMware",
+      "Amazon Lightsail"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Fargate runs containers serverlessly with per-second billing and zero EC2 infrastructure management."
+  },
+  {
+    "q": "A developer wants to restrict an Amazon S3 bucket so that objects can ONLY be uploaded if they are encrypted using an AWS KMS Customer Managed Key (`arn:aws:kms:us-east-1:123456789012:key/abc-123`). What bucket policy statement enforces this?",
+    "o": [
+      "Deny `s3:PutObject` if `s3:x-amz-server-side-encryption-aws-kms-key-id` does not equal `arn:aws:kms:us-east-1:123456789012:key/abc-123`",
+      "Allow `s3:*` to `Principal: \"*\"`",
+      "Delete all IAM roles",
+      "Disable versioning on S3"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An S3 bucket policy denying `s3:PutObject` unless the specific KMS Key ARN is provided enforces designated CMK encryption."
+  },
+  {
+    "q": "An application uses Amazon Cognito User Pools for user authentication. The developer wants to migrate 100,000 users from an existing legacy database to Cognito WITHOUT requiring users to reset their passwords on their first login. Which Cognito feature enables this seamless migration?",
+    "o": [
+      "User Migration Lambda Trigger (invoked on authentication to verify legacy credentials and silently create the Cognito user)",
+      "CSV bulk import (which requires users to reset passwords)",
+      "Amazon S3 Transfer Acceleration",
+      "AWS DataSync"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cognito User Migration Lambda Trigger authenticates users against legacy databases and migrates them seamlessly upon first login."
+  },
+  {
+    "q": "A developer is designing a serverless application using AWS SAM. How can the developer test and debug the Lambda function locally on their laptop against simulated API Gateway events before deploying to AWS?",
+    "o": [
+      "Use the SAM CLI command `sam local invoke` or `sam local start-api`",
+      "Upload the code to an EC2 instance in production",
+      "Run `git push` to production",
+      "SAM functions cannot be tested locally"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sam local invoke` and `sam local start-api` run and test Lambda functions locally inside Docker containers."
+  },
+  {
+    "q": "A developer is building a high-throughput financial ingestion application on AWS Lambda. The application experiences sporadic latency spikes (cold starts) when traffic surges. Which Lambda configuration eliminates cold-start latency by keeping execution environments initialized and ready to respond in double-digit milliseconds?",
+    "o": [
+      "Provisioned Concurrency",
+      "Reserved Concurrency",
+      "Increasing Lambda timeout to 15 minutes",
+      "Deploying Lambda in a private VPC subnet"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Provisioned Concurrency keeps Lambda execution environments initialized, eliminating cold-start latency."
+  },
+  {
+    "q": "An application uses Amazon DynamoDB. The developer needs to capture every insert, update, and delete operation on the table in real-time and trigger a Lambda function to update an OpenSearch search index. Which DynamoDB feature streams item-level changes?",
+    "o": [
+      "Amazon DynamoDB Streams with an AWS Lambda event source mapping",
+      "DynamoDB Global Secondary Indexes",
+      "DynamoDB Point-in-Time Recovery",
+      "Amazon S3 Event Notifications"
+    ],
+    "a": [
+      0
+    ],
+    "e": "DynamoDB Streams captures item-level mutations in real-time, triggering Lambda to synchronize search indexes."
+  },
+  {
+    "q": "A developer wants to protect an Amazon CloudFront distribution against common web exploits, SQL injection attacks, and HTTP flood DDoS attacks. Which AWS service should be attached to the CloudFront distribution?",
+    "o": [
+      "AWS WAF (Web Application Firewall)",
+      "Amazon GuardDuty",
+      "AWS Shield Standard only",
+      "Amazon Inspector"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS WAF protects CloudFront distributions against web exploits, SQLi, XSS, and rate-based DDoS attacks."
+  },
+  {
+    "q": "An application running on EC2 instances needs to access an Amazon Aurora database in a private subnet. How should Security Groups be configured following the principle of least privilege?",
+    "o": [
+      "Configure the Aurora Security Group to allow inbound traffic on port 5432 with the source set to the Security Group ID of the EC2 instances",
+      "Configure the Aurora Security Group to allow port 5432 from `0.0.0.0/0`",
+      "Open all TCP ports on the VPC route table",
+      "Disable Security Groups on both instances"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Allowing database port ingress from the application's Security Group ID follows the principle of least privilege."
+  },
+  {
+    "q": "A developer wants to deploy a Single Page Application (SPA) built with React. When users navigate directly to a sub-route (e.g., `https://example.com/dashboard`), CloudFront returns an HTTP 403 or 404 error because the file does not exist in S3. How should the developer configure CloudFront to support client-side routing?",
+    "o": [
+      "Configure a Custom Error Response in CloudFront that intercepts HTTP 403 and 404 errors and returns `/index.html` with an HTTP 200 OK status code",
+      "Create an S3 bucket for every sub-route",
+      "Disable CloudFront caching completely",
+      "Convert the React app into a bash script"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Custom Error Responses return `/index.html` with a 200 OK status for 403/404 errors, enabling client-side routing."
+  },
+  {
+    "q": "A company needs to store database credentials that rotate automatically every 60 days. An ECS Fargate container needs to read this credential at startup. Which combination of services provides this capability?",
+    "o": [
+      "AWS Secrets Manager (with automated Lambda rotation) + ECS Task Definition referencing the secret ARN in the `secrets` section",
+      "AWS Systems Manager Parameter Store Standard Tier",
+      "Hardcoded credentials in the Docker image",
+      "Amazon S3 unencrypted text file"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Secrets Manager with automated rotation securely injects credentials into ECS Fargate containers via task definitions."
+  },
+  {
+    "q": "A developer is optimizing an application that queries an Amazon DynamoDB table. The application performs frequent read queries that return the exact same items. The developer wants to achieve microsecond read latency without changing the application's query code or logic. Which solution should be deployed?",
+    "o": [
+      "Amazon DynamoDB Accelerator (DAX)",
+      "Amazon ElastiCache Memcached",
+      "Increasing DynamoDB Read Capacity Units to 10,000",
+      "Converting DynamoDB to Amazon Redshift"
+    ],
+    "a": [
+      0
+    ],
+    "e": "DynamoDB Accelerator (DAX) provides seamless microsecond in-memory caching without modifying application code."
+  },
+  {
+    "q": "A developer needs to deploy an infrastructure change using AWS CloudFormation. Before executing the update, the developer wants to preview the exact resources that will be created, modified, or deleted, including whether any resources will require replacement. Which CloudFormation feature provides this preview?",
+    "o": [
+      "CloudFormation Change Sets",
+      "CloudFormation StackSets",
+      "CloudFormation Drift Detection",
+      "CloudFormation Rollback Triggers"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFormation Change Sets generate a detailed preview of proposed resource modifications and replacements."
+  },
+  {
+    "q": "An application running on AWS Lambda writes temporary video files during processing. The files can be up to 4 GB in size. Lambda's default `/tmp` storage is 512 MB. How can the developer accommodate these large temporary files?",
+    "o": [
+      "Increase the Lambda ephemeral storage (`/tmp`) configuration setting (up to 10,240 MB / 10 GB)",
+      "Mount an EBS volume to Lambda",
+      "Increase Lambda timeout to 15 minutes",
+      "Use Amazon S3 Glacier"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Lambda ephemeral storage (`/tmp`) can be configured up to 10 GB to accommodate large temporary files."
+  },
+  {
+    "q": "A developer wants to implement continuous integration for a Python application. Whenever code is pushed to the `main` branch of an AWS CodeCommit repository, an AWS CodePipeline pipeline must automatically start. Which AWS service detects the code push and triggers CodePipeline?",
+    "o": [
+      "Amazon EventBridge (matching CodeCommit repository state-change events)",
+      "Amazon CloudWatch Alarms",
+      "Amazon Route 53",
+      "AWS STS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon EventBridge detects CodeCommit repository state changes and triggers CodePipeline automatically."
+  },
+  {
+    "q": "An application needs to process payments by coordinating three distinct microservices. If any step fails, the system must retry with exponential backoff up to 3 times before transitioning to an error-handling compensation state. Which AWS service is designed for this visual state machine logic?",
+    "o": [
+      "AWS Step Functions (Standard Workflow)",
+      "Amazon SQS",
+      "Amazon SNS",
+      "AWS CodeBuild"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Step Functions Standard Workflows provide visual state machine orchestration with built-in retries and error catchers."
+  },
+  {
+    "q": "A developer is designing an Amazon API Gateway REST API. The developer wants to cache responses for 5 minutes to reduce backend Lambda invocations. However, authenticated administrative requests must be able to bypass the cache and fetch fresh backend data. What HTTP header should the administrator pass?",
+    "o": [
+      "`Cache-Control: max-age=0` (with appropriate IAM authorization to invalidate cache)",
+      "`Authorization: None`",
+      "`Accept: application/xml`",
+      "`X-Forwarded-For: 127.0.0.1`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Passing `Cache-Control: max-age=0` (with appropriate IAM permissions) bypasses the API Gateway cache to fetch fresh data."
+  },
+  {
+    "q": "An application processes messages from an Amazon SQS FIFO queue. The developer observes that messages are being processed one at a time sequentially, causing a processing backlog. The queue contains messages for 1,000 distinct customer accounts. How can the developer increase processing concurrency while maintaining strict ordering per customer?",
+    "o": [
+      "Set the `MessageGroupId` to the unique `CustomerId` for each message, allowing multiple Lambda consumers to process messages from different groups in parallel",
+      "Convert the FIFO queue to an SQS Standard queue",
+      "Delete all messages in the queue",
+      "Increase the SQS Visibility Timeout to 12 hours"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting `MessageGroupId` to unique customer IDs allows SQS FIFO queues to process different customer groups concurrently."
+  },
+  {
+    "q": "A developer is configuring an AWS CodeBuild project that needs to pull base Docker images from Amazon ECR in a different AWS account. What configuration is required?",
+    "o": [
+      "An ECR Repository Policy in the target account allowing `ecr:GetDownloadUrlForLayer`, `ecr:BatchGetImage`, and `ecr:BatchCheckLayerAvailability` for the CodeBuild service role ARN",
+      "Hardcoding IAM access keys in the `buildspec.yml` file",
+      "Moving the CodeBuild project into the target account's VPC",
+      "Disabling IAM policies on ECR"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An ECR Repository Policy in the target account must grant image download permissions to the CodeBuild service role ARN."
+  },
+  {
+    "q": "A developer wants to ensure that a CloudFormation stack deployment rolls back automatically if an application health alarm trips during stack creation or update. Which CloudFormation feature implements this?",
+    "o": [
+      "CloudFormation Rollback Triggers (associated with CloudWatch Alarms)",
+      "CloudFormation StackSets",
+      "CloudFormation Termination Protection",
+      "CloudFormation Macros"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFormation Rollback Triggers monitor CloudWatch alarms and roll back stack deployments if alarms fire during creation/updates."
+  },
+  {
+    "q": "A developer is designing a serverless data ingestion pipeline that processes 50 MB files uploaded to Amazon S3. The processing step takes 8 minutes. What is the most cost-effective compute service for this task?",
+    "o": [
+      "AWS Lambda (configured with sufficient memory and timeout up to 15 minutes)",
+      "Amazon EC2 `m5.metal` instance running 24/7",
+      "Amazon EMR cluster with 10 master nodes",
+      "AWS Cloud9"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Lambda configured with sufficient memory and timeout (up to 15 mins) is the most cost-effective compute for 8-minute tasks."
+  },
+  {
+    "q": "An application running on AWS Lambda needs to query an Amazon RDS PostgreSQL database located in a private subnet in a VPC. The Lambda function also needs to call an external public weather API. What is the correct networking configuration?",
+    "o": [
+      "Attach the Lambda function to private subnets in the VPC; configure a NAT Gateway in a public subnet with a route in the private subnet route table directing `0.0.0.0/0` to the NAT Gateway",
+      "Attach the Lambda function to a public subnet",
+      "Assign an Elastic IP directly to the Lambda function",
+      "Move the RDS database into a public subnet with public accessibility enabled"
+    ],
+    "a": [
+      0
+    ],
+    "e": "VPC-attached Lambda functions in private subnets require a NAT Gateway in a public subnet for outbound internet access."
+  },
+  {
+    "q": "A developer wants to restrict access to an Amazon API Gateway REST API so that only requests originating from an Amazon CloudFront distribution are accepted, blocking direct requests to the API Gateway URL. What combination of features implements this?",
+    "o": [
+      "Configure CloudFront to send a custom secret header (e.g., `X-Origin-Verify: <secret>`) and configure a Web ACL in AWS WAF (or an API Gateway Resource Policy) that allows requests only when the header matches",
+      "Disable HTTPS on CloudFront",
+      "Use Route 53 Simple Routing",
+      "Set API Gateway to Private mode without VPC endpoints"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Requiring a custom secret header in CloudFront verified by AWS WAF or an API Gateway resource policy blocks direct URL access."
+  },
+  {
+    "q": "An e-commerce platform uses Amazon DynamoDB. The developer wants to automatically purge expired user shopping cart sessions after 7 days without consuming write capacity units or writing custom deletion scripts. Which DynamoDB feature accomplishes this?",
+    "o": [
+      "DynamoDB Time to Live (TTL) with an epoch timestamp attribute",
+      "DynamoDB Streams",
+      "DynamoDB Global Tables",
+      "DynamoDB Local Secondary Indexes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "DynamoDB Time to Live (TTL) automatically deletes expired items based on a timestamp attribute without consuming WCU."
+  },
+  {
+    "q": "A developer is designing a continuous deployment pipeline for an AWS Lambda function using AWS SAM. In `template.yaml`, which property under `AutoPublishAlias` enables automated traffic shifting with CodeDeploy?",
+    "o": [
+      "`DeploymentPreference: { Type: \"Linear10PercentEvery1Minute\" }`",
+      "`DeploymentStrategy: \"AllAtOnce\"`",
+      "`CodeDeploy: \"Enabled\"`",
+      "`TrafficShift: \"True\"`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`DeploymentPreference` in SAM templates specifies CodeDeploy traffic shifting strategies (e.g., `Linear10PercentEvery1Minute`)."
+  },
+  {
+    "q": "What is the primary purpose of AWS KMS Envelope Encryption?",
+    "o": [
+      "It allows encrypting data of any size locally using a data key, protecting the data key under a KMS Customer Master Key, and overcoming KMS's direct 4 KB encryption limit",
+      "It encrypts network cables between data centers",
+      "It replaces TLS 1.3",
+      "It eliminates the need for IAM roles"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Envelope Encryption encrypts data locally with data keys protected by KMS master keys, overcoming the 4 KB direct KMS limit."
+  },
+  {
+    "q": "An application receives unpredictable spikes in traffic. The backend consists of an AWS Lambda function querying an Amazon DynamoDB table. What capacity mode should be configured on DynamoDB to handle instant traffic spikes without throttling or capacity planning?",
+    "o": [
+      "On-Demand Capacity Mode",
+      "Provisioned Capacity Mode with fixed 5 RCU / 5 WCU",
+      "Reserved Capacity Mode",
+      "Global Secondary Index Mode"
+    ],
+    "a": [
+      0
+    ],
+    "e": "DynamoDB On-Demand capacity mode automatically accommodates unpredictable traffic spikes without manual provisioning."
+  },
+  {
+    "q": "A developer wants to view real-time log streams from an AWS Lambda function in the local terminal window during development. Which AWS CLI command provides live log streaming?",
+    "o": [
+      "`aws logs tail /aws/lambda/<FunctionName> --follow`",
+      "`aws lambda get-logs`",
+      "`aws cloudwatch stream-events`",
+      "`tail -f /var/log/messages`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`aws logs tail /aws/lambda/<FunctionName> --follow` streams live Lambda log events directly to the terminal."
+  },
+  {
+    "q": "An organization wants to implement blue/green deployments for a containerized application running on Amazon ECS on AWS Fargate. The Application Load Balancer has two Target Groups: `TargetGroup-1` (Blue/Production) and `TargetGroup-2` (Green/Test). Which service orchestrates shifting production traffic from TargetGroup-1 to TargetGroup-2?",
+    "o": [
+      "AWS CodeDeploy",
+      "AWS CodeBuild",
+      "AWS CodeCommit",
+      "Amazon Route 53 Simple Routing"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS CodeDeploy orchestrates blue/green traffic shifting between ECS target groups with automated rollback."
+  },
+  {
+    "q": "A developer wants to publish application metrics directly from structured JSON logs without incurring per-call `PutMetricData` API fees or adding synchronous network latency to Lambda execution. Which CloudWatch feature satisfies this requirement?",
+    "o": [
+      "CloudWatch Embedded Metric Format (EMF)",
+      "CloudWatch Metric Math",
+      "CloudWatch Alarms",
+      "CloudWatch Synthetics"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Embedded Metric Format (EMF) extracts custom metrics asynchronously from JSON logs without `PutMetricData` fees."
+  },
+  {
+    "q": "A developer is troubleshooting an issue where an application throwing an `AccessDeniedException` when calling AWS KMS to decrypt an S3 object. What two policy components must be checked? (Select TWO.)",
+    "o": [
+      "The IAM identity policy attached to the calling role",
+      "The KMS Key Policy attached to the KMS Customer Master Key",
+      "The VPC Route Table",
+      "The Route 53 Hosted Zone",
+      "The S3 Lifecycle Configuration"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "KMS access requires permissions in the IAM identity policy (caller) AND the KMS Key Policy (resource)."
+  },
+  {
+    "q": "A developer needs to distribute user requests evenly across a fleet of EC2 instances in an Auto Scaling group across multiple Availability Zones. Which load balancer operates at Layer 7 (Application Layer) and supports path-based and host-based routing?",
+    "o": [
+      "Application Load Balancer (ALB)",
+      "Network Load Balancer (NLB)",
+      "Gateway Load Balancer (GWLB)",
+      "Classic Load Balancer (CLB)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Application Load Balancer operates at Layer 7 and supports path-based and host-based routing rules."
+  },
+  {
+    "q": "An application needs to process clickstream events. The system must support real-time data analysis with windowed aggregations and immediately archive raw data to Amazon S3. Which combination of AWS services implements this?",
+    "o": [
+      "Amazon Kinesis Data Streams -> Amazon Managed Service for Apache Flink (real-time analytics) + Amazon Kinesis Data Firehose (delivery to S3)",
+      "Amazon SQS -> Amazon S3 Glacier directly",
+      "Amazon RDS MySQL single instance",
+      "AWS Secrets Manager -> AWS CloudTrail"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Kinesis Data Streams with Apache Flink performs real-time analytics; Kinesis Firehose delivers records to S3 for archival."
+  },
+  {
+    "q": "A developer is deploying a single-page web application to Amazon S3. The web assets are cached by Amazon CloudFront. When the developer deploys a new version of `index.html`, users continue seeing the old version. How should the developer immediately force CloudFront edge locations to serve the new file?",
+    "o": [
+      "Create a CloudFront Invalidation for `/index.html` (or `/*`)",
+      "Delete the S3 bucket",
+      "Reboot the CloudFront edge servers",
+      "Change the Route 53 hosted zone"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Creating a CloudFront Invalidation for `/index.html` (or `/*`) immediately purges cached objects from edge locations."
+  },
+  {
+    "q": "An application uses Amazon DynamoDB with strongly consistent reads. What is the impact of strongly consistent reads on DynamoDB read capacity unit (RCU) consumption compared to eventually consistent reads?",
+    "o": [
+      "Strongly consistent reads consume 1 RCU per 4 KB item; eventually consistent reads consume 0.5 RCU per 4 KB item (strongly consistent reads cost twice as much RCU)",
+      "Strongly consistent reads are free of charge",
+      "Strongly consistent reads consume 10 times more RCUs",
+      "Both read types consume identical RCUs"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Strongly consistent reads consume 1 RCU per 4 KB; eventually consistent reads consume 0.5 RCU per 4 KB (half the cost)."
+  },
+  {
+    "q": "A developer is designing a serverless application where users submit expense reports. The expense report must be approved by a human manager via email before payment is issued. Which AWS service natively supports human approval steps and long-running workflows that pause for days or weeks?",
+    "o": [
+      "AWS Step Functions (Standard Workflow using Task Tokens / Activity Tasks)",
+      "AWS Lambda (running continuously for 2 weeks)",
+      "Amazon SQS",
+      "Amazon EventBridge Pipes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Step Functions Standard Workflows support long-running processes (up to 1 year) and human approval task tokens."
+  },
+  {
+    "q": "A company operates an Amazon DynamoDB table in `us-east-1`. The company wants to expand globally and provide low-latency local read and write access for users in `eu-west-1` and `ap-southeast-1` with automated multi-master replication. Which DynamoDB feature should be enabled?",
+    "o": [
+      "Amazon DynamoDB Global Tables",
+      "DynamoDB Accelerator (DAX)",
+      "DynamoDB Local Secondary Indexes",
+      "DynamoDB Point-in-Time Recovery"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon DynamoDB Global Tables provides fully managed multi-region, multi-master active-active replication."
+  },
+  {
+    "q": "A developer wants to run automated headless browser scripts every 5 minutes to verify that the user login workflow and shopping cart checkout buttons are functioning properly 24/7. Which CloudWatch feature provides this capability?",
+    "o": [
+      "CloudWatch Synthetics Canaries",
+      "CloudWatch Metric Filters",
+      "CloudWatch Contributor Insights",
+      "CloudWatch Logs Insights"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Synthetics Canaries run scheduled browser scripts to monitor user flows and checkout endpoints 24/7."
+  },
+  {
+    "q": "An application running on EC2 instances behind an Application Load Balancer requires sticky sessions so that requests from a specific user are consistently forwarded to the same backend target instance. What mechanism does the ALB use to maintain stickiness?",
+    "o": [
+      "HTTP Cookies (either duration-based ALB cookies or application-based cookies)",
+      "Client IP address hashing only",
+      "DNS round-robin",
+      "Hardcoded instance IDs in the URL"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Application Load Balancers maintain session stickiness using HTTP cookies (duration-based or application-based)."
+  },
+  {
+    "q": "A developer wants to ensure that an Amazon S3 bucket cannot have public read access enabled under any circumstances, even if an administrator accidentally adds a public bucket policy. Which S3 feature enforces this account-wide or bucket-wide guardrail?",
+    "o": [
+      "S3 Block Public Access",
+      "S3 Versioning",
+      "S3 Object Lock",
+      "S3 Transfer Acceleration"
+    ],
+    "a": [
+      0
+    ],
+    "e": "S3 Block Public Access enforces centralized protection preventing public bucket policies and ACLs account-wide."
+  },
+  {
+    "q": "An application using Amazon SQS needs to delay the delivery of new messages to consumers by 5 minutes after they are published. Which SQS feature implements this initial delay?",
+    "o": [
+      "SQS Delay Queues (setting `DeliveryDelay` to 300 seconds)",
+      "SQS Visibility Timeout",
+      "SQS Dead-Letter Queue",
+      "SQS Long Polling"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SQS Delay Queues postpone initial message delivery to consumers by up to 15 minutes (`DeliveryDelay: 300`)."
+  },
+  {
+    "q": "A developer is writing an AWS Lambda function that processes items from an Amazon Kinesis Data Stream. If a poison pill record causes the Lambda function to fail, how can the developer prevent the entire shard from being blocked while ensuring the failed record is captured for debugging?",
+    "o": [
+      "Configure `BisectBatchOnFunctionError: true`, set a `MaximumRetryAttempts` limit, and configure an On-Failure Destination (such as an SQS Dead-Letter Queue)",
+      "Increase Lambda memory to 10 GB",
+      "Delete the Kinesis stream",
+      "Disable Kinesis sharding"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`BisectBatchOnFunctionError` splits failed Kinesis batches recursively, isolating poison pill records to a Dead-Letter Queue."
+  },
+  {
+    "q": "An application running on AWS Lambda needs to store session data in Amazon ElastiCache (Redis) inside a VPC. What configuration is required on the Lambda function?",
+    "o": [
+      "Configure the Lambda function for VPC access by specifying private subnets and a Security Group that has network access to the ElastiCache cluster port (6379)",
+      "Assign a public Elastic IP to the Lambda function",
+      "Move ElastiCache to the public internet",
+      "Open port 80 to `0.0.0.0/0`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "VPC-attached Lambda functions require private subnets and security groups with inbound access to the Redis port (6379)."
+  },
+  {
+    "q": "A developer wants to configure an Amazon Route 53 DNS record pointing `example.com` (zone apex) to an Application Load Balancer. Which Route 53 record type must be created?",
+    "o": [
+      "Route 53 Alias Record (A type)",
+      "CNAME Record",
+      "PTR Record",
+      "TXT Record"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Route 53 Alias Record (A type) maps a zone apex domain (`example.com`) directly to an Application Load Balancer."
+  },
+  {
+    "q": "An application processes orders using Amazon DynamoDB. The developer wants to automatically create an audit trail record in an Amazon S3 bucket whenever an item in DynamoDB is modified or deleted. Which serverless architecture implements this?",
+    "o": [
+      "Amazon DynamoDB Streams -> AWS Lambda consumer -> Amazon S3 bucket",
+      "S3 Lifecycle Rules",
+      "Route 53 DNS Query Logs",
+      "AWS WAF Logs"
+    ],
+    "a": [
+      0
+    ],
+    "e": "DynamoDB Streams streaming table mutations to a Lambda consumer writing to Amazon S3 creates an automated audit trail."
+  },
+  {
+    "q": "A developer is designing a secure REST API with Amazon API Gateway. The developer wants to authenticate users using their corporate Microsoft Active Directory credentials via SAML 2.0. Which architecture fulfills this requirement?",
+    "o": [
+      "Amazon Cognito User Pools federated with Microsoft Active Directory (SAML 2.0 IdP) + API Gateway Cognito Authorizer",
+      "Storing Active Directory passwords in plaintext in SSM Parameter Store",
+      "IAM User access keys distributed to all employees",
+      "Amazon S3 static website hosting"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cognito User Pools federated with SAML 2.0 Identity Providers allows authenticating users with corporate Active Directory credentials."
+  }
+];
+
+let idx = 0, score = 0, answered = new Array(QUESTIONS.length).fill(false), correctFlags = new Array(QUESTIONS.length).fill(false), missed = [];
+const STORAGE_KEY = "aws-dva-quiz-17";
+
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({idx, score, answered, correctFlags}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(d && Array.isArray(d.answered) && d.answered.length === QUESTIONS.length){
+      idx = d.idx; score = d.score; answered = d.answered; correctFlags = d.correctFlags;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+const quizArea = document.getElementById("quizArea");
+const posNum = document.getElementById("posNum");
+const scoreNum = document.getElementById("scoreNum");
+const progressFill = document.getElementById("progressFill");
+
+function updateTop(){
+  posNum.textContent = (idx+1) + " / " + QUESTIONS.length;
+  scoreNum.textContent = score;
+  const answeredCount = answered.filter(Boolean).length;
+  progressFill.style.width = (answeredCount / QUESTIONS.length * 100) + "%";
+}
+
+function renderQuestion(){
+  const item = QUESTIONS[idx];
+  const isMulti = !!item.multi;
+  const done = answered[idx];
+  let html = "";
+  html += '<div class="card">';
+  html += '<div class="qnum">Question ' + (idx+1) + '</div>';
+  if(isMulti) html += '<div class="multi-hint">Select all that apply</div><br>';
+  html += '<div class="qtext">' + escapeHtml(item.q) + '</div>';
+  item.o.forEach((optText, i)=>{
+    const letter = String.fromCharCode(65+i);
+    let cls = "opt";
+    if(done){
+      if(item.a.includes(i)) cls += " correct";
+      else if(item.picked && item.picked.includes(i)) cls += " incorrect";
+    } else if(item.picked && item.picked.includes(i)){
+      cls += " selected";
+    }
+    html += '<button class="' + cls + '" data-i="' + i + '" ' + (done?'disabled':'') + '>' +
+      '<span class="mark">' + letter + '</span><span>' + escapeHtml(optText) + '</span></button>';
+  });
+  if(done){
+    html += '<div class="explain"><b>' + (correctFlags[idx] ? "Correct. " : "Not quite. ") + '</b>' + escapeHtml(item.e) + '</div>';
+  }
+  html += '<div class="actions">';
+  if(isMulti && !done){
+    html += '<button class="btn btn-primary" id="submitBtn" disabled>Submit answer</button>';
+  }
+  if(done){
+    if(idx < QUESTIONS.length - 1){
+      html += '<button class="btn btn-primary" id="nextBtn">Next question</button>';
+    } else {
+      html += '<button class="btn btn-primary" id="finishBtn">See results</button>';
+    }
+  }
+  html += '<button class="btn btn-ghost" id="resetBtn">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  updateTop();
+  wireOptions(item, isMulti, done);
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function wireOptions(item, isMulti, done){
+  const opts = quizArea.querySelectorAll(".opt");
+  opts.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(done) return;
+      const i = parseInt(btn.dataset.i, 10);
+      if(isMulti){
+        item.picked = item.picked || [];
+        const pos = item.picked.indexOf(i);
+        if(pos >= 0) item.picked.splice(pos,1); else item.picked.push(i);
+        renderQuestion();
+        const submitBtn = document.getElementById("submitBtn");
+        if(submitBtn) submitBtn.disabled = !(item.picked && item.picked.length > 0);
+      } else {
+        item.picked = [i];
+        commitAnswer(item);
+      }
+    });
+  });
+  const submitBtn = document.getElementById("submitBtn");
+  if(submitBtn){
+    submitBtn.disabled = !(item.picked && item.picked.length > 0);
+    submitBtn.addEventListener("click", ()=> commitAnswer(item));
+  }
+  const nextBtn = document.getElementById("nextBtn");
+  if(nextBtn) nextBtn.addEventListener("click", ()=>{ idx++; save(); renderQuestion(); });
+  const finishBtn = document.getElementById("finishBtn");
+  if(finishBtn) finishBtn.addEventListener("click", renderSummary);
+  const resetBtn = document.getElementById("resetBtn");
+  if(resetBtn) resetBtn.addEventListener("click", resetAll);
+}
+
+function commitAnswer(item){
+  if(answered[idx]) return;
+  answered[idx] = true;
+  const correct = item.picked.length === item.a.length && item.picked.every(p => item.a.includes(p));
+  correctFlags[idx] = correct;
+  if(correct) score++; else missed.push(idx);
+  save();
+  renderQuestion();
+}
+
+function renderSummary(){
+  const pct = Math.round(score / QUESTIONS.length * 100);
+  const passed = pct >= 72;
+  let html = '<div class="card summary">';
+  html += '<div class="eyebrow">Results</div>';
+  html += '<div class="score-big">' + score + ' / ' + QUESTIONS.length + '</div>';
+  html += '<div class="score-pct ' + (passed?'pass':'fail') + '">' + pct + '% — ' + (passed ? "Solid, above the ~72% pass bar" : "Below the ~72% pass bar — revisit the notes") + '</div>';
+  const missedList = answered.map((_,i)=>i).filter(i => !correctFlags[i]);
+  if(missedList.length){
+    html += '<div class="miss-list"><h3>Review these questions</h3>';
+    missedList.forEach(i=>{
+      html += '<div class="miss-item"><b>Q' + (i+1) + '.</b> ' + escapeHtml(QUESTIONS[i].q) + '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="actions" style="justify-content:center; margin-top:22px;">';
+  html += '<button class="btn btn-primary" id="restartBtn">Restart quiz</button>';
+  html += '<button class="btn btn-ghost" id="resetBtn2">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  document.getElementById("restartBtn").addEventListener("click", resetAll);
+  document.getElementById("resetBtn2").addEventListener("click", resetAll);
+}
+
+function resetAll(){
+  idx = 0; score = 0; missed = [];
+  answered = new Array(QUESTIONS.length).fill(false);
+  correctFlags = new Array(QUESTIONS.length).fill(false);
+  QUESTIONS.forEach(q => { delete q.picked; });
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  renderQuestion();
+}
+
+document.addEventListener("keydown", (e)=>{
+  const map = {"1":0,"2":1,"3":2,"4":3,"5":4,"a":0,"b":1,"c":2,"d":3,"e":4,"A":0,"B":1,"C":2,"D":3,"E":4};
+  if(e.key in map){
+    const opts = quizArea.querySelectorAll(".opt:not(:disabled)");
+    const i = map[e.key];
+    if(opts[i]) opts[i].click();
+  } else if(e.key === "Enter"){
+    const nb = document.getElementById("nextBtn") || document.getElementById("finishBtn") || document.getElementById("submitBtn");
+    if(nb && !nb.disabled) nb.click();
+  }
+});
+
+if(load()){
+  if(answered.every(Boolean)) renderSummary(); else renderQuestion();
+} else {
+  renderQuestion();
+}
+</script>
