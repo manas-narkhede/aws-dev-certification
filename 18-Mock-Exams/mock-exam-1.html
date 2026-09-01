@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DVA-C02 Timed Mock Exam 1 — AWS Certified Developer Associate (DVA-C02)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-card: #1a2234;
+  --bg-card-hover: #222d42;
+  --border-color: #2a364f;
+  --border-focus: #ff9900;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-aws: #ff9900;
+  --accent-aws-hover: #ec7211;
+  --accent-blue: #38bdf8;
+  --correct: #10b981;
+  --correct-bg: rgba(16, 185, 129, 0.12);
+  --incorrect: #ef4444;
+  --incorrect-bg: rgba(239, 68, 68, 0.12);
+  --flagged: #f59e0b;
+  --flagged-bg: rgba(245, 158, 11, 0.15);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.875rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-left { display: flex; align-items: center; gap: 1rem; }
+.eyebrow { font-size: 0.75rem; font-weight: 700; color: var(--accent-aws); text-transform: uppercase; letter-spacing: 0.08em; }
+h1 { font-size: 1.125rem; font-weight: 700; color: var(--text-primary); }
+.timer-box {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.125rem;
+  font-weight: 700;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  color: var(--accent-blue);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.timer-warning { color: var(--flagged); border-color: var(--flagged); animation: pulse 1.5s infinite; }
+.timer-danger { color: var(--incorrect); border-color: var(--incorrect); animation: pulse 0.8s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+.main-container {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  gap: 1.5rem;
+  flex: 1;
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .main-container { grid-template-columns: 1fr; }
+}
+
+.q-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.q-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+.domain-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--accent-blue);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+}
+.q-stem { font-size: 1.05rem; font-weight: 500; color: #f8fafc; line-height: 1.6; }
+.options-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.option-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.option-item:hover { background: var(--bg-card-hover); border-color: #475569; }
+.option-item.selected {
+  background: rgba(255, 153, 0, 0.12);
+  border-color: var(--accent-aws);
+}
+.opt-label {
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 1.5rem;
+}
+.opt-text { color: var(--text-primary); font-size: 0.95rem; }
+
+.sidebar {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.25rem;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.grid-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+.nav-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+  max-height: 380px;
+  overflow-y: auto;
+}
+.nav-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+.nav-btn:hover { border-color: var(--accent-aws); color: var(--text-primary); }
+.nav-btn.active { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.15); color: #fff; }
+.nav-btn.answered { background: #22384f; border-color: #38bdf8; color: #fff; }
+.nav-btn.flagged { border-color: var(--flagged); background: var(--flagged-bg); color: var(--flagged); }
+
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+.btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+.btn-primary { background: var(--accent-aws); color: #000; }
+.btn-primary:hover { background: var(--accent-aws-hover); }
+.btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); }
+.btn-secondary:hover { background: var(--bg-card-hover); }
+.btn-flag { background: transparent; color: var(--flagged); border: 1px solid var(--flagged); }
+.btn-flag.active { background: var(--flagged); color: #000; }
+.btn-finish { background: var(--correct); color: #000; width: 100%; }
+.btn-finish:hover { background: #059669; }
+
+/* Results Screen */
+.results-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 2.5rem;
+  max-width: 860px;
+  margin: 2rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.score-banner {
+  text-align: center;
+  padding: 2rem;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.scaled-score { font-size: 3rem; font-weight: 800; color: var(--accent-aws); }
+.pass-badge {
+  display: inline-block;
+  padding: 0.35rem 1.25rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  margin-top: 0.75rem;
+}
+.pass-badge.pass { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct); }
+.pass-badge.fail { background: var(--incorrect-bg); color: var(--incorrect); border: 1px solid var(--incorrect); }
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.breakdown-table th, .breakdown-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+.breakdown-table th { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; }
+.review-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.explanation-box {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.6);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div>
+      <div class="eyebrow">AWS Certified Developer Associate • Full Mock Exam 1</div>
+      <h1>DVA-C02 Timed Mock Exam 1</h1>
+    </div>
+  </div>
+  <div id="timerDisplay" class="timer-box">⏳ 130:00</div>
+</header>
+
+<div id="examContainer" class="main-container">
+  <main class="q-card">
+    <div class="q-header">
+      <span id="qNumber" style="font-weight:700; color:var(--text-secondary);">Question 1 of 65</span>
+      <span id="domainBadge" class="domain-badge">Domain 1</span>
+    </div>
+    <div id="qStem" class="q-stem"></div>
+    <div id="optionsContainer" class="options-list"></div>
+    <div class="action-bar">
+      <button id="prevBtn" class="btn btn-secondary">Previous</button>
+      <button id="flagBtn" class="btn btn-flag">🚩 Flag for Review</button>
+      <button id="nextBtn" class="btn btn-primary">Next</button>
+    </div>
+  </main>
+
+  <aside class="sidebar">
+    <div class="grid-title">Question Navigator</div>
+    <div id="navGrid" class="nav-grid"></div>
+    <button id="finishExamBtn" class="btn btn-finish">Submit Exam</button>
+  </aside>
+</div>
+
+<div id="resultsContainer" style="display:none; padding: 1.5rem;">
+  <div class="results-card">
+    <div class="score-banner">
+      <div style="color:var(--text-muted); text-transform:uppercase; font-size:0.85rem; font-weight:700;">Scaled Score (Passing: 720)</div>
+      <div id="scoreNumber" class="scaled-score">0</div>
+      <div id="scoreSummary" style="color:var(--text-secondary); margin-top:0.25rem;">0 / 65 correct (0%)</div>
+      <div id="passBadge" class="pass-badge">Pass</div>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:1rem; font-size:1.1rem;">Domain Performance Breakdown</h3>
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>Weight</th>
+            <th>Score</th>
+            <th>Percentage</th>
+          </tr>
+        </thead>
+        <tbody id="domainBreakdownBody"></tbody>
+      </table>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:1rem; font-size:1.1rem;">Question Review</h3>
+      <div id="reviewList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [{"num": 1, "q": "A developer is building a serverless e-commerce application. When an order is placed, an AWS Lambda function must read user profile information from an Amazon DynamoDB table. The application requires consistent, single-digit millisecond latency for reads, and the developer wants to minimize read cost. Which read consistency model should be used by default?", "o": ["Strongly Consistent Reads", "Eventually Consistent Reads", "Transactional Reads", "Global Secondary Index Reads"], "a": [1], "multi": false, "e": "Eventually consistent reads (default) deliver single-digit ms latency and consume half the Read Capacity Units (0.5 RCU per 4 KB) compared to strongly consistent reads.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 2, "q": "An application writes large payload objects (between 10 MB and 50 MB) to an Amazon S3 bucket. The developer wants to optimize upload throughput and resilience to network interruptions. Which Amazon S3 feature should the developer implement?", "o": ["Multipart Upload API", "S3 Transfer Acceleration alone without multipart", "S3 Select", "Single-part `PutObject` with increased socket timeout"], "a": [0], "multi": false, "e": "Multipart Upload API optimizes throughput and resilience for objects > 100 MB (and supports objects from 5 MB to 5 TB) by uploading parts in parallel.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 3, "q": "A developer is designing an order processing pipeline using AWS Lambda and Amazon SQS. The Lambda function polls messages from an SQS queue. If the Lambda function encounters an unhandled runtime error while processing a message, what happens to the message in SQS?", "o": ["The message is immediately deleted from the queue", "The message remains in the queue and becomes visible to other consumer instances once the Visibility Timeout expires", "The message is moved to Amazon S3 Glacier", "SQS automatically pauses all queue operations for 1 hour"], "a": [1], "multi": false, "e": "Upon unhandled Lambda failure, the message returns to SQS and becomes visible again to other workers after the Visibility Timeout expires.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 4, "q": "A developer is configuring an Amazon API Gateway REST API with AWS Lambda integration. The frontend web client needs to access the API from a different domain name (`https://www.myfrontend.com`). When making requests, the browser blocks responses with a CORS error. What must the developer configure on API Gateway?", "o": ["Enable CORS on the API Gateway resource and ensure the Lambda proxy response returns an `Access-Control-Allow-Origin: \"https://www.myfrontend.com\"` header (or `\"*\"`)", "Disable HTTPS on API Gateway", "Create a Route 53 CNAME record for the Lambda function", "Switch API Gateway to Private endpoint mode"], "a": [0], "multi": false, "e": "Enabling CORS on API Gateway and returning `Access-Control-Allow-Origin` headers from Lambda proxy integrations resolves browser CORS blocks.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 5, "q": "A developer is writing an application that queries an Amazon DynamoDB table named `Orders`. The query needs to filter results by `OrderStatus = 'PENDING'` and `OrderDate >= '2026-01-01'`. The table's partition key is `CustomerId` and the sort key is `OrderDate`. Which DynamoDB API operation and parameter should the developer use for the lowest latency and cost?", "o": ["`Query` operation specifying `KeyConditionExpression` on `CustomerId` and `OrderDate`, with a `FilterExpression` for `OrderStatus`", "`Scan` operation with `FilterExpression` across the entire table", "`BatchGetItem` specifying all possible order IDs", "`TransactGetItems` without key conditions"], "a": [0], "multi": false, "e": "`Query` specifying `KeyConditionExpression` on partition/sort keys is the most efficient and cost-effective method; `FilterExpression` filters results post-query.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 6, "q": "An application processes real-time financial market data streams. Multiple independent consumer applications need to process the same streaming records concurrently with custom offsets and replay capability up to 7 days. Which AWS service should be used for data ingestion?", "o": ["Amazon Kinesis Data Streams", "Amazon SQS Standard Queue", "Amazon SNS Topic", "AWS Step Functions"], "a": [0], "multi": false, "e": "Amazon Kinesis Data Streams supports multiple concurrent consumers with independent read pointers and 24h to 365d data replay capabilities.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 7, "q": "A developer is building an application that sends transactional emails to customers when account events occur. The developer wants to publish email messages asynchronously to a topic that fans out to both an email delivery service and an audit queue. Which AWS messaging service should be used?", "o": ["Amazon SNS (Simple Notification Service)", "Amazon SQS FIFO Queue", "Amazon Kinesis Video Streams", "AWS AppConfig"], "a": [0], "multi": false, "e": "Amazon SNS is a pub/sub fan-out messaging service that delivers messages asynchronously to multiple subscribers (SQS, email, HTTP, Lambda).", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 8, "q": "A developer wants to implement a stateful serverless workflow that coordinates multiple AWS Lambda functions, executes parallel tasks, and waits for a human manager approval step via email (up to 7 days). Which AWS service should be selected?", "o": ["AWS Step Functions (Standard Workflow)", "AWS Step Functions (Express Workflow)", "Amazon SQS Delay Queue", "Amazon EventBridge Pipes"], "a": [0], "multi": false, "e": "AWS Step Functions Standard Workflows support long-running state machine workflows (up to 1 year) and human approval callback tasks.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 9, "q": "An application running on AWS Lambda needs to write temporary image files during processing. The images can be up to 3 GB in size. Lambda's default `/tmp` directory has 512 MB of storage. How can the developer accommodate these files?", "o": ["Increase the Lambda Ephemeral Storage (`/tmp`) setting up to 10,240 MB (10 GB)", "Attach an Amazon EBS volume to the Lambda function", "Mount an Amazon S3 Glacier vault", "Increase Lambda function timeout to 15 minutes"], "a": [0], "multi": false, "e": "Lambda Ephemeral Storage (`/tmp`) is configurable between 512 MB and 10,240 MB (10 GB) for large temporary files.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 10, "q": "A developer needs to retrieve 50 specific items from an Amazon DynamoDB table by their primary keys in a single network round-trip. Which DynamoDB API operation should be used?", "o": ["`BatchGetItem`", "`Query`", "`Scan`", "`TransactWriteItems`"], "a": [0], "multi": false, "e": "`BatchGetItem` retrieves up to 100 items (or 16 MB) across one or more DynamoDB tables in a single network round-trip.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 11, "q": "A developer is building a web application that requires sub-millisecond read access to relational SQL query results from an Amazon Aurora PostgreSQL database. The query results change infrequently. Which caching service should be placed between the application and database?", "o": ["Amazon ElastiCache for Redis", "Amazon CloudFront", "Amazon DynamoDB Accelerator (DAX)", "Amazon S3 Standard-IA"], "a": [0], "multi": false, "e": "Amazon ElastiCache for Redis provides sub-millisecond in-memory caching for relational database queries.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 12, "q": "An application uses Amazon DynamoDB. The developer needs to ensure that when a customer's account balance is updated, an audit log entry is simultaneously written to an audit table. Both operations must either succeed together or fail together with ACID guarantees. Which DynamoDB API operation should be used?", "o": ["`TransactWriteItems`", "`BatchWriteItem`", "`PutItem` with a conditional expression", "`UpdateItem` with optimistic locking"], "a": [0], "multi": false, "e": "`TransactWriteItems` executes all-or-nothing atomic transactions across multiple DynamoDB items with full ACID guarantees.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 13, "q": "A developer is writing an AWS Lambda function that processes incoming events from an Amazon Kinesis data stream. If the Lambda function encounters a poison pill record that causes a failure, what configuration prevents the entire shard from being blocked indefinitely?", "o": ["Enable `BisectBatchOnFunctionError: true`, configure `MaximumRetryAttempts`, and set an On-Failure Destination to an SQS Dead-Letter Queue", "Increase Lambda memory to 10 GB", "Delete the Kinesis data stream", "Disable Kinesis sharding"], "a": [0], "multi": false, "e": "`BisectBatchOnFunctionError` isolates poison pill records by splitting failed batches recursively and sending failed records to a Dead-Letter Queue.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 14, "q": "A developer is designing a serverless API using Amazon API Gateway and AWS Lambda. The API must handle sudden spikes of 10,000 requests per second. The developer wants to avoid cold-start latency for time-critical endpoints. What Lambda feature should be configured?", "o": ["Provisioned Concurrency", "Reserved Concurrency", "Increasing Lambda function timeout to 15 minutes", "Deploying Lambda inside an Amazon VPC"], "a": [0], "multi": false, "e": "Provisioned Concurrency keeps Lambda execution environments initialized and ready, eliminating cold-start latency during traffic spikes.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 15, "q": "An application uses Amazon SQS to process background jobs. The developer notices that when a worker EC2 instance takes 40 seconds to process a message, another worker receives and begins processing the same message after 30 seconds. What is the cause of this duplicate processing?", "o": ["The SQS queue Visibility Timeout is set to 30 seconds, which is shorter than the application processing time of 40 seconds", "The SQS Message Retention Period expired", "SQS Standard queues only deliver messages once every 5 minutes", "The worker instances lack IAM permissions"], "a": [0], "multi": false, "e": "If processing time exceeds the Visibility Timeout, SQS makes the message visible to other consumers, causing duplicate concurrent processing.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 16, "q": "A developer wants to query an Amazon S3 bucket containing 100 GB of CSV files to extract only the rows where `country = 'US'` without downloading the entire dataset to local compute instances. Which S3 feature should be used?", "o": ["Amazon S3 Select", "Amazon S3 Glacier Select", "Amazon S3 Transfer Acceleration", "Amazon S3 Multipart Download"], "a": [0], "multi": false, "e": "Amazon S3 Select runs SQL expressions directly on S3 data to retrieve only the required subset of data, reducing network transfer and latency.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 17, "q": "An application uses Amazon DynamoDB. The developer needs to calculate the total sum of all orders placed in the last 24 hours across the entire table. Which operation retrieves all matching items across all partitions?", "o": ["`Scan` operation (or Parallel Scan) with a `FilterExpression` on `OrderDate`", "`GetItem` operation", "`Query` operation on the table without a partition key", "`BatchGetItem`"], "a": [0], "multi": false, "e": "A `Scan` operation reads every item in the entire DynamoDB table, filtering results with a `FilterExpression`.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 18, "q": "A developer wants to deploy a real-time collaborative whiteboard application where connected browser clients receive instant drawing updates over persistent, bi-directional connections. Which API Gateway endpoint type supports this architecture?", "o": ["Amazon API Gateway WebSocket API", "Amazon API Gateway REST API with polling", "Amazon API Gateway HTTP API", "Amazon CloudFront Distribution"], "a": [0], "multi": false, "e": "API Gateway WebSocket APIs maintain persistent, bidirectional connections for real-time applications.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 19, "q": "An application running on AWS Lambda needs to write items to an Amazon DynamoDB table. The developer wants to ensure that an item is only inserted if an item with the same `OrderId` does NOT already exist in the table. Which expression should be included in the `PutItem` request?", "o": ["`ConditionExpression: \"attribute_not_exists(OrderId)\"`", "`KeyConditionExpression: \"OrderId = :id\"`", "`FilterExpression: \"OrderId != :id\"`", "`ProjectionExpression: \"OrderId\"`"], "a": [0], "multi": false, "e": "`ConditionExpression: \"attribute_not_exists(OrderId)\"` ensures an item is inserted only if no item with the same primary key already exists.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 20, "q": "A developer is configuring an Amazon SQS FIFO queue. The application sends messages containing updates for 500 different user accounts. The developer wants messages for the same user account to be processed strictly in order, but messages for different user accounts to be processed concurrently. How should messages be formatted?", "o": ["Set the `MessageGroupId` to the unique `UserId` for each message", "Use a different SQS queue for each user", "Set the `MessageDeduplicationId` to the `UserId`", "Enable SQS Long Polling"], "a": [0], "multi": false, "e": "Setting `MessageGroupId` to the unique `UserId` ensures strict in-order processing per user while allowing concurrent processing across different users.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 21, "q": "A developer is designing a serverless microservice that connects to an Amazon Aurora MySQL database. Under heavy traffic, hundreds of concurrent Lambda executions exhaust the database's available connection pool. Which service resolves this connection management issue?", "o": ["Amazon RDS Proxy", "DynamoDB Accelerator (DAX)", "Amazon ElastiCache for Memcached", "AWS Systems Manager Parameter Store --- ### Domain 2: Security (Questions 22–38)"], "a": [0], "multi": false, "e": "Amazon RDS Proxy pools and multiplexes database connections, preventing serverless Lambda functions from exhausting MySQL connection limits.", "d_id": 1, "d_name": "Domain 1: Development with AWS Services (32%)"}, {"num": 22, "q": "A mobile application needs to authenticate users and obtain temporary AWS credentials to upload profile images directly to an Amazon S3 bucket. Which combination of Amazon Cognito services implements this secure flow?", "o": ["Amazon Cognito User Pools (for authentication and JWT issuance) + Amazon Cognito Identity Pools (for exchanging JWTs for temporary AWS IAM credentials)", "Amazon Cognito User Pools only", "Amazon Cognito Identity Pools only with hardcoded IAM keys", "AWS Secrets Manager only"], "a": [0], "multi": false, "e": "Cognito User Pools handle user authentication and JWT issuance; Identity Pools exchange JWTs for temporary AWS IAM credentials.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 23, "q": "A developer needs to encrypt sensitive database passwords stored in an AWS Lambda function's environment variables so that unauthorized IAM users cannot view them in plaintext in the AWS Management Console. Which feature should the developer use?", "o": ["Lambda Encryption Helpers with a Customer Managed Key (CMK) in AWS KMS, decrypting the ciphertext in code using `kms:Decrypt`", "Storing the password in a public S3 bucket", "Setting the environment variable name to `SECRET_PASSWORD`", "Base64 encoding the password in the console"], "a": [0], "multi": false, "e": "KMS Encryption Helpers encrypt Lambda environment variables client-side before deployment, masking them from console viewers.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 24, "q": "What is the maximum payload size that can be directly encrypted using an AWS KMS Customer Master Key (CMK) in a single API call?", "o": ["4 KB", "256 KB", "5 MB", "5 GB"], "a": [0], "multi": false, "e": "AWS KMS Customer Master Keys can directly encrypt or decrypt payloads up to 4 KB per API call.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 25, "q": "An application needs to encrypt 100 MB data files before uploading them to Amazon S3. What cryptographic technique must the developer implement to encrypt data exceeding KMS's direct payload limit?", "o": ["Envelope Encryption (using KMS `GenerateDataKey` to obtain a data key, encrypting the file locally, and storing the encrypted data key alongside the ciphertext)", "Calling `kms:Encrypt` in a loop for each byte", "Base64 encoding the file twice", "Storing the KMS private key in the application repository"], "a": [0], "multi": false, "e": "Envelope Encryption uses KMS `GenerateDataKey` to encrypt large files locally with data keys protected by KMS master keys.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 26, "q": "An organization requires database master credentials for an Amazon RDS PostgreSQL instance to be rotated automatically every 30 days without application downtime. Which AWS service natively supports automated credential rotation using Lambda rotation templates?", "o": ["AWS Secrets Manager", "AWS Systems Manager Parameter Store Standard Tier", "AWS KMS Key Rotation", "Amazon DynamoDB TTL"], "a": [0], "multi": false, "e": "AWS Secrets Manager provides built-in native automated password rotation for Amazon RDS using AWS Lambda rotation templates.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 27, "q": "A developer is configuring a `SecureString` parameter in AWS Systems Manager Parameter Store. When retrieving the parameter via the AWS SDK `get_parameter` API, what parameter must be explicitly passed to return the decrypted plaintext secret?", "o": ["`WithDecryption=True` (or `--with-decryption` in CLI)", "`ShowSecret=True`", "`Decrypt=All`", "`Plaintext=True`"], "a": [0], "multi": false, "e": "`--with-decryption` (or `WithDecryption=True`) must be specified when calling `get_parameter` to return decrypted plaintext for `SecureString` parameters.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 28, "q": "An application running on an Amazon EC2 instance needs to access an Amazon S3 bucket. What is the AWS best practice for granting permissions to the application?", "o": ["Attach an IAM Role with an S3 least-privilege policy to the EC2 instance via an Instance Profile", "Hardcode IAM access keys in the application source code", "Store AWS secret keys in a local `.env` file on the EC2 instance root volume", "Use root account credentials"], "a": [0], "multi": false, "e": "Assigning an IAM Role via an Instance Profile provides secure, automatically rotated temporary credentials via IMDSv2.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 29, "q": "A developer is designing an IAM policy for mobile app users accessing an Amazon DynamoDB table. The developer wants users to be able to read and write ONLY items where the partition key matches their unique Cognito Identity ID. Which condition key enforces this fine-grained access control?", "o": ["`\"Condition\": { \"ForAllValues:StringEquals\": { \"dynamodb:LeadingKeys\": [\"${cognito-identity.amazonaws.com:sub}\"] } }`", "`\"Condition\": { \"StringEquals\": { \"aws:username\": \"${aws:PrincipalArn}\" } }`", "`\"Condition\": { \"NumericEquals\": { \"dynamodb:Select\": 1 } }`", "`\"Condition\": { \"Bool\": { \"aws:MultiFactorAuthPresent\": \"true\" } }`"], "a": [0], "multi": false, "e": "`dynamodb:LeadingKeys` matching `${cognito-identity.amazonaws.com:sub}` limits users to reading/writing items matching their own identity ID.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 30, "q": "What is the effect of an explicit `Deny` statement in an IAM policy attached to a user when another policy attached to the same user contains an `Allow` statement for the same action?", "o": ["The request is Denied, because an explicit Deny overrides any and all Allow statements unconditionally", "The request is Allowed", "AWS prompts the user for MFA", "The request is placed in an SQS queue"], "a": [0], "multi": false, "e": "An explicit `Deny` in any applicable IAM policy overrides all `Allow` statements unconditionally.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 31, "q": "A developer wants to restrict access to an Amazon S3 bucket so that objects can ONLY be uploaded if the request is encrypted in transit over HTTPS. What condition in the S3 bucket policy enforces this?", "o": ["`\"Condition\": { \"Bool\": { \"aws:SecureTransport\": \"false\" } }` with `Effect: Deny`", "`\"Condition\": { \"StringEquals\": { \"s3:x-amz-acl\": \"public-read\" } }`", "`\"Condition\": { \"NumericLessThan\": { \"s3:TlsVersion\": 1.2 } }`", "`\"Condition\": { \"Null\": { \"aws:PrincipalTag\": \"true\" } }`"], "a": [0], "multi": false, "e": "Denying `s3:PutObject` when `aws:SecureTransport: false` strictly enforces HTTPS encryption in transit on S3 buckets.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 32, "q": "A company wants to protect an Application Load Balancer and Amazon API Gateway against common web exploits, SQL injection (SQLi), Cross-Site Scripting (XSS), and HTTP flood DDoS attacks. Which AWS service should be deployed?", "o": ["AWS WAF (Web Application Firewall)", "Amazon GuardDuty", "AWS Shield Standard only", "Amazon Inspector"], "a": [0], "multi": false, "e": "AWS WAF protects Layer 7 applications (ALB, API Gateway, CloudFront) against SQLi, XSS, and rate-based DDoS attacks.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 33, "q": "An application in Account A needs to decrypt S3 objects encrypted with an AWS KMS Customer Managed Key (CMK) in Account B. What two permissions are required? (Select TWO.)", "o": ["The KMS Key Policy in Account B must grant `kms:Decrypt` to Account A's IAM Role ARN", "The IAM Policy attached to the application role in Account A must grant `kms:Decrypt` on the KMS Key ARN in Account B", "Account A must assume the root user of Account B", "S3 Block Public Access must be disabled in Account B", "The KMS key must be moved into Account A"], "a": [0, 1], "multi": true, "e": "Cross-account KMS access requires permissions in the KMS Key Policy (Account B) AND the caller's IAM Policy (Account A).", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 34, "q": "What is the difference between an AWS Managed Key (e.g., `aws/s3`) and a Customer Managed Key (CMK) in AWS KMS?", "o": ["AWS Managed Keys are created and managed by AWS with automatic rotation and no monthly key storage fee; Customer Managed Keys support custom key policies, manual rotation schedules, deletion control, and cross-account access", "Customer Managed Keys are free; AWS Managed Keys cost $1/month", "AWS Managed Keys can be exported as raw private keys", "Customer Managed Keys do not support CloudTrail logging"], "a": [0], "multi": false, "e": "AWS Managed Keys are maintained by AWS; Customer Managed Keys support custom policies, rotation schedules, and cross-account access.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 35, "q": "A developer wants to provision a public SSL/TLS certificate for an Application Load Balancer domain name (`api.example.com`). Which service provides free public certificates with automated DNS-based renewal?", "o": ["AWS Certificate Manager (ACM)", "AWS KMS", "AWS Secrets Manager", "AWS CloudHSM"], "a": [0], "multi": false, "e": "AWS Certificate Manager (ACM) provisions free public SSL/TLS certificates with automated DNS-based renewal for integrated AWS services.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 36, "q": "An application uses Amazon Cognito User Pools. The developer wants to automatically execute custom validation logic (such as checking if an email domain is allowed) during user registration before the user is confirmed. Which Cognito feature provides this capability?", "o": ["Pre Sign-up Lambda Trigger", "Post Authentication Lambda Trigger", "Cognito Hosted UI", "Amazon SNS SMS verification"], "a": [0], "multi": false, "e": "Cognito Pre Sign-up Lambda Triggers execute custom validation logic before confirming new user registrations.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 37, "q": "A developer needs to decode an authorization failure message returned by an AWS CLI command to identify which IAM policy denied access. Which AWS STS API action should be used?", "o": ["`sts:DecodeAuthorizationMessage`", "`sts:GetCallerIdentity`", "`sts:AssumeRole`", "`sts:GetSessionToken`"], "a": [0], "multi": false, "e": "`sts:DecodeAuthorizationMessage` decodes and displays authorization failure details for permission troubleshooting.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 38, "q": "A company is connecting an external SaaS vendor to manage resources in its AWS account via an IAM role. What condition key in the role's trust policy prevents the \"Confused Deputy\" vulnerability?", "o": ["`sts:ExternalId`", "`aws:SourceIp`", "`aws:PrincipalTag`", "`aws:SecureTransport` --- ### Domain 3: Deployment (Questions 39–54)"], "a": [0], "multi": false, "e": "The `sts:ExternalId` condition prevents the Confused Deputy vulnerability during third-party cross-account role assumption.", "d_id": 2, "d_name": "Domain 2: Security (26%)"}, {"num": 39, "q": "A developer is preparing an `appspec.yml` file for deploying an application to an Amazon EC2 Auto Scaling group using AWS CodeDeploy. Which lifecycle hook is executed to start application services after software files are copied to the instance?", "o": ["`ApplicationStart`", "`BeforeInstall`", "`AfterInstall`", "`ValidateService`"], "a": [0], "multi": false, "e": "The `ApplicationStart` lifecycle hook in CodeDeploy executes scripts to start application services after files are installed.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 40, "q": "A developer is configuring an AWS CodeBuild project. Where should the build phases (`install`, `pre_build`, `build`, `post_build`), environment variables, and artifact definitions be declared?", "o": ["In a `buildspec.yml` file placed at the root of the source code repository", "In the `appspec.yaml` file", "In the Dockerfile `CMD` instruction", "In the AWS CloudTrail event log"], "a": [0], "multi": false, "e": "`buildspec.yml` placed at the repository root defines CodeBuild build phases, environment variables, and artifact outputs.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 41, "q": "A developer wants to deploy a new version of an AWS Lambda function using AWS CodeDeploy. The deployment must shift 10% of traffic to the new version, wait 10 minutes, and then shift the remaining 90% of traffic if no CloudWatch alarms trigger. Which deployment preference type should be selected?", "o": ["`LambdaCanary10Percent10Minutes`", "`LambdaLinear10PercentEvery1Minute`", "`LambdaAllAtOnce`", "`LambdaBlueGreenImmediate`"], "a": [0], "multi": false, "e": "`LambdaCanary10Percent10Minutes` shifts 10% of traffic to the new Lambda version, waits 10 minutes, and shifts the remaining 90%.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 42, "q": "A developer is defining a serverless application using the AWS Serverless Application Model (SAM). Which SAM template resource type declares a serverless Lambda function with an API Gateway event source?", "o": ["`AWS::Serverless::Function`", "`AWS::Lambda::Function`", "`AWS::Serverless::Api` only", "`AWS::EC2::Instance`"], "a": [0], "multi": false, "e": "`AWS::Serverless::Function` is the SAM resource type for declaring serverless Lambda functions and API event triggers.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 43, "q": "A developer wants to test a SAM-based serverless application locally on their developer laptop against sample event JSON files before deploying to AWS. Which SAM CLI command executes the Lambda function locally?", "o": ["`sam local invoke`", "`sam deploy --guided`", "`sam package`", "`sam build --debug`"], "a": [0], "multi": false, "e": "`sam local invoke` runs Lambda functions locally inside Docker containers against sample event payloads.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 44, "q": "A developer is writing an AWS CloudFormation template. The template needs to dynamically fetch the latest Amazon Linux 2023 AMI ID maintained by AWS in Systems Manager Parameter Store. Which CloudFormation parameter type enables this dynamic lookup?", "o": ["`AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>`", "`AWS::EC2::AMI::Latest`", "`String` with hardcoded AMI ID", "`CommaDelimitedList`"], "a": [0], "multi": false, "e": "`AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>` dynamically fetches the latest AMI ID from SSM Parameter Store during stack deployment.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 45, "q": "A developer wants to preview the exact changes that AWS CloudFormation will make to existing infrastructure resources before executing a stack update. Which CloudFormation feature generates this preview?", "o": ["CloudFormation Change Sets", "CloudFormation StackSets", "CloudFormation Drift Detection", "CloudFormation Rollback Triggers"], "a": [0], "multi": false, "e": "CloudFormation Change Sets generate a detailed preview of proposed resource modifications and replacements prior to execution.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 46, "q": "An application is deployed using AWS Elastic Beanstalk. The development team needs to deploy updates with zero downtime and ensure that new application versions are tested on a fresh fleet of instances before redirecting user traffic. If issues arise, rollback must be instantaneous via DNS swap. Which Elastic Beanstalk deployment policy should be selected?", "o": ["Blue/Green Deployment (using Swap Environment URLs)", "All-at-Once Deployment", "Rolling Deployment", "Immutable Deployment"], "a": [0], "multi": false, "e": "Blue/Green deployment using Elastic Beanstalk Swap Environment URLs provides zero-downtime deployment with instant DNS rollback.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 47, "q": "A developer is packaging an AWS Lambda function written in Node.js that depends on several large third-party npm libraries. The developer wants to reuse these shared libraries across 10 different Lambda functions without bundling them in each function's deployment zip file. What Lambda feature should be used?", "o": ["AWS Lambda Layers", "Lambda Environment Variables", "Lambda Extensions", "Amazon S3 Glacier"], "a": [0], "multi": false, "e": "AWS Lambda Layers allow sharing common dependencies, libraries, and custom runtimes across multiple Lambda functions.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 48, "q": "A continuous delivery pipeline in AWS CodePipeline fails during the deployment stage to AWS CloudFormation with the error `InsufficientCapabilitiesException`. What parameter was missing when creating the CloudFormation change set in the pipeline?", "o": ["`CAPABILITY_IAM` or `CAPABILITY_NAMED_IAM` (authorizing CloudFormation to create IAM resources)", "`CAPABILITY_AUTO_EXPAND` only", "`DISABLE_ROLLBACK`", "`FORCE_DEPLOY`"], "a": [0], "multi": false, "e": "CloudFormation requires `CAPABILITY_IAM` or `CAPABILITY_NAMED_IAM` acknowledgment when templates create or modify IAM resources.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 49, "q": "A developer is building a Docker container image in AWS CodeBuild. The build process needs to push the resulting container image to an Amazon ECR repository. What AWS CLI command authenticates the Docker CLI to the Amazon ECR registry?", "o": ["`aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.<region>.amazonaws.com`", "`docker login -u root -p password`", "`aws ecr authenticate`", "`aws iam create-login-profile`"], "a": [0], "multi": false, "e": "`aws ecr get-login-password` pipes an authentication token to `docker login` to authenticate the Docker client with ECR.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 50, "q": "A developer wants to store and version control application configuration parameters using AWS AppConfig. What capability does AWS AppConfig provide to prevent bad configurations from causing outages?", "o": ["Deployment Strategies with gradual rollout percentages, baking periods, and automated CloudWatch Alarm rollbacks", "Automatic compilation of C++ source code", "Database indexing", "DNS health checking"], "a": [0], "multi": false, "e": "AWS AppConfig provides deployment strategies with gradual traffic rollouts, baking periods, and automated CloudWatch alarm rollbacks.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 51, "q": "A developer is configuring an AWS CodeDeploy deployment for an Amazon ECS service. Which deployment configuration shifts traffic from the original task set to the replacement task set in two increments?", "o": ["`CodeDeployDefault.ECSCanary10Percent5Minutes`", "`CodeDeployDefault.ECSAllAtOnce`", "`CodeDeployDefault.OneAtATime`", "`CodeDeployDefault.HalfAtATime`"], "a": [0], "multi": false, "e": "`ECSCanary10Percent5Minutes` shifts 10% of traffic to the replacement ECS task set, waits 5 minutes, and shifts the remainder.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 52, "q": "In an AWS CloudFormation template, what intrinsic function is used to concatenate strings and reference resource attributes together (e.g., creating an S3 bucket name dynamically as `my-app-prod-us-east-1`)?", "o": ["`!Sub` (or `Fn::Sub` / `!Join`)", "`!Ref`", "`!GetAtt`", "`!Select`"], "a": [0], "multi": false, "e": "`!Sub` (or `Fn::Sub`) substitutes variables and concatenates strings dynamically in CloudFormation templates.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 53, "q": "A developer wants to detect whether manual changes were made to AWS infrastructure resources outside of AWS CloudFormation management. Which CloudFormation feature detects discrepancies between the template configuration and actual live resource properties?", "o": ["CloudFormation Drift Detection", "CloudFormation Change Sets", "CloudFormation StackSets", "CloudFormation Rollback"], "a": [0], "multi": false, "e": "CloudFormation Drift Detection identifies differences between the expected template configuration and actual live resource properties.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 54, "q": "An application is deployed to an Amazon ECS cluster running on AWS Fargate. What configuration in the ECS Task Definition specifies the CPU and memory limits allocated to the serverless container task?", "o": ["Task-level `cpu` and `memory` parameters (e.g., `cpu: \"256\"`, `memory: \"512\"`)", "The EC2 instance type in the Auto Scaling group", "The VPC subnet CIDR size", "The Dockerfile `EXPOSE` port --- ### Domain 4: Troubleshooting & Optimization (Questions 55–65)"], "a": [0], "multi": false, "e": "Task-level `cpu` and `memory` parameters in ECS Task Definitions specify compute limits for Fargate tasks.", "d_id": 3, "d_name": "Domain 3: Deployment (24%)"}, {"num": 55, "q": "An application encounters an HTTP 502 Bad Gateway error when users invoke an Amazon API Gateway REST API backed by an AWS Lambda function with Lambda Proxy Integration. CloudWatch logs show the Lambda function executed successfully. What is the root cause?", "o": ["The Lambda function returned a response payload that did not match the expected API Gateway proxy format (missing `statusCode`, `headers`, or stringified `body`)", "The Lambda function ran out of memory", "API Gateway timed out after 29 seconds", "S3 bucket public access was blocked"], "a": [0], "multi": false, "e": "Lambda Proxy integration requires returning a specific JSON object (`statusCode`, `headers`, `body`); returning raw strings causes HTTP 502.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 56, "q": "An application querying an Amazon DynamoDB table receives frequent `ProvisionedThroughputExceededException` errors during peak traffic. Monitoring reveals that total consumed capacity is well below the table's total provisioned limits. What is the root cause?", "o": ["A hot partition caused by an uneven distribution of read/write traffic across partition keys", "The DynamoDB table is encrypted with KMS", "The table has too many Local Secondary Indexes", "The application is using eventually consistent reads"], "a": [0], "multi": false, "e": "A hot partition occurs when access patterns concentrate on a narrow key range, exceeding single-partition throughput limits.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 57, "q": "A developer is investigating an issue where requests to a microservices application experience high latency. The architecture includes API Gateway, Lambda, and DynamoDB. Which AWS tool provides a visual Service Map displaying nodes color-coded by error rate and latency to pinpoint the exact bottleneck?", "o": ["AWS X-Ray Service Map", "Amazon CloudWatch Dashboards", "AWS CloudTrail Event History", "Amazon Inspector"], "a": [0], "multi": false, "e": "AWS X-Ray Service Maps visually display interconnected service nodes, latency metrics, and error rates to pinpoint bottlenecks.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 58, "q": "In AWS X-Ray, what is the difference between an Annotation and Metadata attached to a trace segment?", "o": ["Annotations are indexed key-value pairs that can be searched and used with filter expressions in the X-Ray console; Metadata is non-indexed contextual debugging data that cannot be searched across traces", "Metadata is indexed; Annotations are not", "Annotations can only contain numbers; Metadata contains strings", "Annotations are deleted after 5 minutes"], "a": [0], "multi": false, "e": "Annotations are indexed and searchable; Metadata is non-indexed contextual debugging data visible on individual traces.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 59, "q": "A developer writes a query in Amazon CloudWatch Logs Insights to find the 20 slowest requests in an application log group. Which query syntax accomplishes this?", "o": ["``` fields @timestamp, requestId, latencyMs | filter latencyMs > 1000 | sort latencyMs desc | limit 20 ```", "`select * from logs where latency > 1000 order by latency desc limit 20`", "`find slowest 20`", "`get logs --slow`"], "a": [0], "multi": false, "e": "The query filters for `latencyMs > 1000`, sorts descending, and limits results to 20 rows in CloudWatch Logs Insights.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 60, "q": "An application logs error events in structured JSON: `{\"statusCode\": 500, \"errorType\": \"DatabaseTimeout\", \"service\": \"orders\"}`. Which CloudWatch feature extracts a custom metric `OrderDatabaseErrors` from these logs in real time as they arrive?", "o": ["CloudWatch Logs Metric Filters", "CloudWatch Synthetics", "CloudWatch Metric Math", "Amazon Athena"], "a": [0], "multi": false, "e": "CloudWatch Logs Metric Filters scan incoming log lines for patterns and extract custom metrics to graph and alarm on.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 61, "q": "A developer wants to record custom business metrics (such as `CompletedOrders` and `OrderValue`) from an AWS Lambda function with zero additional network latency and without incurring `PutMetricData` per-call API fees. Which pattern should be implemented?", "o": ["CloudWatch Embedded Metric Format (EMF) outputting structured JSON with an `_aws` metadata object to standard output", "Synchronous `PutMetricData` API calls inside the handler loop", "Writing metrics to local `/tmp` and deleting them on exit", "Sending metrics via Amazon SES email"], "a": [0], "multi": false, "e": "Embedded Metric Format (EMF) extracts custom metrics asynchronously from JSON logs without `PutMetricData` API fees or latency.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 62, "q": "A developer needs to audit who deleted an Amazon DynamoDB table at 2:00 AM on a weekend. Which AWS service records the IAM identity, API action (`DeleteTable`), timestamp, source IP address, and request parameters?", "o": ["AWS CloudTrail", "Amazon CloudWatch Logs", "AWS X-Ray", "Amazon CodeGuru Profiler"], "a": [0], "multi": false, "e": "AWS CloudTrail records an authoritative audit log of control-plane API activity, including identity, API action, timestamp, and IP.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 63, "q": "An application running on Amazon ECS consumes 95% CPU under normal load. The developer wants a visual flame graph identifying the exact methods and lines of code consuming the most CPU cycles at runtime. Which AWS service provides this profiling?", "o": ["Amazon CodeGuru Profiler", "Amazon CodeGuru Reviewer", "AWS CloudTrail", "AWS Trusted Advisor"], "a": [0], "multi": false, "e": "Amazon CodeGuru Profiler generates runtime flame graphs identifying specific CPU-intensive methods in running applications.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 64, "q": "A developer is testing an AWS Lambda function attached to a VPC that queries an Amazon ElastiCache for Redis cluster in private subnets. The function invocation times out after 15 seconds. What is the most common misconfiguration?", "o": ["The ElastiCache Security Group does not allow inbound TCP traffic on port 6379 from the Lambda function's Security Group", "Redis does not support VPC connections", "Lambda functions cannot access ElastiCache", "ElastiCache requires an Internet Gateway"], "a": [0], "multi": false, "e": "Connection timeouts to ElastiCache are typically caused by missing inbound rules on port 6379 in the Redis Security Group.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}, {"num": 65, "q": "An application calling an external AWS API receives an HTTP 429 Too Many Requests status code (`ThrottlingException`). What retry strategy should the developer implement in the client application code?", "o": ["Exponential backoff with full jitter", "Immediate retries in an infinite loop with zero delay", "Crashing the application process", "Hardcoding a fixed 1-second sleep before retrying once"], "a": [0], "multi": false, "e": "HTTP 429 / `ThrottlingException` errors should be handled by retrying with exponential backoff and jitter.", "d_id": 4, "d_name": "Domain 4: Troubleshooting & Optimization (18%)"}];
+let currentIndex = 0;
+let userAnswers = {}; // qIndex -> [selected indices]
+let flagged = new Set();
+let timeLeft = 130 * 60; // 130 minutes in seconds
+let timerInterval = null;
+let examSubmitted = false;
+
+function init() {
+  renderNavGrid();
+  loadQuestion(0);
+  startTimer();
+
+  document.getElementById('prevBtn').onclick = () => { if (currentIndex > 0) loadQuestion(currentIndex - 1); };
+  document.getElementById('nextBtn').onclick = () => { if (currentIndex < questions.length - 1) loadQuestion(currentIndex + 1); };
+  document.getElementById('flagBtn').onclick = toggleFlag;
+  document.getElementById('finishExamBtn').onclick = confirmSubmit;
+}
+
+function startTimer() {
+  const display = document.getElementById('timerDisplay');
+  timerInterval = setInterval(() => {
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      submitExam();
+      return;
+    }
+    timeLeft--;
+    const mins = Math.floor(timeLeft / 60);
+    const secs = timeLeft % 60;
+    display.textContent = `⏳ ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+    if (timeLeft <= 900) display.className = 'timer-box timer-warning';
+    if (timeLeft <= 300) display.className = 'timer-box timer-danger';
+  }, 1000);
+}
+
+function renderNavGrid() {
+  const grid = document.getElementById('navGrid');
+  grid.innerHTML = '';
+  questions.forEach((q, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'nav-btn';
+    btn.textContent = idx + 1;
+    btn.onclick = () => loadQuestion(idx);
+    grid.appendChild(btn);
+  });
+}
+
+function updateNavGrid() {
+  const btns = document.querySelectorAll('.nav-btn');
+  btns.forEach((btn, idx) => {
+    btn.className = 'nav-btn';
+    if (idx === currentIndex) btn.classList.add('active');
+    if (userAnswers[idx] && userAnswers[idx].length > 0) btn.classList.add('answered');
+    if (flagged.has(idx)) btn.classList.add('flagged');
+  });
+}
+
+function loadQuestion(idx) {
+  currentIndex = idx;
+  const q = questions[idx];
+
+  document.getElementById('qNumber').textContent = `Question ${idx + 1} of ${questions.length}`;
+  document.getElementById('domainBadge').textContent = q.d_name;
+  document.getElementById('qStem').textContent = q.q;
+
+  const flagBtn = document.getElementById('flagBtn');
+  flagBtn.className = flagged.has(idx) ? 'btn btn-flag active' : 'btn btn-flag';
+
+  const container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+
+  const selected = userAnswers[idx] || [];
+
+  q.o.forEach((opt, optIdx) => {
+    const item = document.createElement('div');
+    item.className = 'option-item' + (selected.includes(optIdx) ? ' selected' : '');
+    const letter = String.fromCharCode(65 + optIdx);
+    item.innerHTML = `<span class="opt-label">${letter})</span><span class="opt-text">${opt}</span>`;
+    item.onclick = () => selectOption(idx, optIdx, q.multi);
+    container.appendChild(item);
+  });
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').textContent = (idx === questions.length - 1) ? 'Review & Submit' : 'Next';
+  updateNavGrid();
+}
+
+function selectOption(qIdx, optIdx, isMulti) {
+  if (examSubmitted) return;
+  if (!userAnswers[qIdx]) userAnswers[qIdx] = [];
+
+  if (isMulti) {
+    const pos = userAnswers[qIdx].indexOf(optIdx);
+    if (pos > -1) userAnswers[qIdx].splice(pos, 1);
+    else userAnswers[qIdx].push(optIdx);
+  } else {
+    userAnswers[qIdx] = [optIdx];
+  }
+  loadQuestion(qIdx);
+}
+
+function toggleFlag() {
+  if (flagged.has(currentIndex)) flagged.delete(currentIndex);
+  else flagged.add(currentIndex);
+  loadQuestion(currentIndex);
+}
+
+function confirmSubmit() {
+  const answeredCount = Object.keys(userAnswers).filter(k => userAnswers[k].length > 0).length;
+  const unanswered = questions.length - answeredCount;
+  const msg = unanswered > 0 
+    ? `You have ${unanswered} unanswered questions. Are you sure you want to submit?`
+    : 'Are you ready to submit your exam and view your score?';
+  if (confirm(msg)) submitExam();
+}
+
+function submitExam() {
+  examSubmitted = true;
+  clearInterval(timerInterval);
+
+  document.getElementById('examContainer').style.display = 'none';
+  document.getElementById('resultsContainer').style.display = 'block';
+
+  let totalCorrect = 0;
+  const domainStats = {
+    1: { name: 'Domain 1: Development with AWS Services (32%)', total: 0, correct: 0 },
+    2: { name: 'Domain 2: Security (26%)', total: 0, correct: 0 },
+    3: { name: 'Domain 3: Deployment (24%)', total: 0, correct: 0 },
+    4: { name: 'Domain 4: Troubleshooting & Optimization (18%)', total: 0, correct: 0 }
+  };
+
+  questions.forEach((q, idx) => {
+    domainStats[q.d_id].total++;
+    const userSel = (userAnswers[idx] || []).sort();
+    const correctAns = (q.a || []).sort();
+
+    const isCorrect = userSel.length === correctAns.length && userSel.every((val, i) => val === correctAns[i]);
+    if (isCorrect) {
+      totalCorrect++;
+      domainStats[q.d_id].correct++;
+    }
+  });
+
+  // Scaled Score: 100 to 1000 scale
+  const rawPct = (totalCorrect / questions.length);
+  const scaledScore = Math.round(100 + rawPct * 900);
+  const passed = scaledScore >= 720;
+
+  document.getElementById('scoreNumber').textContent = scaledScore;
+  document.getElementById('scoreSummary').textContent = `${totalCorrect} / ${questions.length} correct (${Math.round(rawPct * 100)}%)`;
+
+  const badge = document.getElementById('passBadge');
+  badge.textContent = passed ? 'PASSED' : 'FAILED';
+  badge.className = passed ? 'pass-badge pass' : 'pass-badge fail';
+
+  // Domain breakdown table
+  const tbody = document.getElementById('domainBreakdownBody');
+  tbody.innerHTML = '';
+  Object.keys(domainStats).forEach(dId => {
+    const d = domainStats[dId];
+    const pct = d.total > 0 ? Math.round((d.correct / d.total) * 100) : 0;
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td style="font-weight:600;">${d.name}</td>
+      <td>${dId == 1 ? '32%' : dId == 2 ? '26%' : dId == 3 ? '24%' : '18%'}</td>
+      <td>${d.correct} / ${d.total}</td>
+      <td style="font-weight:700; color:${pct >= 72 ? 'var(--correct)' : 'var(--incorrect)'};">${pct}%</td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  // Review List
+  const reviewList = document.getElementById('reviewList');
+  reviewList.innerHTML = '';
+  questions.forEach((q, idx) => {
+    const userSel = (userAnswers[idx] || []).sort();
+    const correctAns = (q.a || []).sort();
+    const isCorrect = userSel.length === correctAns.length && userSel.every((val, i) => val === correctAns[i]);
+
+    const card = document.createElement('div');
+    card.className = 'review-item';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+        <span style="font-weight:700; color:${isCorrect ? 'var(--correct)' : 'var(--incorrect)'};">
+          ${isCorrect ? '✓ Correct' : '✗ Incorrect'} — Question ${idx + 1}
+        </span>
+        <span class="domain-badge">${q.d_name}</span>
+      </div>
+      <div style="font-size:0.95rem; margin-bottom:0.75rem; color:#f1f5f9;">${q.q}</div>
+      <div style="font-size:0.875rem; color:var(--text-secondary);">
+        <strong>Your Answer:</strong> ${userSel.map(i => String.fromCharCode(65 + i)).join(', ') || 'None'}<br>
+        <strong>Correct Answer:</strong> ${correctAns.map(i => String.fromCharCode(65 + i)).join(', ')}
+      </div>
+      <div class="explanation-box">
+        <strong>Explanation:</strong> ${q.e}
+      </div>
+    `;
+    reviewList.appendChild(card);
+  });
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
