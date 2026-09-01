@@ -77,7 +77,7 @@ Status legend: ✅ complete (all 3 files) · 🟡 partial (see note) · ⬜ not 
 - [x] ✅ 08 — Relational & In-Memory Databases (RDS, Aurora, ElastiCache, MemoryDB)
 - [x] ✅ 09 — Caching Strategies & Performance
 - [x] ✅ 10 — CI/CD & Developer Tooling (CodeCommit, CodeBuild, CodeDeploy, CodePipeline, CodeArtifact, CodeStar, AppConfig)
-- [ ] 🟡 11 — Elastic Beanstalk, Amplify & Copilot — notes.md done, needs questions.md + quiz.html
+- [x] ✅ 11 — Elastic Beanstalk, Amplify & Copilot
 - [x] ✅ 12 — Containers (ECS, ECR, Fargate, EKS)
 - [ ] 🟡 13 — IaC (CloudFormation, SAM, CDK) — notes.md done, needs questions.md + quiz.html
 - [ ] ⬜ 14 — Security Deep Dive (IAM, KMS, Secrets Manager, Cognito, STS, ACM, WAF) — not started, biggest remaining module
