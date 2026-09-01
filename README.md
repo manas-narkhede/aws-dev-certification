@@ -68,17 +68,17 @@ Status legend: ✅ complete (all 3 files) · 🟡 partial (see note) · ⬜ not 
 
 - [x] ✅ 00 — Exam Overview & AWS Fundamentals
 - [x] ✅ 01 — EC2 & Compute Basics
-- [ ] 🟡 02 — S3 & Storage — notes.md done, needs questions.md + quiz.html
-- [ ] 🟡 03 — DynamoDB — notes.md done, needs questions.md + quiz.html
-- [ ] 🟡 04 — App Design Patterns & AWS Lambda — notes.md done, needs questions.md + quiz.html
-- [ ] 🟡 05 — API Gateway & AppSync — notes.md + questions.md done (142 Q), needs quiz.html
-- [ ] 🟡 06 — Messaging, Streaming & Analytics (SQS, SNS, EventBridge, Kinesis, Athena, OpenSearch) — notes.md + questions.md done (134 Q), needs quiz.html
-- [ ] 🟡 07 — Step Functions & Orchestration — notes.md + questions.md done (125 Q), needs quiz.html
-- [ ] 🟡 08 — Relational & In-Memory Databases (RDS, Aurora, ElastiCache, MemoryDB) — notes.md done, needs questions.md + quiz.html
+- [x] ✅ 02 — S3 & Storage
+- [x] ✅ 03 — DynamoDB
+- [x] ✅ 04 — App Design Patterns & AWS Lambda
+- [x] ✅ 05 — API Gateway & AppSync
+- [x] ✅ 06 — Messaging, Streaming & Analytics (SQS, SNS, EventBridge, Kinesis, Athena, OpenSearch)
+- [x] ✅ 07 — Step Functions & Orchestration
+- [x] ✅ 08 — Relational & In-Memory Databases (RDS, Aurora, ElastiCache, MemoryDB)
 - [ ] 🟡 09 — Caching Strategies & Performance — notes.md done, needs questions.md + quiz.html
-- [ ] 🟡 10 — CI/CD & Developer Tooling (CodeCommit, CodeBuild, CodeDeploy, CodePipeline, CodeArtifact, CodeStar, AppConfig) — notes.md + questions.md done (135 Q), needs quiz.html
+- [x] ✅ 10 — CI/CD & Developer Tooling (CodeCommit, CodeBuild, CodeDeploy, CodePipeline, CodeArtifact, CodeStar, AppConfig)
 - [ ] 🟡 11 — Elastic Beanstalk, Amplify & Copilot — notes.md done, needs questions.md + quiz.html
-- [ ] 🟡 12 — Containers (ECS, ECR, Fargate, EKS) — notes.md + questions.md done (123 Q), needs quiz.html
+- [x] ✅ 12 — Containers (ECS, ECR, Fargate, EKS)
 - [ ] 🟡 13 — IaC (CloudFormation, SAM, CDK) — notes.md done, needs questions.md + quiz.html
 - [ ] ⬜ 14 — Security Deep Dive (IAM, KMS, Secrets Manager, Cognito, STS, ACM, WAF) — not started, biggest remaining module
 - [ ] 🟡 15 — Networking for Developers (VPC, Route 53, CloudFront) — notes.md done, needs questions.md + quiz.html
