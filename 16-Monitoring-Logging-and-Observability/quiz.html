@@ -1,0 +1,1922 @@
+<title>Monitoring, Logging & Observability Quiz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eceeec; --ink:#141a1f; --muted:#5c6670;
+  --border:#dde1de; --accent:#0d7377; --accent-ink:#ffffff; --accent-soft:#e3f1f0;
+  --success:#1f8a44; --success-bg:#e5f6ea; --success-border:#a9dfb8;
+  --danger:#c8402f; --danger-bg:#fbe9e6; --danger-border:#f0b8ac;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+    --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+    --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+    --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+  --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+  --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+  --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+}
+*{box-sizing:border-box;}
+body{background:var(--bg); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;}
+.wrap{max-width:760px; margin:0 auto; padding:28px 20px 80px;}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600;}
+h1{font-size:22px; font-weight:800; margin:4px 0 18px; text-wrap:balance; letter-spacing:-.01em;}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px; flex-wrap:wrap;}
+.stat{display:flex; flex-direction:column; align-items:flex-end;}
+.stat .num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:18px; font-weight:600;}
+.stat .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+.progress-track{height:8px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin:14px 0 28px; border:1px solid var(--border);}
+.progress-fill{height:100%; background:var(--accent); border-radius:999px; transition:width .35s ease;}
+@media (prefers-reduced-motion: reduce){ .progress-fill{transition:none;} }
+
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px; box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.qnum{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin-bottom:10px;}
+.qtext{font-size:16.5px; font-weight:600; line-height:1.55; margin-bottom:20px; text-wrap:balance;}
+.multi-hint{display:inline-block; font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:999px; padding:3px 10px; margin-bottom:14px;}
+
+.opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:13px 14px; margin-bottom:10px; cursor:pointer; font:inherit; color:var(--ink); font-size:14.5px; line-height:1.5; transition:border-color .15s, background .15s;}
+.opt:hover{border-color:var(--accent);}
+.opt:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+.opt .mark{flex:0 0 22px; height:22px; border-radius:6px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--muted); margin-top:1px;}
+.opt.selected{border-color:var(--accent); background:var(--accent-soft);}
+.opt.selected .mark{border-color:var(--accent); color:var(--accent);}
+.opt.correct{border-color:var(--success-border); background:var(--success-bg);}
+.opt.correct .mark{border-color:var(--success); color:var(--success); background:var(--success-bg);}
+.opt.incorrect{border-color:var(--danger-border); background:var(--danger-bg);}
+.opt.incorrect .mark{border-color:var(--danger); color:var(--danger); background:var(--danger-bg);}
+.opt:disabled{cursor:default;}
+.opt:disabled:hover{border-color:var(--border);}
+.opt.correct:hover, .opt.incorrect:hover{border-color:inherit;}
+
+.actions{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+button.btn{font:inherit; font-weight:700; font-size:14px; border-radius:9px; padding:11px 18px; cursor:pointer; border:1.5px solid transparent;}
+.btn-primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+.btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+.btn-ghost{background:transparent; color:var(--ink); border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--accent);}
+button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+.explain{margin-top:16px; padding:14px 16px; border-radius:10px; font-size:14px; line-height:1.55; border:1px solid var(--border); background:var(--surface-2);}
+.explain b{color:var(--accent);}
+
+.summary{text-align:center; padding:10px 0 20px;}
+.score-big{font-family:"IBM Plex Mono",monospace; font-size:52px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+.score-pct{color:var(--muted); font-size:15px; margin-top:2px;}
+.score-pct.pass{color:var(--success); font-weight:700;}
+.score-pct.fail{color:var(--danger); font-weight:700;}
+.miss-list{margin-top:28px; text-align:left; border-top:1px solid var(--border); padding-top:20px;}
+.miss-list h3{font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:12px; font-family:"IBM Plex Mono",monospace;}
+.miss-item{padding:10px 12px; background:var(--surface-2); border-radius:8px; margin-bottom:8px; font-size:13.5px; line-height:1.45; border-left:3px solid var(--danger);}
+.miss-item b{color:var(--ink);}
+
+.footer-note{text-align:center; color:var(--muted); font-size:12px; margin-top:24px; font-family:"IBM Plex Mono",monospace;}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Module 16 • Practice Quiz</div>
+      <h1>Monitoring, Logging & Observability Quiz</h1>
+    </div>
+    <div class="stat">
+      <span class="num" id="posNum">1 / 125</span>
+      <span class="lbl">Question</span>
+    </div>
+    <div class="stat">
+      <span class="num" id="scoreNum">0</span>
+      <span class="lbl">Correct</span>
+    </div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <div id="quizArea"></div>
+  <div class="footer-note">Progress is saved automatically in this browser. Use 1–5 or A–E on your keyboard to answer.</div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    "q": "A developer is designing a monitoring strategy for an e-commerce platform hosted on AWS. The application needs to track both AWS infrastructure metrics (such as EC2 CPU utilization) and application business metrics (such as completed checkout transactions). In Amazon CloudWatch, what concept isolates and groups related metrics together to prevent naming collisions?",
+    "o": [
+      "Metric Dimensions",
+      "Metric Namespaces",
+      "Log Streams",
+      "CloudWatch Dashboards"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Namespaces isolate and group related metrics in CloudWatch, preventing naming collisions between services."
+  },
+  {
+    "q": "Which prefix is reserved exclusively for metrics automatically published by AWS services in Amazon CloudWatch?",
+    "o": [
+      "`Custom/`",
+      "`AWS/` (e.g., `AWS/Lambda`, `AWS/EC2`, `AWS/DynamoDB`)",
+      "`System/`",
+      "`Amazon/`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `AWS/` prefix (e.g., `AWS/Lambda`, `AWS/EC2`) is reserved exclusively for metrics published by AWS services."
+  },
+  {
+    "q": "In Amazon CloudWatch, an engineer wants to track error rates separately for different microservices deployed in different environments (e.g., `Environment=Production`, `Service=PaymentService`). What CloudWatch metric component represents these key-value metadata qualifiers?",
+    "o": [
+      "Namespaces",
+      "Dimensions",
+      "Units",
+      "Math Expressions"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Dimensions are key-value pairs that uniquely identify and qualify a metric within a namespace."
+  },
+  {
+    "q": "A developer publishes a custom metric named `LoginFailures` with two dimensions: `Environment=Prod` and `Region=us-east-1`. Later, the developer publishes the same metric with only one dimension: `Environment=Prod`. How does Amazon CloudWatch treat these two data streams?",
+    "o": [
+      "It aggregates them automatically into a single metric",
+      "It treats them as two completely separate, independent metrics because CloudWatch uniquely identifies metrics by the combination of namespace, metric name, and exact dimension set",
+      "It rejects the second metric with an `InvalidParameterException`",
+      "It overwrites the first metric"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudWatch uniquely identifies metrics by the combination of namespace, metric name, and exact dimension set; differing dimensions create separate metrics."
+  },
+  {
+    "q": "Auditing control-plane API activity for compliance. Which combination of AWS services correctly satisfies these requirements?",
+    "o": [
+      "AWS X-Ray (tracing) + CloudWatch Embedded Metric Format (logging & metrics) + CloudWatch Logs Insights (log querying) + AWS CloudTrail (audit logging)",
+      "CloudWatch Alarms only for all four requirements",
+      "AWS CloudTrail for tracing and metrics + AWS CodeGuru for log querying + Amazon S3 for auditing",
+      "Amazon Athena for tracing + AWS Secrets Manager for metrics + Amazon Route 53 for querying"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudWatch uniquely identifies metrics by the combination of namespace, metric name, and exact dimension set; differing dimensions create separate metrics."
+  },
+  {
+    "q": "A financial trading system needs to detect and alarm on rapid latency spikes occurring within a 5-second window. Standard CloudWatch metrics publish at a default 1-minute granularity. Which feature should the developer enable to publish and evaluate metrics at 1-second intervals?",
+    "o": [
+      "CloudWatch High-Resolution Metrics",
+      "CloudWatch Basic Monitoring",
+      "AWS CloudTrail Data Events",
+      "Amazon Athena High-Throughput Engine"
+    ],
+    "a": [
+      0
+    ],
+    "e": "High-Resolution Custom Metrics allow publishing and evaluating metric data points down to 1-second intervals."
+  },
+  {
+    "q": "What is the minimum storage resolution available for Amazon CloudWatch High-Resolution Custom Metrics?",
+    "o": [
+      "1 millisecond",
+      "1 second",
+      "5 seconds",
+      "1 minute"
+    ],
+    "a": [
+      1
+    ],
+    "e": "1 second is the finest storage resolution supported for high-resolution metrics in CloudWatch."
+  },
+  {
+    "q": "How does Amazon CloudWatch handle data retention for metrics over time?",
+    "o": [
+      "All metrics are permanently deleted after 24 hours",
+      "CloudWatch retains metric data at decreasing granularity: 1-second data for 3 hours, 1-minute data for 15 days, 5-minute data for 63 days, and 1-hour data for 15 months",
+      "Metrics are retained indefinitely at 1-second resolution without data aggregation",
+      "Metric retention requires configuring an S3 lifecycle policy"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudWatch retains metrics at decreasing granularity: 1s for 3h, 1m for 15d, 5m for 63d, and 1h for 15 months."
+  },
+  {
+    "q": "A developer wants an automated notification sent to an on-call team's email address whenever an application's HTTP 5xx error rate exceeds 2% over a 5-minute evaluation period. What AWS service combination achieves this?",
+    "o": [
+      "Amazon CloudWatch Alarm triggering an Amazon SNS Topic subscription",
+      "AWS CloudTrail triggering Amazon SES directly",
+      "Amazon S3 Event Notifications",
+      "AWS CodeArtifact Webhooks"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A CloudWatch Alarm watching metric thresholds publishes messages to an Amazon SNS topic, notifying subscribers via email or SMS."
+  },
+  {
+    "q": "What are the three possible operational states of an Amazon CloudWatch Alarm?",
+    "o": [
+      "`ACTIVE`, `INACTIVE`, `PENDING`",
+      "`OK`, `ALARM`, `INSUFFICIENT_DATA`",
+      "`PASS`, `FAIL`, `UNKNOWN`",
+      "`HEALTHY`, `DEGRADED`, `CRITICAL`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The three standard operational states for a CloudWatch alarm are `OK`, `ALARM`, and `INSUFFICIENT_DATA`."
+  },
+  {
+    "q": "When a newly created CloudWatch alarm has not yet received any metric data points from a newly deployed application, what state does the alarm enter by default?",
+    "o": [
+      "`OK`",
+      "`ALARM`",
+      "`INSUFFICIENT_DATA`",
+      "`ERROR`"
+    ],
+    "a": [
+      2
+    ],
+    "e": "Alarms start in `INSUFFICIENT_DATA` until enough metric data points are received to determine status."
+  },
+  {
+    "q": "An operations engineer is experiencing alert fatigue because intermittent network blips trigger individual alarms that page the on-call engineer. The engineer wants an alert triggered ONLY when BOTH the CPU utilization exceeds 85% AND the application error rate exceeds 5% simultaneously. Which CloudWatch feature satisfies this requirement?",
+    "o": [
+      "Metric Math Expressions",
+      "CloudWatch Composite Alarms",
+      "CloudWatch Anomaly Detection",
+      "High-Resolution Alarms"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Composite Alarms evaluate multiple underlying alarms using logical AND/OR conditions to reduce alert noise."
+  },
+  {
+    "q": "Which actions can be triggered directly by an Amazon CloudWatch Alarm when transitioning to the `ALARM` state? (Select TWO.)",
+    "o": [
+      "Publishing a message to an Amazon SNS topic",
+      "Executing an Auto Scaling policy to scale out or scale in an Auto Scaling group",
+      "Compiling code in AWS CodeBuild",
+      "Creating an AWS CodeCommit repository",
+      "Initializing an AWS Amplify hosting branch"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "CloudWatch Alarms can trigger SNS notifications, Auto Scaling actions, and EC2 instance actions directly."
+  },
+  {
+    "q": "An application running on an Amazon EC2 instance becomes unresponsive due to memory leaks. The operations team wants CloudWatch to automatically reboot the EC2 instance when a custom memory alarm enters the `ALARM` state. What action type can be attached to the alarm?",
+    "o": [
+      "EC2 Action (`Reboot this instance`)",
+      "SQS Action",
+      "S3 Glacier Action",
+      "Route 53 Action"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Alarms can execute EC2 actions directly, such as rebooting, stopping, terminating, or recovering instances."
+  },
+  {
+    "q": "A developer wants to create a single cross-region dashboard in the AWS Management Console that displays CPU utilization of EC2 instances in `us-east-1` alongside Lambda duration metrics in `eu-west-1`. Does Amazon CloudWatch Dashboards support this?",
+    "o": [
+      "No, dashboards are strictly locked to a single AWS Region",
+      "Yes, CloudWatch Dashboards can visualize metrics and alarms from multiple AWS Regions on a single customized board",
+      "Only if the accounts are in AWS GovCloud",
+      "Only when using third-party Grafana plugins"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudWatch Dashboards can display metrics, alarms, and Logs Insights widgets from multiple AWS Regions on a single board."
+  },
+  {
+    "q": "What is the primary difference between a CloudWatch Dashboard and a CloudWatch Alarm?",
+    "o": [
+      "A Dashboard is a visual monitoring interface for human observation across metrics, while an Alarm is an automated evaluation engine that triggers actions when metrics breach thresholds",
+      "Dashboards can send SMS notifications; Alarms cannot",
+      "Alarms are only available for EC2; Dashboards are only for S3",
+      "Dashboards only retain data for 1 hour"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Dashboards provide visual displays for human operators; Alarms evaluate thresholds and execute automated actions."
+  },
+  {
+    "q": "A developer uses CloudWatch Metric Math to calculate the percentage of failed requests in an API. What expression calculates the error percentage given metrics `Errors` (m1) and `TotalRequests` (m2)?",
+    "o": [
+      "`(m1 / m2) * 100`",
+      "`m1 + m2`",
+      "`SUM(m1) - SUM(m2)`",
+      "`DIFF(m1, m2)`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Metric Math supports arithmetic expressions like `(m1 / m2) * 100` to calculate error percentages."
+  },
+  {
+    "q": "What feature in Amazon CloudWatch uses machine learning models to automatically establish a dynamic expected baseline for a metric and detect abnormal spikes or drops without hardcoded threshold numbers?",
+    "o": [
+      "CloudWatch Metric Math",
+      "CloudWatch Anomaly Detection",
+      "CloudWatch Contributor Insights",
+      "CloudWatch Evidently"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudWatch Anomaly Detection applies machine learning algorithms to continuously analyze metric patterns and detect abnormal deviations."
+  },
+  {
+    "q": "An application needs to track the top 100 most active IP addresses generating traffic to an API Gateway endpoint. Which CloudWatch feature analyzes high-cardinality log data in real-time to identify top talkers and outliers?",
+    "o": [
+      "CloudWatch Contributor Insights",
+      "CloudWatch Synthetics",
+      "AWS CloudTrail Lake",
+      "Amazon Inspector"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Contributor Insights analyzes high-cardinality log data in real-time to identify top talkers and contributors."
+  },
+  {
+    "q": "A developer wants to simulate user traffic by running automated, scheduled headless browser scripts against a web application to verify that login flows and checkout buttons are functioning properly 24/7. Which CloudWatch feature provides this synthetic monitoring capability?",
+    "o": [
+      "CloudWatch Synthetics Canaries",
+      "CloudWatch ServiceLens",
+      "CloudWatch Metric Filters",
+      "CloudWatch Logs Insights"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Synthetics Canaries run automated, scheduled browser scripts to verify user workflows and endpoints 24/7."
+  },
+  {
+    "q": "A developer needs to publish 20 distinct data points to Amazon CloudWatch in a single API call to optimize network efficiency. Which AWS CLI command and parameter should be used?",
+    "o": [
+      "`aws cloudwatch put-metric-data --namespace \"MyApp\" --metric-data file://metrics.json`",
+      "`aws cloudwatch send-metrics`",
+      "`aws cloudwatch write-log-events`",
+      "`aws cloudwatch post-data`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`aws cloudwatch put-metric-data` submits multiple metric data points in a single API call using a JSON payload."
+  },
+  {
+    "q": "What is the maximum number of metric data points that can be submitted in a single `PutMetricData` API call in Amazon CloudWatch?",
+    "o": [
+      "100 data points (or up to 1 MB payload size)",
+      "1 data point",
+      "1,000,000 data points",
+      "Unlimited"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`PutMetricData` supports up to 100 metric data points (or 1 MB payload size) in a single request."
+  },
+  {
+    "q": "A developer wants to publish custom memory and disk utilization metrics from an Amazon EC2 Linux instance to CloudWatch. Why are these metrics not published by default by AWS?",
+    "o": [
+      "CloudWatch only monitors network cards",
+      "Memory and disk space are operating system-level guest metrics; the underlying hypervisor cannot inspect guest OS memory without an in-guest agent",
+      "Linux disables all monitoring APIs by default",
+      "EC2 instances do not support memory metrics"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Memory and disk utilization are guest OS metrics that the hypervisor cannot inspect without an in-guest agent."
+  },
+  {
+    "q": "Which software agent must be installed and configured on Amazon EC2 instances or on-premises servers to collect internal OS metrics (memory, disk usage, swap) and custom application log files, streaming them to CloudWatch?",
+    "o": [
+      "Unified Amazon CloudWatch Agent",
+      "AWS CodeDeploy Agent",
+      "AWS Systems Manager SSM Agent only",
+      "Amazon Kinesis Agent only"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The Unified CloudWatch Agent collects system-level metrics (memory, disk, swap) and log files from EC2 instances and on-premises servers."
+  },
+  {
+    "q": "Where does the unified CloudWatch Agent store its configuration file on a Linux EC2 instance?",
+    "o": [
+      "`amazon-cloudwatch-agent.json` (managed locally or via AWS Systems Manager Parameter Store)",
+      "`/etc/hosts`",
+      "`~/.bashrc`",
+      "`/dev/null`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The unified CloudWatch Agent configuration is stored in `amazon-cloudwatch-agent.json` or managed via SSM Parameter Store."
+  },
+  {
+    "q": "An application uses CloudWatch alarms to trigger Auto Scaling step scaling policies. What CloudWatch alarm configuration setting determines how missing data points are treated when evaluating alarm status (e.g., during low-traffic periods)?",
+    "o": [
+      "`TreatMissingData` (options: `breaching`, `notBreaching`, `ignore`, `missing`)",
+      "`DataFormat`",
+      "`ScaleFactor`",
+      "`AlarmGranularity` --- ### CloudWatch Logs, Log Groups, Subscriptions & Logs Insights (26–55)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`TreatMissingData` defines how missing data points are handled (`breaching`, `notBreaching`, `ignore`, `missing`)."
+  },
+  {
+    "q": "An organization has hundreds of microservices running on AWS Lambda. By default, how does AWS Lambda organize log output generated by function code (`console.log`, `print()`)?",
+    "o": [
+      "It writes logs to a shared Amazon S3 bucket in CSV format",
+      "It automatically creates a dedicated CloudWatch Log Group named `/aws/lambda/<function-name>`, with individual Log Streams created per execution environment instance",
+      "It stores logs in an unencrypted EC2 instance store",
+      "It sends all logs to an on-premises syslog server"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Lambda automatically creates a dedicated Log Group `/aws/lambda/<function-name>` with individual Log Streams per execution environment."
+  },
+  {
+    "q": "A company’s monthly AWS bill shows steadily increasing storage costs for Amazon CloudWatch Logs. An audit reveals that log groups created three years ago are still consuming terabytes of storage. What is the default retention setting for newly created CloudWatch Log Groups, and how should this cost issue be fixed?",
+    "o": [
+      "Default retention is 30 days; the issue is caused by duplicate log streams",
+      "Default retention is \"Never Expire\" (indefinite retention); the team should configure an explicit retention period (e.g., 30, 90, or 365 days) on each log group",
+      "CloudWatch Logs automatically charges a flat fee regardless of volume",
+      "The team must delete the AWS account"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudWatch Log Groups default to \"Never Expire\"; configuring an explicit retention period automatically prunes old log data to control costs."
+  },
+  {
+    "q": "A security team wants to encrypt all log events stored in an Amazon CloudWatch Log Group using a Customer Managed Key (CMK) in AWS KMS. How can this be configured?",
+    "o": [
+      "Associate the AWS KMS Key ARN with the CloudWatch Log Group using the `aws logs associate-kms-key` CLI command or CloudFormation",
+      "Encryption at rest is not supported for CloudWatch Logs",
+      "Encrypt the developer's laptop hard drive",
+      "Re-deploy the Lambda functions with SSL certificates"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Log Groups support encryption at rest with AWS KMS Customer Managed Keys using `associate-kms-key`."
+  },
+  {
+    "q": "A developer wants to stream error logs from a CloudWatch Log Group in near real-time to an Amazon Kinesis Data Stream for real-time fraud analysis. Which CloudWatch Logs feature provides this continuous push mechanism?",
+    "o": [
+      "CloudWatch Logs Subscription Filters",
+      "CloudWatch Logs Insights",
+      "S3 Lifecycle Rules",
+      "AWS CloudTrail Lake"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Logs Subscription Filters stream log events in near real-time to Lambda, Kinesis Data Streams, or Kinesis Data Firehose."
+  },
+  {
+    "q": "Which three destinations are natively supported as targets for Amazon CloudWatch Logs Subscription Filters? (Select THREE.)",
+    "o": [
+      "AWS Lambda functions",
+      "Amazon Kinesis Data Streams",
+      "Amazon Kinesis Data Firehose",
+      "Amazon DynamoDB directly",
+      "Amazon SQS directly F) Amazon EC2 instance store"
+    ],
+    "a": [
+      0,
+      1,
+      2
+    ],
+    "multi": true,
+    "e": "AWS Lambda, Amazon Kinesis Data Streams, and Amazon Kinesis Data Firehose are native targets for Subscription Filters."
+  },
+  {
+    "q": "A developer wants to extract a custom metric from plain-text application logs. Whenever a log line in `/var/log/application.log` contains the phrase `[ERROR] DatabaseConnectionFailed`, CloudWatch should increment a metric named `DatabaseFailures` by 1. Which feature achieves this?",
+    "o": [
+      "CloudWatch Logs Metric Filters",
+      "CloudWatch Subscription Filters",
+      "Amazon Athena Partition Projection",
+      "CloudWatch Synthetics"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Logs Metric Filters scan incoming log lines for specific text/JSON patterns and increment custom CloudWatch metrics."
+  },
+  {
+    "q": "What is the difference between a CloudWatch Metric Filter and a CloudWatch Subscription Filter?",
+    "o": [
+      "A Metric Filter scans incoming log streams for patterns and extracts numeric metric data points to plot on graphs and alarm on; a Subscription Filter streams full raw log events to external processing destinations (Lambda, Kinesis) in near real-time",
+      "Metric Filters are only for Windows; Subscription Filters are only for Linux",
+      "Both filters perform identical operations",
+      "Metric Filters delete log data upon match"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Metric Filters extract numeric metrics to graph and alarm on; Subscription Filters forward full raw log events to external streaming targets."
+  },
+  {
+    "q": "An operations engineer needs to search through 50 GB of application logs across multiple log groups to find all HTTP 500 errors that occurred between 2:00 PM and 3:00 PM, and count how many times each unique customer ID experienced an error. Which tool provides interactive SQL-like querying directly against CloudWatch Logs?",
+    "o": [
+      "Amazon CloudWatch Logs Insights",
+      "AWS CloudTrail Event History",
+      "AWS X-Ray Service Map",
+      "Amazon S3 Glacier Select"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Logs Insights provides an interactive, purpose-built query language to search and aggregate log data directly."
+  },
+  {
+    "q": "In CloudWatch Logs Insights, which command is used to filter log events based on specific conditions (such as matching a regex or checking an extracted field value)?",
+    "o": [
+      "`filter` (e.g., `filter level = \"ERROR\" or @message like /Timeout/`)",
+      "`where`",
+      "`having`",
+      "`match`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `filter` command filters log events by string matching, boolean logic, or regex expressions."
+  },
+  {
+    "q": "A developer writes the following query in CloudWatch Logs Insights: ``` fields @timestamp, @message | filter @message like /Exception/ | stats count(*) as exceptionCount by bin(5m) | sort exceptionCount desc ``` What does this query do?",
+    "o": [
+      "It deletes all exception logs every 5 minutes",
+      "It finds all log messages containing the word \"Exception\", counts the occurrences in 5-minute time buckets, and sorts the buckets by the highest count in descending order",
+      "It reboots the database if exceptions exceed 5",
+      "It converts the logs into a PDF report"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The query searches for \"Exception\", counts matching lines in 5-minute time buckets (`bin(5m)`), and sorts descending."
+  },
+  {
+    "q": "In CloudWatch Logs Insights, what does the `bin()` function do when used inside a `stats ... by bin(1h)` aggregation?",
+    "o": [
+      "It deletes the logs from the recycle bin",
+      "It groups timestamped log events into discrete, equal-sized time intervals (e.g., 1-hour buckets) for time-series aggregation",
+      "It compresses binary data",
+      "It encrypts the logs using Base64"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`bin()` groups timestamped log events into discrete, equal-sized time buckets for time-series aggregation."
+  },
+  {
+    "q": "A developer is querying unstructured plain-text Apache web server logs in CloudWatch Logs Insights. The log line format is `192.168.1.1 - GET /products HTTP/1.1 200 1420`. Which Logs Insights command extracts the client IP, HTTP method, status code, and response size into queryable fields?",
+    "o": [
+      "`parse @message \"* - * * * * *\" as clientIp, method, path, protocol, statusCode, responseSize`",
+      "`select clientIp, method, path`",
+      "`split(@message, \" \")`",
+      "`extract-all`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `parse` command extracts fields from unstructured text logs using glob-style wildcards into named query variables."
+  },
+  {
+    "q": "What built-in fields are automatically generated and present in every log event queried via CloudWatch Logs Insights?",
+    "o": [
+      "`@timestamp`, `@message`, `@logStream`, `@log`",
+      "`@ip`, `@mac`, `@gateway`",
+      "`@user`, `@password`, `@role`",
+      "`@cpu`, `@memory`, `@disk`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`@timestamp`, `@message`, `@logStream`, and `@log` are standard built-in fields present in all Logs Insights query results."
+  },
+  {
+    "q": "A developer wants to export historical log data from a CloudWatch Log Group to an Amazon S3 bucket for low-cost compliance archiving. Which method exports the log data?",
+    "o": [
+      "Create an Export Task to Amazon S3 via the CloudWatch Logs console or `aws logs create-export-task` CLI command",
+      "Take an EBS snapshot of the CloudWatch server",
+      "Download log files one by one using a web browser",
+      "CloudWatch Logs cannot be exported to S3"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Export tasks (`create-export-task`) asynchronously export log data from CloudWatch Log Groups to Amazon S3 buckets."
+  },
+  {
+    "q": "How are queries in Amazon CloudWatch Logs Insights priced?",
+    "o": [
+      "Flat rate of $50 per query",
+      "Billed based on the volume of log data scanned (per GB scanned) during the query",
+      "Billed per second of query execution time only",
+      "Free of charge up to 100 TB per month"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudWatch Logs Insights pricing is based on the volume of log data scanned (per GB scanned) per query."
+  },
+  {
+    "q": "What is the maximum number of CloudWatch Log Groups that can be queried simultaneously in a single CloudWatch Logs Insights query?",
+    "o": [
+      "1 log group",
+      "Up to 50 log groups (or up to 10,000 log groups with cross-account queries)",
+      "Exactly 5 log groups",
+      "Unlimited"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudWatch Logs Insights supports querying up to 50 log groups in a single query (up to 10,000 across accounts)."
+  },
+  {
+    "q": "A developer wants to mask sensitive customer information (such as credit card numbers and Social Security numbers) automatically in real-time as logs are ingested into CloudWatch Logs. Which feature provides automated PII data protection and masking?",
+    "o": [
+      "CloudWatch Logs Data Protection Policies (using managed data identifiers and audit masking)",
+      "CloudWatch Metric Math",
+      "Amazon S3 Versioning",
+      "AWS WAF Rate Limiting"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Logs Data Protection Policies automatically identify and mask sensitive PII (credit cards, SSNs) upon ingestion."
+  },
+  {
+    "q": "An application writes log events in JSON format: `{\"statusCode\": 404, \"path\": \"/login\", \"latency\": 150}`. How does CloudWatch Logs Insights handle JSON-formatted log lines?",
+    "o": [
+      "It automatically parses and indexes the JSON fields, allowing the developer to query `statusCode`, `path`, and `latency` directly without writing a custom `parse` statement",
+      "It rejects JSON logs as malformed",
+      "It requires converting JSON to XML before querying",
+      "It only indexes top-level arrays"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Logs Insights automatically parses JSON log events, making top-level keys directly queryable without `parse`."
+  },
+  {
+    "q": "A developer configures a Metric Filter with the filter pattern `{ $.statusCode = 500 }`. What type of log format is this filter pattern designed to match?",
+    "o": [
+      "JSON-structured log events containing a top-level property `statusCode` equal to 500",
+      "Plain-text CSV logs",
+      "XML documents with namespace prefixes",
+      "Binary byte buffers"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`{ $.statusCode = 500 }` matches JSON-structured log events where the `statusCode` property equals 500."
+  },
+  {
+    "q": "A developer wants to test a metric filter pattern against sample log lines before deploying it to production. How can this be done using the AWS CLI?",
+    "o": [
+      "`aws logs test-metric-filter --filter-pattern \"{ $.level = \"ERROR\" }\" --log-event-messages \"{\"level\":\"ERROR\",\"msg\":\"fail\"}\"`",
+      "`aws cloudwatch test-alarm`",
+      "`aws lambda invoke-test`",
+      "`aws logs check-syntax`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`test-metric-filter` tests a metric filter pattern against sample log messages via the AWS CLI."
+  },
+  {
+    "q": "What happens to a CloudWatch Logs Subscription Filter if the destination AWS Lambda function's resource-based policy does not grant `logs.amazonaws.com` permission to invoke the function?",
+    "o": [
+      "The Lambda function is deleted",
+      "CloudFormation rolls back the entire AWS account",
+      "The subscription filter fails to deliver log events and drops them, incrementing delivery error metrics",
+      "CloudWatch writes logs to an unformatted S3 bucket"
+    ],
+    "a": [
+      2
+    ],
+    "e": "If permissions are missing, the subscription filter cannot invoke the target and drops log events, incrementing error metrics."
+  },
+  {
+    "q": "How can an organization stream CloudWatch Logs across multiple AWS accounts to a central security analysis account in real time?",
+    "o": [
+      "CloudWatch Logs Cross-Account Subscription Filters (streaming logs to a central Amazon Kinesis Data Stream in the security account)",
+      "Emailing log files daily",
+      "Storing logs on an EC2 instance in `us-east-1`",
+      "Using VPC Peering without IAM roles"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cross-Account Subscription Filters stream logs from source accounts to a central Kinesis Data Stream in a security account."
+  },
+  {
+    "q": "A developer wants to view live log events streaming from a Lambda function in real-time in their terminal window during development. Which AWS CLI command provides live log tailing?",
+    "o": [
+      "`aws logs tail /aws/lambda/MyFunction --follow`",
+      "`aws logs view-stream`",
+      "`aws lambda stream-logs`",
+      "`tail -f /dev/null`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`aws logs tail <log-group> --follow` tails live log events in real-time in the terminal window."
+  },
+  {
+    "q": "What is the maximum payload size of a single log event (including timestamp and UTF-8 message string) accepted by Amazon CloudWatch Logs?",
+    "o": [
+      "256 KB",
+      "10 MB",
+      "5 GB",
+      "1 KB"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The maximum payload size for a single log event in CloudWatch Logs is 256 KB."
+  },
+  {
+    "q": "A developer wants to run automated, scheduled queries in CloudWatch Logs Insights and save the output to Amazon S3 for weekly reporting. Which AWS service can orchestrate scheduled Logs Insights queries?",
+    "o": [
+      "Amazon EventBridge Scheduler invoking an AWS Lambda function or AWS Step Functions state machine that calls the `StartQuery` API",
+      "Amazon Route 53",
+      "AWS CodeArtifact",
+      "Amazon ElastiCache"
+    ],
+    "a": [
+      0
+    ],
+    "e": "EventBridge Scheduler invoking Lambda or Step Functions can execute the `StartQuery` API to automate scheduled queries."
+  },
+  {
+    "q": "What does the `@logStream` field in CloudWatch Logs Insights represent for an AWS Lambda function?",
+    "o": [
+      "The specific Lambda execution environment instance that processed the invocation",
+      "The AWS account ID",
+      "The IP address of the client calling API Gateway",
+      "The git commit hash"
+    ],
+    "a": [
+      0
+    ],
+    "e": "In Lambda log groups, `@logStream` identifies the specific execution environment instance that processed the request."
+  },
+  {
+    "q": "In CloudWatch Logs Insights, what command limits the number of query results returned to the caller?",
+    "o": [
+      "`limit <number>` (e.g., `limit 25`)",
+      "`top <number>`",
+      "`max <number>`",
+      "`fetch <number>`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `limit` command restricts the number of rows returned by a Logs Insights query."
+  },
+  {
+    "q": "An application logs HTTP status codes in plain text: `STATUS=200` or `STATUS=500`. What is the metric filter pattern to match all log events where the status is 500?",
+    "o": [
+      "`[..., status = \"STATUS=500\", ...]` or `\"?STATUS=500\"`",
+      "`SELECT WHERE 500`",
+      "`STATUS == 500`",
+      "`500.status.match`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`[..., status = \"STATUS=500\", ...]` matches plain-text tokenized logs for the specified string."
+  },
+  {
+    "q": "If an application outputs logs to standard output (`stdout`) and standard error (`stderr`) in an AWS Lambda function, where do those logs appear in CloudWatch?",
+    "o": [
+      "They are automatically captured and written to the function's CloudWatch Log Group with distinct log events",
+      "They are discarded unless explicitly forwarded via syslog",
+      "They are written to local `/tmp` and deleted on cold start",
+      "They are sent to Amazon SES"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Standard output and standard error from Lambda function execution are automatically captured and written to CloudWatch Logs."
+  },
+  {
+    "q": "What is the impact of setting a log retention policy on a CloudWatch Log Group?",
+    "o": [
+      "All log events older than the configured retention period (e.g., 30 days) are automatically and permanently deleted by CloudWatch",
+      "All log events are encrypted with a public key",
+      "The log group is converted into an S3 bucket",
+      "Existing metrics derived from the logs are deleted --- ### Structured Logging & CloudWatch Embedded Metric Format (EMF) (56–75)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting a retention policy causes CloudWatch to permanently delete log events older than the specified duration."
+  },
+  {
+    "q": "Why is structured logging (formatting log messages as valid JSON objects) strongly recommended over plain-text logging for microservice applications running on AWS?",
+    "o": [
+      "Structured JSON logs allow downstream tools (CloudWatch Logs Insights, OpenSearch, SIEMs) to automatically parse, filter, aggregate, and index fields without brittle regex patterns",
+      "JSON logs compress to zero bytes",
+      "Plain-text logs are prohibited by the AWS Lambda runtime",
+      "JSON logs eliminate the need for IAM roles"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Structured JSON logs enable automated parsing, searching, and aggregation in modern observability tools without brittle regex."
+  },
+  {
+    "q": "A developer is building a high-throughput payment microservice that processes 5,000 transactions per second on AWS Lambda. The developer wants to record custom business metrics (such as transaction latency and payment amounts broken down by merchant ID and card type) in Amazon CloudWatch. Calling the `PutMetricData` API synchronously for every transaction adds latency and incurs significant API costs. Which feature solves this problem?",
+    "o": [
+      "CloudWatch Embedded Metric Format (EMF)",
+      "Amazon S3 Glacier Select",
+      "Amazon RDS Multi-AZ replication",
+      "AWS CodeGuru Reviewer"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Embedded Metric Format (EMF) embeds metric definitions inside JSON logs for automatic extraction without separate API calls."
+  },
+  {
+    "q": "How does CloudWatch Embedded Metric Format (EMF) work under the hood?",
+    "o": [
+      "The application outputs a specially structured JSON log line containing an `_aws` metadata object to `stdout`; CloudWatch Logs automatically parses the log line, extracts the metrics asynchronously, and generates CloudWatch metrics without separate `PutMetricData` API calls",
+      "It requires launching an EC2 instance in every AZ",
+      "It stores metrics in a DynamoDB table",
+      "It sends UDP packets directly to CloudWatch servers"
+    ],
+    "a": [
+      0
+    ],
+    "e": "EMF outputs specially formatted JSON with an `_aws` metadata object; CloudWatch asynchronously extracts and graphs the metrics."
+  },
+  {
+    "q": "What are two major benefits of using CloudWatch Embedded Metric Format (EMF) instead of calling `PutMetricData`? (Select TWO.)",
+    "o": [
+      "Zero additional network latency added to the application request path, as metrics are emitted via asynchronous standard log output",
+      "Lower cost at high volume, as metric extraction from logs avoids standalone CloudWatch `PutMetricData` per-call API ingestion fees",
+      "EMF completely eliminates CloudWatch Logs storage fees",
+      "EMF only works on Windows Server instances",
+      "EMF automatically writes data to Amazon Redshift"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "EMF adds zero network latency (emitted via standard log output) and avoids `PutMetricData` per-call ingestion fees."
+  },
+  {
+    "q": "In an EMF-formatted JSON log event, which top-level JSON key contains the metadata defining the CloudWatch namespace, dimensions, and metric names?",
+    "o": [
+      "`_aws` (containing `CloudWatchMetrics: [...]`)",
+      "`metadata`",
+      "`cloudwatch`",
+      "`metrics_config`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `_aws` key in EMF contains the `CloudWatchMetrics` array defining namespaces, dimensions, and metric names."
+  },
+  {
+    "q": "Examine the following EMF payload: ```json { \"_aws\": { \"Timestamp\": 1693495325183, \"CloudWatchMetrics\": [ { \"Namespace\": \"PaymentService\", \"Dimensions\": [[\"Environment\", \"PaymentType\"]], \"Metrics\": [ { \"Name\": \"ProcessingTime\", \"Unit\": \"Milliseconds\" } ] } ] }, \"Environment\": \"Production\", \"PaymentType\": \"CreditCard\", \"CustomerId\": \"cust-12345\", \"ProcessingTime\": 245, \"TransactionId\": \"tx-98765\" } ``` What happens to the fields `\"CustomerId\"` and `\"TransactionId\"` that are NOT listed in the `Dimensions` array?",
+    "o": [
+      "They are rejected and cause an error",
+      "They are preserved in the CloudWatch Log event as searchable structured log context queryable in Logs Insights, but are not graphed as metric dimensions (avoiding high-cardinality metric explosion)",
+      "They are deleted by CloudWatch",
+      "They are converted to XML"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Unmapped fields in an EMF payload are retained as searchable log context without creating high-cardinality metric dimensions."
+  },
+  {
+    "q": "What issue occurs when a developer includes high-cardinality values (such as unique `TransactionId` or `CustomerId` values) as metric dimensions in standard CloudWatch `PutMetricData` calls?",
+    "o": [
+      "Metric cardinality explosion, creating millions of custom metrics and resulting in massive AWS CloudWatch billing charges",
+      "The Lambda function crashes with a stack overflow",
+      "CloudWatch drops all network connections",
+      "The database is locked in read-only mode"
+    ],
+    "a": [
+      0
+    ],
+    "e": "High-cardinality dimensions in CloudWatch Custom Metrics cause metric explosion, creating thousands of custom metrics and high costs."
+  },
+  {
+    "q": "Which client library provided by AWS simplifies emitting Embedded Metric Format logs in Node.js, Python, and Java applications?",
+    "o": [
+      "AWS Embedded Metrics SDK (`aws-embedded-metrics`)",
+      "Boto3 Core only",
+      "AWS Amplify SDK",
+      "AWS CDK Assertions"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The AWS Embedded Metrics SDK (`aws-embedded-metrics`) provides helper libraries for emitting EMF logs in Node.js, Python, and Java."
+  },
+  {
+    "q": "How does the AWS Embedded Metrics SDK handle metrics in an AWS Lambda environment?",
+    "o": [
+      "It formats the JSON payload and writes it directly to `stdout`, allowing the native Lambda logging pipeline to forward it to CloudWatch Logs",
+      "It opens a persistent TCP socket to the Lambda service API",
+      "It creates a local SQLite database",
+      "It sends an email via Amazon SES"
+    ],
+    "a": [
+      0
+    ],
+    "e": "In Lambda, the Embedded Metrics SDK writes JSON to `stdout`, which Lambda's native logging pipeline streams to CloudWatch Logs."
+  },
+  {
+    "q": "When running containerized applications on Amazon ECS or Amazon EKS, how are EMF logs captured and forwarded to CloudWatch?",
+    "o": [
+      "By running the CloudWatch Agent as a sidecar container or DaemonSet, which listens for EMF logs over UDP/TCP or tailing container log files",
+      "By running `sam local start-api`",
+      "By configuring an S3 lifecycle policy",
+      "By manually copying files to `/tmp`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "On ECS/EKS, the CloudWatch Agent runs as a sidecar or DaemonSet listening for EMF log events over UDP/TCP."
+  },
+  {
+    "q": "What CloudWatch metric unit options are valid in an EMF metric definition?",
+    "o": [
+      "`Seconds`, `Milliseconds`, `Microseconds`, `Bytes`, `Kilobytes`, `Megabytes`, `Count`, `Percent`, and `None`",
+      "Only `Count`",
+      "`DollarAmount`",
+      "`Liters`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "EMF supports standard CloudWatch units including `Seconds`, `Milliseconds`, `Bytes`, `Count`, and `Percent`."
+  },
+  {
+    "q": "Can a single EMF JSON log line define multiple metrics simultaneously (e.g., emitting both `OrderValue` and `ProcessingDuration`)?",
+    "o": [
+      "Yes, the `Metrics` array within the `_aws.CloudWatchMetrics` definition can contain multiple metric objects",
+      "No, each EMF log line can only contain exactly one metric",
+      "Only if using Java",
+      "Only in `us-east-1`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `Metrics` array in an EMF `_aws` definition can declare multiple metric definitions in a single log line."
+  },
+  {
+    "q": "A developer wants to query historical EMF logs in CloudWatch Logs Insights to calculate the average `ProcessingTime` for a specific `CustomerId = \"cust-12345\"`. Which query works?",
+    "o": [
+      "`fields ProcessingTime | filter CustomerId = \"cust-12345\" | stats avg(ProcessingTime)`",
+      "`select avg(ProcessingTime) where CustomerId = cust-12345`",
+      "`emf-query ProcessingTime`",
+      "`get CustomerId`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Fields in EMF JSON logs are directly accessible in Logs Insights queries using standard `filter` and `stats` syntax."
+  },
+  {
+    "q": "What happens if an EMF JSON payload is malformed (e.g., missing the `Namespace` property inside `_aws`)?",
+    "o": [
+      "CloudWatch Logs stores the log line as a standard log event, but skips metric extraction and records an EMF extraction error",
+      "CloudWatch deletes the entire log group",
+      "The Lambda execution environment is terminated",
+      "The AWS account is blocked"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Malformed EMF payloads are stored as regular log events; metric extraction is skipped without crashing the application."
+  },
+  {
+    "q": "How does EMF enable cost-effective observability for serverless architectures?",
+    "o": [
+      "By unifying structured application logging and custom metric emission into a single write path, eliminating redundant API calls and decoupling metric extraction from the critical request path",
+      "By replacing all database storage with S3 Glacier",
+      "By disabling encryption across all services",
+      "By compressing images at edge locations"
+    ],
+    "a": [
+      0
+    ],
+    "e": "EMF unifies application logging and metric emission into a single write path, reducing API overhead and operational complexity."
+  },
+  {
+    "q": "A developer wants to log an error in a structured JSON format in Python. What is the recommended practice?",
+    "o": [
+      "Output a JSON-serialized dictionary containing standard fields (`timestamp`, `level`, `message`, `service`, `error`, `stackTrace`) using the standard logging library or tools like AWS Lambda Powertools",
+      "Use `print(\"ERROR: Something bad happened\")`",
+      "Write the error to a local CSV file",
+      "Send an SMS alert on every error"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Formatting errors as JSON objects with timestamp, level, message, and error details provides structured, actionable telemetry."
+  },
+  {
+    "q": "In a distributed microservices environment, what correlation identifier should be included in every structured log line across all services involved in processing a user request?",
+    "o": [
+      "`CorrelationId` (or `RequestId` / `TraceId`) propagated via HTTP headers (such as `X-Correlation-Id` or `X-Amzn-Trace-Id`)",
+      "The database administrator password",
+      "The EC2 instance MAC address",
+      "The local timezone offset"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A `CorrelationId` or `TraceId` propagated across service boundaries correlates related log events for end-to-end request tracing."
+  },
+  {
+    "q": "How does AWS Lambda Powertools assist developers in implementing structured logging, metrics, and tracing?",
+    "o": [
+      "It provides a suite of lightweight utilities for Python, TypeScript, Java, and .NET that automate structured JSON logging, EMF metric creation, and X-Ray tracing with simple decorators and annotations",
+      "It compiles Lambda functions into native C++ binaries",
+      "It provisions EC2 instances automatically",
+      "It replaces AWS CloudFormation"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Lambda Powertools provides opinionated utilities for structured logging, EMF metric creation, and X-Ray tracing."
+  },
+  {
+    "q": "A developer uses AWS Lambda Powertools for Python. How can they automatically log every incoming event and inject standard execution context into structured JSON logs?",
+    "o": [
+      "By decorating the handler with `@logger.inject_lambda_context(log_event=True)`",
+      "By running `sam build`",
+      "By configuring Route 53 health checks",
+      "By adding an S3 bucket policy"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`@logger.inject_lambda_context(log_event=True)` in Powertools automatically logs incoming events and Lambda context."
+  },
+  {
+    "q": "When comparing standard CloudWatch Custom Metrics (`PutMetricData`) with CloudWatch Logs Metric Filters and EMF, which statement is accurate?",
+    "o": [
+      "`PutMetricData` makes direct synchronous API calls; Metric Filters scan plain-text/JSON logs post-ingestion using filter patterns; EMF embeds metric definitions directly inside structured JSON logs for automatic asynchronous extraction",
+      "EMF is deprecated and replaced by `PutMetricData`",
+      "Metric Filters can only be used on Windows Server",
+      "`PutMetricData` does not support dimensions --- ### AWS X-Ray: Distributed Tracing, Segments, Subsegments & Sampling (76–100)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`PutMetricData` makes direct synchronous API calls; Metric Filters scan logs post-ingestion; EMF embeds metric extraction directly in JSON logs."
+  },
+  {
+    "q": "A developer is investigating an e-commerce checkout flow where requests traverse Amazon API Gateway, AWS Lambda, Amazon DynamoDB, and a third-party payment gateway API. Users report intermittent 5-second latency. Which AWS service provides end-to-end distributed tracing and visual call-graph mapping to pinpoint the exact bottleneck?",
+    "o": [
+      "AWS X-Ray",
+      "Amazon CloudWatch Logs",
+      "AWS CloudTrail",
+      "AWS Trusted Advisor"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS X-Ray provides distributed request tracing, subsegment timing analysis, and visual service maps across microservices."
+  },
+  {
+    "q": "In AWS X-Ray, what is the unique identifier that is generated at the start of a request and forwarded across all downstream services in an HTTP header (`X-Amzn-Trace-Id`) to correlate trace segments together?",
+    "o": [
+      "Trace ID",
+      "Segment ID",
+      "Session Token",
+      "Secret Key"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Trace ID is generated at request entry and propagated through `X-Amzn-Trace-Id` to correlate segments across services."
+  },
+  {
+    "q": "What is the difference between an X-Ray Segment and an X-Ray Subsegment?",
+    "o": [
+      "A Segment represents the work done by a distinct compute resource/service (e.g., an entire Lambda function execution); a Subsegment provides granular timing breakdowns for specific downstream calls or code blocks within that segment (e.g., a DynamoDB query or external HTTP request)",
+      "Segments are for frontend; Subsegments are for backend",
+      "Subsegments are only supported in Java",
+      "Segments are not recorded in X-Ray"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Segment records the work of a single service/compute node; Subsegments provide granular timing for downstream calls within that segment."
+  },
+  {
+    "q": "A developer wants to attach custom searchable key-value pairs (such as `OrderId` and `CustomerId`) to an X-Ray segment so that specific customer traces can be filtered and queried in the X-Ray console. Which X-Ray feature should the developer use?",
+    "o": [
+      "X-Ray Annotations",
+      "X-Ray Metadata",
+      "X-Ray Sampling Rules",
+      "CloudWatch Alarms"
+    ],
+    "a": [
+      0
+    ],
+    "e": "X-Ray Annotations are indexed key-value pairs used to search and filter traces in the X-Ray console."
+  },
+  {
+    "q": "What is the key distinction between X-Ray Annotations and X-Ray Metadata?",
+    "o": [
+      "Annotations are indexed key-value pairs that can be searched and used with filter expressions in the X-Ray console; Metadata is non-indexed key-value data that provides contextual debugging details for a specific trace but cannot be queried across traces",
+      "Metadata is indexed; Annotations are not",
+      "Annotations can only contain integers; Metadata can only contain strings",
+      "Metadata is automatically deleted after 5 minutes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Annotations are indexed and searchable; Metadata is non-indexed contextual debugging data visible on individual traces."
+  },
+  {
+    "q": "A developer wants to instrument a Node.js application using the AWS X-Ray SDK to automatically trace all outgoing AWS SDK calls (e.g., DynamoDB, S3, SQS). What code snippet achieves this automatic capture?",
+    "o": [
+      "`const AWSXRay = require('aws-xray-sdk-core'); const AWS = AWSXRay.captureAWS(require('aws-sdk'));`",
+      "`console.log(\"Trace started\");`",
+      "`process.env.TRACE_ALL = \"true\";`",
+      "`AWS.enableTracing();`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AWSXRay.captureAWS(require('aws-sdk'))` wraps the AWS SDK to automatically trace all outgoing AWS API calls in Node.js."
+  },
+  {
+    "q": "In Python, which method from the AWS X-Ray SDK automatically patches all supported libraries (Boto3, Requests, HTTP client) for distributed tracing?",
+    "o": [
+      "`patch_all()` from `aws_xray_sdk.core`",
+      "`xray.start()`",
+      "`boto3.enable_xray()`",
+      "`trace.auto()`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`patch_all()` in the Python AWS X-Ray SDK automatically instruments supported libraries (Boto3, Requests, HTTP clients)."
+  },
+  {
+    "q": "A developer wants to enable AWS X-Ray active tracing on an AWS Lambda function using the AWS CLI or CloudFormation. What property must be configured?",
+    "o": [
+      "`TracingConfig: { Mode: \"Active\" }` (or `Tracing: Active` in SAM)",
+      "`XRay: true`",
+      "`EnableTracing: \"Yes\"`",
+      "`DebugMode: \"Enabled\"`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting `TracingConfig: { Mode: \"Active\" }` enables X-Ray Active Tracing on an AWS Lambda function."
+  },
+  {
+    "q": "What is the role of the AWS X-Ray Daemon?",
+    "o": [
+      "It is a background listening process that receives raw UDP trace packets (port 2000) from the X-Ray SDK, buffers them, and uploads them in batches to the X-Ray API",
+      "It compiles application code into bytecode",
+      "It generates SSL certificates for CloudFront",
+      "It reboots EC2 instances on failure"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The X-Ray Daemon listens for UDP trace packets (port 2000) from SDKs and uploads them in batches to the X-Ray API."
+  },
+  {
+    "q": "Does a developer need to install or run the X-Ray daemon manually when using AWS Lambda with Active Tracing enabled?",
+    "o": [
+      "No, AWS Lambda manages the X-Ray daemon automatically within the serverless execution environment",
+      "Yes, the developer must package the daemon binary inside the Lambda zip file",
+      "Yes, the daemon must run in an EC2 instance in the same VPC",
+      "Only when running in `us-west-2`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Lambda automatically provisions and manages the X-Ray daemon in the serverless execution environment."
+  },
+  {
+    "q": "When running containerized applications on Amazon ECS on AWS Fargate, how is the X-Ray daemon typically deployed?",
+    "o": [
+      "As a sidecar container in the ECS Task Definition alongside the application container",
+      "On a physical on-premises server",
+      "Inside an S3 bucket",
+      "As a Lambda layer"
+    ],
+    "a": [
+      0
+    ],
+    "e": "On Amazon ECS on Fargate, the X-Ray daemon is deployed as a sidecar container in the task definition."
+  },
+  {
+    "q": "A high-volume web service handles 10,000 requests per second. Tracing 100% of requests would generate excessive trace data and high X-Ray costs. How can the developer control the percentage of requests recorded by X-Ray without redeploying application code?",
+    "o": [
+      "Configure X-Ray Sampling Rules in the AWS X-Ray console or API",
+      "Delete the X-Ray SDK from the application",
+      "Throttle incoming HTTP traffic at the load balancer",
+      "Reduce the EC2 instance count"
+    ],
+    "a": [
+      0
+    ],
+    "e": "X-Ray Sampling Rules dynamically control the rate and volume of traces collected without application redeployment."
+  },
+  {
+    "q": "In an AWS X-Ray Sampling Rule, what do the \"Reservoir\" and \"Fixed Rate\" parameters control?",
+    "o": [
+      "The Reservoir ensures a minimum number of traces are recorded per second (e.g., 1 trace/sec); the Fixed Rate defines the percentage of additional requests sampled beyond the reservoir (e.g., 5% of subsequent requests)",
+      "Reservoir sets the memory limit; Fixed Rate sets CPU clock speed",
+      "Reservoir controls database connection pools; Fixed Rate sets HTTP timeout",
+      "They configure CloudWatch metric retention"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The Reservoir sets a minimum guaranteed number of traces/second; Fixed Rate sets the percentage of additional requests sampled."
+  },
+  {
+    "q": "A developer opens the AWS X-Ray console and views a visual node graph showing all connected microservices, databases, and external APIs, color-coded by error rate and latency. What is this visual representation called?",
+    "o": [
+      "X-Ray Service Map",
+      "CloudWatch Metric Dashboard",
+      "AWS CloudTrail Event Graph",
+      "VPC Network Topology Map"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An X-Ray Service Map is a visual representation of all interconnected services and resources participating in traced requests."
+  },
+  {
+    "q": "In an X-Ray Service Map, what does a red circle around a service node indicate?",
+    "o": [
+      "A high percentage of HTTP 5xx errors (faults) originated from or were returned by that service",
+      "The service is running on an outdated Linux kernel",
+      "The service has been terminated",
+      "The service is missing an IAM role"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A red circle on an X-Ray Service Map node indicates a high percentage of HTTP 5xx errors or service faults."
+  },
+  {
+    "q": "In an X-Ray Service Map, what does a yellow circle around a service node indicate?",
+    "o": [
+      "HTTP 4xx client errors (throttling or client errors) occurred on that service",
+      "The service is offline",
+      "The service has high disk usage",
+      "The service is in development mode"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A yellow circle on an X-Ray Service Map node indicates HTTP 4xx client errors (such as throttling or bad requests)."
+  },
+  {
+    "q": "A developer wants to create a custom subsegment in Python to measure the execution time of an internal image processing function `process_image()`. How is this written using the X-Ray SDK?",
+    "o": [
+      "```python with xray_recorder.in_subsegment('process_image'): process_image() ```",
+      "`xray.time('process_image')`",
+      "`console.time('process_image')`",
+      "`trace(process_image)`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`with xray_recorder.in_subsegment('process_image'):` creates a custom subsegment to measure internal function execution time."
+  },
+  {
+    "q": "If an unhandled exception occurs inside an X-Ray subsegment, what does the X-Ray SDK do automatically?",
+    "o": [
+      "It records the exception details (error message, type, stack trace) in the subsegment metadata and marks the subsegment as a fault (`error: true` or `fault: true`)",
+      "It crashes the entire server",
+      "It deletes the trace",
+      "It reboots the database"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The X-Ray SDK automatically captures exception details and marks the subsegment with `error: true` or `fault: true`."
+  },
+  {
+    "q": "What IAM permission is required in a Lambda function's execution role to allow it to upload trace data to AWS X-Ray?",
+    "o": [
+      "`xray:PutTraceSegments` and `xray:PutTelemetryRecords` (included in `AWSXRayDaemonWriteAccess` policy)",
+      "`AdministratorAccess`",
+      "`s3:PutObject`",
+      "`ec2:DescribeInstances`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`xray:PutTraceSegments` and `xray:PutTelemetryRecords` permit Lambda execution roles to upload trace data to X-Ray."
+  },
+  {
+    "q": "How does AWS X-Ray propagate trace context across asynchronous boundaries (such as passing a message through Amazon SQS to a worker Lambda function)?",
+    "o": [
+      "SQS automatically passes the trace header in message system attributes; the consumer SDK extracts the `AWSTraceHeader` to continue the trace segment",
+      "SQS converts trace data into an XML file",
+      "Tracing across asynchronous queues is impossible",
+      "The developer must hardcode the trace ID in the SQS queue URL"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SQS passes the `AWSTraceHeader` in message system attributes, allowing consumer functions to continue the distributed trace."
+  },
+  {
+    "q": "A developer wants to search for all X-Ray traces that experienced a latency greater than 3 seconds and where the annotation `environment` equals `\"production\"`. What filter expression syntax is used in the X-Ray console?",
+    "o": [
+      "`responsetime > 3 AND annotation.environment = \"production\"`",
+      "`SELECT * WHERE time > 3 AND env = \"production\"`",
+      "`filter: latency > 3s`",
+      "`find traces --slow`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`responsetime > 3 AND annotation.environment = \"production\"` filters X-Ray traces by duration and custom annotations."
+  },
+  {
+    "q": "An API Gateway REST API is integrated with an AWS Lambda backend. When X-Ray tracing is enabled on both API Gateway and Lambda, what component creates the initial root Trace ID?",
+    "o": [
+      "API Gateway (on the initial incoming HTTP request)",
+      "Lambda",
+      "DynamoDB",
+      "CloudWatch Logs"
+    ],
+    "a": [
+      0
+    ],
+    "e": "API Gateway generates the root Trace ID for incoming HTTP requests when X-Ray tracing is enabled."
+  },
+  {
+    "q": "A developer wants to record user IP addresses in X-Ray traces to analyze geographic performance trends. Where are client IP addresses captured by default?",
+    "o": [
+      "In the `http.request.client_ip` field of the entry segment generated by API Gateway or Application Load Balancer",
+      "In the EC2 BIOS log",
+      "In the Route 53 DNS query log",
+      "In the S3 bucket policy"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Client IP addresses are recorded in the `http.request.client_ip` field of entry segments generated by API Gateway or ALBs."
+  },
+  {
+    "q": "What AWS service integrates X-Ray distributed traces, CloudWatch metrics, and CloudWatch Logs into a unified single-pane-of-glass troubleshooting interface?",
+    "o": [
+      "CloudWatch ServiceLens (and Application Signals)",
+      "AWS Artifact",
+      "AWS CloudShell",
+      "Amazon Inspector"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch ServiceLens integrates X-Ray traces, CloudWatch metrics, and log groups into a unified observability interface."
+  },
+  {
+    "q": "How long does AWS X-Ray retain trace data by default?",
+    "o": [
+      "30 days",
+      "24 hours",
+      "1 year",
+      "Indefinitely --- ### Root Cause Analysis, Error Codes, SDK Exceptions & Deployment Troubleshooting (101–125)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS X-Ray retains trace data for 30 days by default."
+  },
+  {
+    "q": "An API client sends a `POST /orders` request with a missing required JSON property in the request body. The server rejects the request. What HTTP status code should the API return?",
+    "o": [
+      "400 Bad Request",
+      "500 Internal Server Error",
+      "403 Forbidden",
+      "504 Gateway Timeout"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Missing required client parameters or malformed payloads should return HTTP 400 Bad Request."
+  },
+  {
+    "q": "A frontend web application attempts to access an Amazon S3 bucket, but receives an HTTP 403 Forbidden error. What is the fundamental root cause of an HTTP 403 status code in AWS?",
+    "o": [
+      "An authorization failure where the caller's identity is known (or anonymous), but IAM policies, S3 Bucket Policies, or Access Control Lists explicitly deny or fail to grant permission for the requested action",
+      "The requested S3 object does not exist",
+      "The client internet connection failed",
+      "S3 is experiencing a server outage"
+    ],
+    "a": [
+      0
+    ],
+    "e": "HTTP 403 Forbidden indicates an authorization failure where the caller lacks permission under IAM or resource policies."
+  },
+  {
+    "q": "An API Gateway endpoint backed by a Lambda function returns an HTTP 504 Gateway Timeout error to callers. What does this status code indicate?",
+    "o": [
+      "The Lambda function execution duration exceeded API Gateway's maximum integration timeout limit (fixed at 29 seconds) or a downstream network call hung",
+      "The Lambda function returned a 404 status code",
+      "The client sent an invalid query string",
+      "API Gateway was deleted"
+    ],
+    "a": [
+      0
+    ],
+    "e": "HTTP 504 Gateway Timeout occurs when an integration (e.g., Lambda) exceeds the gateway timeout limit (29s) or hangs."
+  },
+  {
+    "q": "A developer configures an API Gateway REST API with a Lambda Proxy integration. When calling the API, callers receive an HTTP 502 Bad Gateway error. The Lambda execution logs show that the function executed successfully and returned a plain string `\"Hello World\"`. What caused the 502 error?",
+    "o": [
+      "Lambda Proxy integration requires the function to return a specific JSON response structure containing `statusCode` (integer), `headers` (object), and `body` (string); returning a plain string violates the proxy integration contract",
+      "The Lambda function ran out of disk space",
+      "API Gateway requires all responses to be encrypted with KMS",
+      "The API Gateway URL is incorrect"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Lambda Proxy integration requires returning a specific JSON object (`statusCode`, `headers`, `body`); returning a raw string causes HTTP 502."
+  },
+  {
+    "q": "An application encounters an HTTP 429 Too Many Requests status code when invoking an AWS API. What action should the developer implement in their application code to handle this error gracefully?",
+    "o": [
+      "Retry the request immediately in a tight loop with zero delay",
+      "Implement exponential backoff with full jitter to retry the request over increasing time intervals",
+      "Terminate the application process",
+      "Delete the IAM user credentials"
+    ],
+    "a": [
+      1
+    ],
+    "e": "HTTP 429 Too Many Requests should be handled by retrying with exponential backoff and jitter."
+  },
+  {
+    "q": "A Python application querying Amazon DynamoDB throws a `ProvisionedThroughputExceededException`. CloudWatch metrics show that the table's total consumed capacity is well below the provisioned capacity limits. What is the most likely root cause?",
+    "o": [
+      "A \"hot partition\" caused by an uneven partition key distribution, where a large percentage of read or write requests target a single physical storage partition that exceeds its per-partition throughput limit",
+      "The DynamoDB table has too many Global Secondary Indexes",
+      "The AWS account has run out of DynamoDB storage",
+      "The application is using an invalid IAM role"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A hot partition occurs when access patterns concentrate on a narrow key range, exceeding single-partition throughput limits."
+  },
+  {
+    "q": "What are two valid solutions to resolve frequent `ProvisionedThroughputExceededException` errors caused by hot partitions in DynamoDB? (Select TWO.)",
+    "o": [
+      "Redesign the partition key schema to introduce high-cardinality keys or append random suffixes (key salting) to distribute traffic evenly across partitions",
+      "Deploy Amazon DynamoDB Accelerator (DAX) to cache read requests in memory",
+      "Reduce the DynamoDB table provisioned capacity to 1 RCU",
+      "Delete all Global Secondary Indexes",
+      "Convert the DynamoDB table to Amazon S3 Glacier"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "High-cardinality partition keys (or key salting) distribute traffic across partitions; DAX caches read traffic in memory."
+  },
+  {
+    "q": "An application executes a conditional write against a DynamoDB table: `attribute_exists(OrderId) AND OrderStatus = :pending`. The operation fails with a `ConditionalCheckFailedException`. What does this exception mean?",
+    "o": [
+      "An expected application-level optimistic locking condition was not met because the item either did not exist or its `OrderStatus` was not `pending` at the time of write",
+      "DynamoDB is experiencing an internal hardware fault",
+      "The IAM execution role lacks `dynamodb:PutItem` permission",
+      "The DynamoDB table was dropped"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`ConditionalCheckFailedException` is an expected optimistic locking failure when item attributes do not match the write condition."
+  },
+  {
+    "q": "An application calling AWS KMS to decrypt data throws an `AccessDeniedException`. Which three IAM policy components should the developer inspect to diagnose the permission failure? (Select THREE.)",
+    "o": [
+      "The IAM Identity-Based Policy attached to the calling role/user",
+      "The AWS KMS Key Policy attached to the KMS Customer Master Key (CMK)",
+      "Any applicable IAM Permissions Boundaries or Service Control Policies (SCPs) in AWS Organizations",
+      "The S3 Bucket Lifecycle Policy",
+      "The VPC Route Table F) The Route 53 Hosted Zone"
+    ],
+    "a": [
+      0,
+      1,
+      2
+    ],
+    "multi": true,
+    "e": "Diagnosing KMS access denials requires checking the IAM identity policy, the KMS key policy, and any applicable SCPs."
+  },
+  {
+    "q": "A developer attempts to invoke a Lambda function using the AWS SDK, but receives a `ResourceNotFoundException`. What is the cause?",
+    "o": [
+      "The specified Lambda function name or ARN does not exist in the targeted AWS Region or account",
+      "The Lambda function code has a syntax error",
+      "The Lambda execution role has expired",
+      "The EC2 instance ran out of memory"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`ResourceNotFoundException` indicates the targeted AWS resource does not exist in the specified Region or account."
+  },
+  {
+    "q": "During an automated CI/CD pipeline execution, an AWS CodeBuild project fails in the `BUILD` phase. The application's CloudWatch runtime logs show no activity. Where should the engineer look to find the root cause of the build failure?",
+    "o": [
+      "In the AWS CodeBuild project build logs streamed to CloudWatch Logs (examining compiler errors, failed unit test steps, or non-zero exit codes in `buildspec.yml`)",
+      "In the S3 server access logs",
+      "In the VPC Flow Logs",
+      "In the AWS Cost Explorer"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CodeBuild build logs streamed to CloudWatch Logs detail compiler errors, failed tests, and command exit codes."
+  },
+  {
+    "q": "A continuous deployment pipeline using AWS CodeDeploy fails during a deployment to an EC2 Auto Scaling group. The deployment status shows `FAILED` at the `AfterInstall` lifecycle hook. Where can the developer find the detailed script output and error logs from the deployment hooks?",
+    "o": [
+      "In the CodeDeploy agent log files on the EC2 instance (located at `/var/log/aws/codedeploy-agent/codedeploy-agent.log` and `/opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log`)",
+      "In the Route 53 DNS query log",
+      "In the AWS CloudTrail management events",
+      "In the AWS CodeArtifact repository metadata"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CodeDeploy agent logs on target instances (`/var/log/aws/codedeploy-agent/`) record deployment lifecycle script output and failures."
+  },
+  {
+    "q": "A CloudFormation stack update fails and triggers an automatic rollback (`UPDATE_ROLLBACK_IN_PROGRESS`). Where can the developer immediately see the exact resource and reason that caused the deployment failure?",
+    "o": [
+      "In the CloudFormation console's \"Events\" tab for the stack, looking for the first resource that transitioned to `CREATE_FAILED` or `UPDATE_FAILED` with its accompanying `Status Reason`",
+      "In the IAM user login history",
+      "In the Amazon S3 billing dashboard",
+      "In the AWS Trusted Advisor security check"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The CloudFormation \"Events\" tab lists resource lifecycle transitions and the specific `Status Reason` for failed resources."
+  },
+  {
+    "q": "A developer needs to audit who deleted a production Amazon DynamoDB table at 3:00 AM on Sunday. Which AWS service provides the authoritative audit log recording the IAM identity, API action (`DeleteTable`), timestamp, source IP address, and request parameters?",
+    "o": [
+      "AWS CloudTrail",
+      "Amazon CloudWatch Logs Insights",
+      "AWS X-Ray",
+      "Amazon CodeGuru Profiler"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS CloudTrail records control-plane API activity, including identity, API action (`DeleteTable`), timestamp, and IP address."
+  },
+  {
+    "q": "What is the difference between AWS CloudTrail Management Events and AWS CloudTrail Data Events?",
+    "o": [
+      "Management Events record control-plane operations on AWS resources (e.g., `CreateBucket`, `DeleteTable`, `ModifySecurityGroupRules`), logged by default; Data Events record high-volume data-plane operations (e.g., `s3:GetObject`, `lambda:Invoke`, DynamoDB item CRUD), which must be explicitly enabled",
+      "Management Events are for Linux; Data Events are for Windows",
+      "Data Events are free; Management Events cost $10 per call",
+      "Both event types are identical"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudTrail Management Events record resource-level operations (logged by default); Data Events record item/object operations (opt-in)."
+  },
+  {
+    "q": "A company wants to run SQL queries across historical CloudTrail event logs spanning 3 years across all AWS Regions without setting up complex ETL data pipelines. Which CloudTrail feature provides built-in SQL query capabilities?",
+    "o": [
+      "CloudTrail Lake",
+      "CloudTrail Event History (limited to past 90 days)",
+      "Amazon CloudWatch Alarms",
+      "AWS CodeCommit"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudTrail Lake provides built-in SQL query capabilities across multi-region, multi-account audit logs."
+  },
+  {
+    "q": "What is the fundamental difference between Amazon CodeGuru Reviewer and Amazon CodeGuru Profiler?",
+    "o": [
+      "CodeGuru Reviewer performs automated static code analysis on source code during pull requests to detect security flaws, leaked credentials, and anti-patterns; CodeGuru Profiler performs runtime performance analysis on active production applications to find CPU and latency bottlenecks",
+      "CodeGuru Reviewer is for Python only; CodeGuru Profiler is for Java only",
+      "CodeGuru Profiler reviews pull requests; CodeGuru Reviewer runs on EC2",
+      "CodeGuru Reviewer is an antivirus scanner"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CodeGuru Reviewer performs static analysis during pull requests; CodeGuru Profiler analyzes runtime CPU/latency hotspots in production."
+  },
+  {
+    "q": "A developer wants to analyze why a Java microservice deployed on Amazon ECS consumes 90% CPU under normal traffic. The developer wants a visual flame graph showing the exact methods and lines of code spending the most CPU cycles. Which AWS tool generates this analysis?",
+    "o": [
+      "Amazon CodeGuru Profiler",
+      "Amazon CodeGuru Reviewer",
+      "AWS CloudTrail",
+      "Amazon Inspector"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon CodeGuru Profiler generates flame graphs identifying specific CPU-intensive methods in running applications."
+  },
+  {
+    "q": "A developer suspects that hardcoded AWS access keys were accidentally committed to a GitHub repository branch. Which tool can automatically scan pull requests and flag hardcoded credentials before merging?",
+    "o": [
+      "Amazon CodeGuru Reviewer (or git-secrets / AWS Secrets Manager secret scanner)",
+      "Amazon Route 53",
+      "CloudWatch Alarms",
+      "AWS DataSync"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CodeGuru Reviewer uses ML models to scan pull requests for hardcoded AWS credentials and security vulnerabilities."
+  },
+  {
+    "q": "An AWS Lambda function fails with an error `Runtime.HandlerNotFound`. What is the root cause?",
+    "o": [
+      "The handler method specified in the Lambda function configuration does not match the actual file name or exported function name in the deployment package",
+      "The Lambda function ran out of memory",
+      "The function's execution role lacks KMS permissions",
+      "The API Gateway endpoint was deleted"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`Runtime.HandlerNotFound` indicates the configured handler path does not match the actual file or function name in the zip package."
+  },
+  {
+    "q": "A Lambda function fails with `Task timed out after 3.00 seconds`. What are two immediate troubleshooting actions a developer should take? (Select TWO.)",
+    "o": [
+      "Increase the Lambda function `Timeout` setting (up to the 15-minute maximum) to accommodate long-running tasks",
+      "Check X-Ray traces or CloudWatch Logs to identify slow downstream calls (e.g., hanging database queries or un-cached external API calls) causing the timeout",
+      "Delete the Lambda execution role",
+      "Reduce function memory to 128 MB",
+      "Convert the Lambda runtime to Assembly"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Increasing function timeout and analyzing X-Ray traces/logs to identify slow downstream dependencies resolves timeouts."
+  },
+  {
+    "q": "An application running on EC2 attempts to send messages to an SQS queue, but receives an `AWS.SimpleQueueService.NonExistentQueue` error. What is the root cause?",
+    "o": [
+      "The specified SQS queue URL does not exist in the targeted AWS Region or account, or the queue name in the URL is misspelled",
+      "The SQS queue is full",
+      "SQS messages have expired",
+      "The EC2 instance was rebooted"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`NonExistentQueue` indicates the specified SQS queue URL does not exist in the targeted Region or is misspelled."
+  },
+  {
+    "q": "A developer wants to configure automated alerts when an AWS service quota (such as the number of running EC2 instances or Lambda concurrent executions) reaches 85% of its account limit. Which service provides metrics on quota utilization for CloudWatch alarms?",
+    "o": [
+      "AWS Service Quotas integration with Amazon CloudWatch",
+      "AWS Budgets only",
+      "AWS Support tickets only",
+      "Amazon S3 Storage Lens"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Service Quotas integration with CloudWatch allows setting alarms when resource usage approaches service quotas."
+  },
+  {
+    "q": "An operations team wants to be notified in a Slack channel whenever an AWS CodePipeline pipeline execution fails. Which AWS architecture pattern implements this event-driven alert?",
+    "o": [
+      "AWS CodePipeline emits a state-change event to Amazon EventBridge; an EventBridge rule matches `state: FAILED` and triggers an Amazon SNS topic or AWS Chatbot integrated with Slack",
+      "CloudWatch Metrics polling CodePipeline every 10 milliseconds",
+      "Running an EC2 cron job that checks pipeline status",
+      "S3 Bucket Notifications"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CodePipeline emits state-change events to EventBridge, which matches failures and triggers SNS or Chatbot alerts to Slack."
+  }
+];
+
+let idx = 0, score = 0, answered = new Array(QUESTIONS.length).fill(false), correctFlags = new Array(QUESTIONS.length).fill(false), missed = [];
+const STORAGE_KEY = "aws-dva-quiz-16";
+
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({idx, score, answered, correctFlags}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(d && Array.isArray(d.answered) && d.answered.length === QUESTIONS.length){
+      idx = d.idx; score = d.score; answered = d.answered; correctFlags = d.correctFlags;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+const quizArea = document.getElementById("quizArea");
+const posNum = document.getElementById("posNum");
+const scoreNum = document.getElementById("scoreNum");
+const progressFill = document.getElementById("progressFill");
+
+function updateTop(){
+  posNum.textContent = (idx+1) + " / " + QUESTIONS.length;
+  scoreNum.textContent = score;
+  const answeredCount = answered.filter(Boolean).length;
+  progressFill.style.width = (answeredCount / QUESTIONS.length * 100) + "%";
+}
+
+function renderQuestion(){
+  const item = QUESTIONS[idx];
+  const isMulti = !!item.multi;
+  const done = answered[idx];
+  let html = "";
+  html += '<div class="card">';
+  html += '<div class="qnum">Question ' + (idx+1) + '</div>';
+  if(isMulti) html += '<div class="multi-hint">Select all that apply</div><br>';
+  html += '<div class="qtext">' + escapeHtml(item.q) + '</div>';
+  item.o.forEach((optText, i)=>{
+    const letter = String.fromCharCode(65+i);
+    let cls = "opt";
+    if(done){
+      if(item.a.includes(i)) cls += " correct";
+      else if(item.picked && item.picked.includes(i)) cls += " incorrect";
+    } else if(item.picked && item.picked.includes(i)){
+      cls += " selected";
+    }
+    html += '<button class="' + cls + '" data-i="' + i + '" ' + (done?'disabled':'') + '>' +
+      '<span class="mark">' + letter + '</span><span>' + escapeHtml(optText) + '</span></button>';
+  });
+  if(done){
+    html += '<div class="explain"><b>' + (correctFlags[idx] ? "Correct. " : "Not quite. ") + '</b>' + escapeHtml(item.e) + '</div>';
+  }
+  html += '<div class="actions">';
+  if(isMulti && !done){
+    html += '<button class="btn btn-primary" id="submitBtn" disabled>Submit answer</button>';
+  }
+  if(done){
+    if(idx < QUESTIONS.length - 1){
+      html += '<button class="btn btn-primary" id="nextBtn">Next question</button>';
+    } else {
+      html += '<button class="btn btn-primary" id="finishBtn">See results</button>';
+    }
+  }
+  html += '<button class="btn btn-ghost" id="resetBtn">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  updateTop();
+  wireOptions(item, isMulti, done);
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function wireOptions(item, isMulti, done){
+  const opts = quizArea.querySelectorAll(".opt");
+  opts.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(done) return;
+      const i = parseInt(btn.dataset.i, 10);
+      if(isMulti){
+        item.picked = item.picked || [];
+        const pos = item.picked.indexOf(i);
+        if(pos >= 0) item.picked.splice(pos,1); else item.picked.push(i);
+        renderQuestion();
+        const submitBtn = document.getElementById("submitBtn");
+        if(submitBtn) submitBtn.disabled = !(item.picked && item.picked.length > 0);
+      } else {
+        item.picked = [i];
+        commitAnswer(item);
+      }
+    });
+  });
+  const submitBtn = document.getElementById("submitBtn");
+  if(submitBtn){
+    submitBtn.disabled = !(item.picked && item.picked.length > 0);
+    submitBtn.addEventListener("click", ()=> commitAnswer(item));
+  }
+  const nextBtn = document.getElementById("nextBtn");
+  if(nextBtn) nextBtn.addEventListener("click", ()=>{ idx++; save(); renderQuestion(); });
+  const finishBtn = document.getElementById("finishBtn");
+  if(finishBtn) finishBtn.addEventListener("click", renderSummary);
+  const resetBtn = document.getElementById("resetBtn");
+  if(resetBtn) resetBtn.addEventListener("click", resetAll);
+}
+
+function commitAnswer(item){
+  if(answered[idx]) return;
+  answered[idx] = true;
+  const correct = item.picked.length === item.a.length && item.picked.every(p => item.a.includes(p));
+  correctFlags[idx] = correct;
+  if(correct) score++; else missed.push(idx);
+  save();
+  renderQuestion();
+}
+
+function renderSummary(){
+  const pct = Math.round(score / QUESTIONS.length * 100);
+  const passed = pct >= 72;
+  let html = '<div class="card summary">';
+  html += '<div class="eyebrow">Results</div>';
+  html += '<div class="score-big">' + score + ' / ' + QUESTIONS.length + '</div>';
+  html += '<div class="score-pct ' + (passed?'pass':'fail') + '">' + pct + '% — ' + (passed ? "Solid, above the ~72% pass bar" : "Below the ~72% pass bar — revisit the notes") + '</div>';
+  const missedList = answered.map((_,i)=>i).filter(i => !correctFlags[i]);
+  if(missedList.length){
+    html += '<div class="miss-list"><h3>Review these questions</h3>';
+    missedList.forEach(i=>{
+      html += '<div class="miss-item"><b>Q' + (i+1) + '.</b> ' + escapeHtml(QUESTIONS[i].q) + '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="actions" style="justify-content:center; margin-top:22px;">';
+  html += '<button class="btn btn-primary" id="restartBtn">Restart quiz</button>';
+  html += '<button class="btn btn-ghost" id="resetBtn2">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  document.getElementById("restartBtn").addEventListener("click", resetAll);
+  document.getElementById("resetBtn2").addEventListener("click", resetAll);
+}
+
+function resetAll(){
+  idx = 0; score = 0; missed = [];
+  answered = new Array(QUESTIONS.length).fill(false);
+  correctFlags = new Array(QUESTIONS.length).fill(false);
+  QUESTIONS.forEach(q => { delete q.picked; });
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  renderQuestion();
+}
+
+document.addEventListener("keydown", (e)=>{
+  const map = {"1":0,"2":1,"3":2,"4":3,"5":4,"a":0,"b":1,"c":2,"d":3,"e":4,"A":0,"B":1,"C":2,"D":3,"E":4};
+  if(e.key in map){
+    const opts = quizArea.querySelectorAll(".opt:not(:disabled)");
+    const i = map[e.key];
+    if(opts[i]) opts[i].click();
+  } else if(e.key === "Enter"){
+    const nb = document.getElementById("nextBtn") || document.getElementById("finishBtn") || document.getElementById("submitBtn");
+    if(nb && !nb.disabled) nb.click();
+  }
+});
+
+if(load()){
+  if(answered.every(Boolean)) renderSummary(); else renderQuestion();
+} else {
+  renderQuestion();
+}
+</script>
