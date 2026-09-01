@@ -75,7 +75,7 @@ Status legend: ✅ complete (all 3 files) · 🟡 partial (see note) · ⬜ not 
 - [x] ✅ 06 — Messaging, Streaming & Analytics (SQS, SNS, EventBridge, Kinesis, Athena, OpenSearch)
 - [x] ✅ 07 — Step Functions & Orchestration
 - [x] ✅ 08 — Relational & In-Memory Databases (RDS, Aurora, ElastiCache, MemoryDB)
-- [ ] 🟡 09 — Caching Strategies & Performance — notes.md done, needs questions.md + quiz.html
+- [x] ✅ 09 — Caching Strategies & Performance
 - [x] ✅ 10 — CI/CD & Developer Tooling (CodeCommit, CodeBuild, CodeDeploy, CodePipeline, CodeArtifact, CodeStar, AppConfig)
 - [ ] 🟡 11 — Elastic Beanstalk, Amplify & Copilot — notes.md done, needs questions.md + quiz.html
 - [x] ✅ 12 — Containers (ECS, ECR, Fargate, EKS)

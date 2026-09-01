@@ -66,6 +66,10 @@ def parse_questions_md(md_path):
         # Clean up any trailing dashes or dividers from options
         options = [re.sub(r"\s*---\s*$", "", re.sub(r"^[A-E]\)\s*", "", o)).strip() for o in opt_lines]
 
+        if len(options) < 2:
+            # Not a real question block (likely an internal numbered list)
+            continue
+
         if qnum in ans_dict:
             a_indices, exp = ans_dict[qnum]
             is_multi = len(a_indices) > 1 or "(Select TWO)" in stem or "(Select THREE)" in stem or "(Select all" in stem
@@ -80,6 +84,8 @@ def parse_questions_md(md_path):
         else:
             print(f"Warning: Missing answer for question {qnum} in {md_path}")
 
+    # Sort by question number
+    q_items.sort(key=lambda x: x["num"])
     return q_items
 
 def generate_quiz_html(module_title, eyebrow_text, storage_key, q_items):
