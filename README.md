@@ -81,7 +81,7 @@ Status legend: ✅ complete (all 3 files) · 🟡 partial (see note) · ⬜ not 
 - [x] ✅ 12 — Containers (ECS, ECR, Fargate, EKS)
 - [x] ✅ 13 — IaC (CloudFormation, SAM, CDK)
 - [ ] ⬜ 14 — Security Deep Dive (IAM, KMS, Secrets Manager, Cognito, STS, ACM, WAF) — not started, biggest remaining module
-- [ ] 🟡 15 — Networking for Developers (VPC, Route 53, CloudFront) — notes.md done, needs questions.md + quiz.html
+- [x] ✅ 15 — Networking for Developers (VPC, Route 53, CloudFront)
 - [ ] 🟡 16 — Monitoring, Logging & Observability (CloudWatch, X-Ray, CloudTrail, CodeGuru) — notes.md done, needs questions.md + quiz.html
 - [ ] ⬜ 17 — Well-Architected & Exam Strategy — not started
 - [ ] ⬜ 18 — Mock Exams (×2) — build last, once 00-17 are complete

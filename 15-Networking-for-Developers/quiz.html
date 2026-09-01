@@ -1,0 +1,1923 @@
+<title>Networking for Developers Quiz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eceeec; --ink:#141a1f; --muted:#5c6670;
+  --border:#dde1de; --accent:#0d7377; --accent-ink:#ffffff; --accent-soft:#e3f1f0;
+  --success:#1f8a44; --success-bg:#e5f6ea; --success-border:#a9dfb8;
+  --danger:#c8402f; --danger-bg:#fbe9e6; --danger-border:#f0b8ac;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+    --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+    --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+    --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+  --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+  --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+  --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+}
+*{box-sizing:border-box;}
+body{background:var(--bg); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;}
+.wrap{max-width:760px; margin:0 auto; padding:28px 20px 80px;}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600;}
+h1{font-size:22px; font-weight:800; margin:4px 0 18px; text-wrap:balance; letter-spacing:-.01em;}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px; flex-wrap:wrap;}
+.stat{display:flex; flex-direction:column; align-items:flex-end;}
+.stat .num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:18px; font-weight:600;}
+.stat .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+.progress-track{height:8px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin:14px 0 28px; border:1px solid var(--border);}
+.progress-fill{height:100%; background:var(--accent); border-radius:999px; transition:width .35s ease;}
+@media (prefers-reduced-motion: reduce){ .progress-fill{transition:none;} }
+
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px; box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.qnum{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin-bottom:10px;}
+.qtext{font-size:16.5px; font-weight:600; line-height:1.55; margin-bottom:20px; text-wrap:balance;}
+.multi-hint{display:inline-block; font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:999px; padding:3px 10px; margin-bottom:14px;}
+
+.opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:13px 14px; margin-bottom:10px; cursor:pointer; font:inherit; color:var(--ink); font-size:14.5px; line-height:1.5; transition:border-color .15s, background .15s;}
+.opt:hover{border-color:var(--accent);}
+.opt:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+.opt .mark{flex:0 0 22px; height:22px; border-radius:6px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--muted); margin-top:1px;}
+.opt.selected{border-color:var(--accent); background:var(--accent-soft);}
+.opt.selected .mark{border-color:var(--accent); color:var(--accent);}
+.opt.correct{border-color:var(--success-border); background:var(--success-bg);}
+.opt.correct .mark{border-color:var(--success); color:var(--success); background:var(--success-bg);}
+.opt.incorrect{border-color:var(--danger-border); background:var(--danger-bg);}
+.opt.incorrect .mark{border-color:var(--danger); color:var(--danger); background:var(--danger-bg);}
+.opt:disabled{cursor:default;}
+.opt:disabled:hover{border-color:var(--border);}
+.opt.correct:hover, .opt.incorrect:hover{border-color:inherit;}
+
+.actions{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+button.btn{font:inherit; font-weight:700; font-size:14px; border-radius:9px; padding:11px 18px; cursor:pointer; border:1.5px solid transparent;}
+.btn-primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+.btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+.btn-ghost{background:transparent; color:var(--ink); border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--accent);}
+button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+.explain{margin-top:16px; padding:14px 16px; border-radius:10px; font-size:14px; line-height:1.55; border:1px solid var(--border); background:var(--surface-2);}
+.explain b{color:var(--accent);}
+
+.summary{text-align:center; padding:10px 0 20px;}
+.score-big{font-family:"IBM Plex Mono",monospace; font-size:52px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+.score-pct{color:var(--muted); font-size:15px; margin-top:2px;}
+.score-pct.pass{color:var(--success); font-weight:700;}
+.score-pct.fail{color:var(--danger); font-weight:700;}
+.miss-list{margin-top:28px; text-align:left; border-top:1px solid var(--border); padding-top:20px;}
+.miss-list h3{font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:12px; font-family:"IBM Plex Mono",monospace;}
+.miss-item{padding:10px 12px; background:var(--surface-2); border-radius:8px; margin-bottom:8px; font-size:13.5px; line-height:1.45; border-left:3px solid var(--danger);}
+.miss-item b{color:var(--ink);}
+
+.footer-note{text-align:center; color:var(--muted); font-size:12px; margin-top:24px; font-family:"IBM Plex Mono",monospace;}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Module 15 • Practice Quiz</div>
+      <h1>Networking for Developers Quiz</h1>
+    </div>
+    <div class="stat">
+      <span class="num" id="posNum">1 / 125</span>
+      <span class="lbl">Question</span>
+    </div>
+    <div class="stat">
+      <span class="num" id="scoreNum">0</span>
+      <span class="lbl">Correct</span>
+    </div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <div id="quizArea"></div>
+  <div class="footer-note">Progress is saved automatically in this browser. Use 1–5 or A–E on your keyboard to answer.</div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    "q": "A developer is deploying a three-tier web application consisting of a web tier, an application tier, and an Amazon RDS database. The company's security policy requires that the database must not be directly reachable from the public internet. Where should the developer place the database instances?",
+    "o": [
+      "In a public subnet with an Internet Gateway route",
+      "In private subnets with no route to an Internet Gateway",
+      "In a public subnet with an Elastic IP address attached",
+      "On an S3 bucket with public read access enabled"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Placing databases in private subnets without an Internet Gateway route prevents direct inbound access from the public internet."
+  },
+  {
+    "q": "What specific routing configuration distinguishes a public subnet from a private subnet in an Amazon VPC?",
+    "o": [
+      "A public subnet has a route in its route table pointing non-local traffic (`0.0.0.0/0`) to an attached Internet Gateway (IGW)",
+      "A public subnet uses 10.0.0.0/8 CIDR blocks while a private subnet uses 192.168.0.0/16",
+      "A public subnet has Network ACLs completely disabled",
+      "A public subnet must span at least three AWS Regions"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A public subnet has a route in its route table pointing default outbound traffic (`0.0.0.0/0`) to an attached Internet Gateway (IGW)."
+  },
+  {
+    "q": "An EC2 instance resides in a public subnet with a route table entry pointing `0.0.0.0/0` to an Internet Gateway. However, external users cannot connect to the web server running on the instance over HTTP. What is the most likely networking requirement missing from the instance?",
+    "o": [
+      "The instance does not have a public IPv4 address or an Elastic IP address assigned",
+      "The VPC must be attached to an AWS Direct Connect gateway",
+      "The instance must have an IAM instance profile with Administrator privileges",
+      "The instance must be in an Amazon S3 storage class"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Instances in a public subnet must have a public IPv4 or Elastic IP assigned in addition to the IGW route to communicate with the internet."
+  },
+  {
+    "q": "An application running on EC2 instances in a private subnet needs to download security patches and software updates from the public internet. The instances must NEVER accept unsolicited inbound connections from the internet. Which VPC component provides this outbound-only internet connectivity?",
+    "o": [
+      "Internet Gateway (IGW)",
+      "NAT Gateway",
+      "Customer Gateway",
+      "Virtual Private Gateway (VGW)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A NAT Gateway provides outbound-only internet connectivity for instances in private subnets while blocking unsolicited inbound traffic."
+  },
+  {
+    "q": "The Lambda function must access an Amazon RDS PostgreSQL database in private subnets and fetch credentials from Secrets Manager without leaving the AWS network. Which combination of networking features correctly fulfills this architecture?",
+    "o": [
+      "CloudFront with Origin Access Control (OAC) + VPC-attached Lambda function in private subnets + Interface VPC Endpoint for Secrets Manager + RDS Security Group allowing inbound traffic from Lambda Security Group",
+      "Public S3 bucket + Lambda with no VPC + NAT Gateway for RDS + Route 53 Simple routing",
+      "CloudFront without OAC + Lambda in public subnet + RDS with public IP + Gateway Endpoint for Secrets Manager",
+      "Internet Gateway for RDS + Elastic Beanstalk single instance + S3 website hosting"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A NAT Gateway provides outbound-only internet connectivity for instances in private subnets while blocking unsolicited inbound traffic."
+  },
+  {
+    "q": "Where must a managed NAT Gateway be deployed in an Amazon VPC to function properly?",
+    "o": [
+      "In a private subnet with a route to a database",
+      "In a public subnet that has an allocated Elastic IP (EIP) and a route to an Internet Gateway",
+      "Directly inside an Amazon S3 bucket",
+      "On an on-premises router"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A NAT Gateway must be located in a public subnet with an allocated Elastic IP (EIP) and a route to an Internet Gateway."
+  },
+  {
+    "q": "A developer notices that a company's monthly AWS bill includes significant data transfer and hourly charges for a NAT Gateway. Which two architectural strategies help reduce or eliminate NAT Gateway data processing costs? (Select TWO.)",
+    "o": [
+      "Create Gateway VPC Endpoints for Amazon S3 and Amazon DynamoDB traffic so that requests bypass the NAT Gateway entirely at no additional cost",
+      "Create Interface VPC Endpoints (AWS PrivateLink) for high-volume AWS services (such as Amazon SQS, SNS, or Secrets Manager) accessed from private subnets",
+      "Move all private databases into public subnets with public IP addresses",
+      "Attach two Internet Gateways to the same VPC",
+      "Disable encryption on all network packets"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Gateway Endpoints for S3/DynamoDB are free, and Interface Endpoints keep AWS service traffic private, bypassing NAT Gateway data transfer fees."
+  },
+  {
+    "q": "An EC2 instance in a private subnet needs to access a third-party payment gateway API on the public internet. What route table entry is required in the private subnet's route table?",
+    "o": [
+      "`0.0.0.0/0` targeting the Internet Gateway (`igw-xxxx`)",
+      "`0.0.0.0/0` targeting the NAT Gateway (`nat-xxxx`)",
+      "`10.0.0.0/16` targeting the NAT Gateway",
+      "`0.0.0.0/0` targeting a Customer Gateway"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The private subnet route table must route `0.0.0.0/0` to the NAT Gateway (`nat-xxxx`) to enable outbound internet access."
+  },
+  {
+    "q": "What is the primary operational difference between an AWS-managed NAT Gateway and a self-managed NAT Instance running on Amazon EC2?",
+    "o": [
+      "NAT Gateway is a fully managed, highly available service that automatically scales bandwidth up to 100 Gbps without requiring OS patching or software maintenance; NAT Instances require manual instance sizing, AMI patching, and custom failover scripts",
+      "NAT Gateway only works with IPv6 traffic",
+      "NAT Instances are completely free of charge",
+      "NAT Gateway allows unsolicited inbound connections from the public internet"
+    ],
+    "a": [
+      0
+    ],
+    "e": "NAT Gateways are managed, auto-scaling up to 100 Gbps, and require no OS patching; NAT Instances are self-managed EC2 instances with manual scaling."
+  },
+  {
+    "q": "How does an organization achieve high availability for outbound internet traffic when deploying NAT Gateways in a multi-AZ VPC?",
+    "o": [
+      "Deploy a single NAT Gateway in one public subnet and route all private subnets across all AZs to it",
+      "Deploy an independent NAT Gateway in a public subnet in EACH Availability Zone, and configure each private subnet's route table to use the NAT Gateway in its respective AZ",
+      "Deploy a NAT Gateway on an S3 Glacier vault",
+      "Attach multiple Internet Gateways to a single subnet"
+    ],
+    "a": [
+      1
+    ],
+    "e": "High availability requires deploying a dedicated NAT Gateway in each Availability Zone and routing each private subnet to its AZ's NAT Gateway."
+  },
+  {
+    "q": "A developer is troubleshooting an issue where an EC2 instance in a private subnet cannot connect to the internet through a newly provisioned NAT Gateway. The private subnet route table has a route for `0.0.0.0/0` pointing to the NAT Gateway ID. What check should the developer perform next?",
+    "o": [
+      "Verify that the public subnet hosting the NAT Gateway has a route for `0.0.0.0/0` pointing to an Internet Gateway and that an Elastic IP is associated with the NAT Gateway",
+      "Recreate the VPC from scratch",
+      "Reboot the EC2 instance in safe mode",
+      "Change the instance tenancy to Dedicated"
+    ],
+    "a": [
+      0
+    ],
+    "e": "For a NAT Gateway to work, its hosting public subnet must route `0.0.0.0/0` to an IGW and have an associated Elastic IP address."
+  },
+  {
+    "q": "An application requires two-way internet communication: it must accept incoming customer requests on port 443 and initiate outbound API calls to external vendors. Where should the application's EC2 instances be hosted?",
+    "o": [
+      "In a private subnet behind a NAT Gateway",
+      "In a public subnet with a route to an Internet Gateway, assigned public IP addresses, and appropriate Security Group ingress rules",
+      "In an on-premises data center with no internet access",
+      "In an isolated subnet with no route tables"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Instances requiring two-way internet communication must reside in a public subnet with an IGW route, public IP, and open security group rules."
+  },
+  {
+    "q": "In an Amazon VPC, what is the maximum number of Internet Gateways that can be attached to a single VPC at any given time?",
+    "o": [
+      "1",
+      "2",
+      "5",
+      "Unlimited"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An Amazon VPC can have exactly one Internet Gateway attached at a time."
+  },
+  {
+    "q": "A company has a private subnet containing application servers and a database subnet containing Amazon RDS instances. The application servers need to communicate with the database. How is routing between subnets within the same VPC handled?",
+    "o": [
+      "Through a NAT Gateway",
+      "Automatically by the local VPC route (e.g., `10.0.0.0/16` -> `local`), allowing subnets within the same VPC to communicate by default unless restricted by Security Groups or NACLs",
+      "Via an Internet Gateway",
+      "Using Route 53 public hosted zones"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The default `local` route in every VPC route table automatically enables communication between all subnets within that VPC."
+  },
+  {
+    "q": "What happens when an EC2 instance in a private subnet attempts to communicate with another EC2 instance in a different private subnet within the same VPC?",
+    "o": [
+      "The traffic is dropped because private subnets cannot communicate with each other",
+      "The traffic flows directly over the internal VPC network via the default `local` route",
+      "The traffic must pass through an Internet Gateway",
+      "The traffic is routed through AWS CloudTrail"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Subnets within the same VPC communicate privately and directly via the VPC's internal `local` route."
+  },
+  {
+    "q": "An engineer is configuring a VPC. Which component acts as a stateful virtual firewall that operates at the individual Elastic Network Interface (ENI) / instance level?",
+    "o": [
+      "Network Access Control List (NACL)",
+      "Security Group",
+      "Internet Gateway",
+      "Route Table"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Security Groups operate at the individual instance/ENI level as stateful virtual firewalls."
+  },
+  {
+    "q": "Which component acts as a stateless subnet-level firewall that inspects traffic entering and exiting an entire subnet in an Amazon VPC?",
+    "o": [
+      "Security Group",
+      "Network Access Control List (NACL)",
+      "NAT Gateway",
+      "Route 53"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Network ACLs (NACLs) operate at the subnet boundary as stateless packet-filtering firewalls."
+  },
+  {
+    "q": "If a Security Group allows inbound traffic on TCP port 443 from `0.0.0.0/0`, what outbound rule is required to allow the response traffic back to the client?",
+    "o": [
+      "An explicit outbound rule allowing ephemeral ports (1024–65535)",
+      "No outbound rule is required because Security Groups are stateful; return traffic for an allowed inbound request is automatically permitted",
+      "An outbound rule allowing all ICMP traffic",
+      "A custom NACL rule only"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Security Groups are stateful; return traffic for an allowed inbound connection is automatically allowed outbound regardless of outbound rules."
+  },
+  {
+    "q": "A developer configures a custom NACL on a public subnet. The inbound rule allows HTTP traffic on port 80. When testing the web server from a browser, the request hangs and times out. What missing NACL configuration is the root cause?",
+    "o": [
+      "NACLs are stateless, so an explicit outbound rule allowing traffic to ephemeral ports (1024–65535) is required for the server to send responses back to clients",
+      "The Internet Gateway was deleted",
+      "The Security Group must be converted to stateless mode",
+      "The subnet must be placed in multiple AWS Regions"
+    ],
+    "a": [
+      0
+    ],
+    "e": "NACLs are stateless, requiring explicit outbound rules for ephemeral client ports (1024–65535) to allow response traffic back to clients."
+  },
+  {
+    "q": "In a microservices architecture, a web service running on EC2 needs to communicate with an internal backend API running on EC2 in the same VPC. How should the backend API's Security Group be configured to follow the principle of least privilege?",
+    "o": [
+      "Allow inbound TCP on the API port from `0.0.0.0/0`",
+      "Allow inbound TCP on the API port referencing the Security Group ID of the web service as the source",
+      "Allow all traffic from the VPC CIDR block without restrictions",
+      "Disable Security Groups and use IAM policies only"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Referencing the web service's Security Group ID as the source in the backend Security Group enforces least-privilege security-group chaining."
+  },
+  {
+    "q": "What is an Elastic IP (EIP) address in AWS?",
+    "o": [
+      "A temporary private IP address that changes upon instance reboot",
+      "A static, public IPv4 address allocated to an AWS account that can be dynamically remapped between instances or NAT Gateways in a Region",
+      "An IPv6 address used exclusively for S3 Glacier",
+      "A dedicated hardware firewall appliance"
+    ],
+    "a": [
+      1
+    ],
+    "e": "An Elastic IP (EIP) is a static, persistent public IPv4 address allocated to an AWS account that can be dynamically remapped to instances."
+  },
+  {
+    "q": "A developer wants to ensure that database instances in a private subnet cannot be reached directly from the internet under any circumstances, even if an administrator accidentally adds an Elastic IP. What VPC design guarantees this isolation?",
+    "o": [
+      "Keeping the database subnet associated with a route table that has NO route to an Internet Gateway",
+      "Enabling S3 Block Public Access",
+      "Installing antivirus software on the database host",
+      "Creating an IAM user without administrator access"
+    ],
+    "a": [
+      0
+    ],
+    "e": "If a subnet has no route to an Internet Gateway, resources in it cannot be reached from the internet, even if an EIP is attached."
+  },
+  {
+    "q": "What happens to traffic destined for an external IP address if a subnet's route table contains only the default `local` route (e.g., `10.0.0.0/16` -> `local`) and no default gateway route for `0.0.0.0/0`?",
+    "o": [
+      "The traffic is automatically sent to the nearest AWS edge location",
+      "The traffic is dropped immediately because there is no route to non-local IP addresses (creating an isolated subnet)",
+      "The traffic is broadcast to all instances in the VPC",
+      "The traffic is forwarded to Amazon CloudFront"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Without a route for `0.0.0.0/0`, any non-local traffic is dropped, resulting in an isolated private subnet."
+  },
+  {
+    "q": "A company is connecting its on-premises corporate network to an Amazon VPC using an AWS Site-to-Site VPN. Which VPC component is attached to the VPC to terminate the VPN connection on the AWS side?",
+    "o": [
+      "Virtual Private Gateway (VGW) or AWS Transit Gateway",
+      "Internet Gateway (IGW)",
+      "NAT Gateway",
+      "Elastic Load Balancer"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Virtual Private Gateway (VGW) or AWS Transit Gateway terminates Site-to-Site VPN connections on the AWS VPC side."
+  },
+  {
+    "q": "What is the maximum transmission unit (MTU) supported for traffic traversing an Internet Gateway, NAT Gateway, or Inter-Region VPC Peering?",
+    "o": [
+      "1,500 bytes (standard Ethernet frame)",
+      "9,001 bytes (jumbo frames)",
+      "64,000 bytes",
+      "512 bytes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The maximum MTU for traffic crossing an Internet Gateway, NAT Gateway, or Inter-Region peering connection is 1,500 bytes."
+  },
+  {
+    "q": "An application requires instances in two separate VPCs in the same AWS Region to communicate using private IP addresses with low latency and no internet traversal. Which AWS networking feature connects the two VPCs directly?",
+    "o": [
+      "VPC Peering (or AWS Transit Gateway)",
+      "Internet Gateway",
+      "Amazon CloudFront",
+      "Route 53 Public Hosted Zone --- ### VPC Endpoints: Gateway vs Interface Endpoints (PrivateLink) (26–50)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "VPC Peering connects two VPCs directly using AWS's private network infrastructure without internet traversal."
+  },
+  {
+    "q": "An application hosted on EC2 instances in a private subnet reads and writes millions of images to an Amazon S3 bucket daily. The security team mandates that S3 traffic must not traverse the public internet or pass through a NAT Gateway. Which solution meets these requirements at NO additional cost?",
+    "o": [
+      "Provision an S3 Interface VPC Endpoint (AWS PrivateLink)",
+      "Provision an S3 Gateway VPC Endpoint and attach it to the private subnet's route table",
+      "Assign public IP addresses to all private EC2 instances",
+      "Deploy an AWS Site-to-Site VPN to Amazon S3"
+    ],
+    "a": [
+      1
+    ],
+    "e": "An S3 Gateway VPC Endpoint routes traffic privately from VPC subnets to S3 over AWS internal networks at zero additional cost."
+  },
+  {
+    "q": "Which two AWS services support Gateway VPC Endpoints? (Select TWO.)",
+    "o": [
+      "Amazon S3",
+      "Amazon DynamoDB",
+      "Amazon SQS",
+      "AWS Secrets Manager",
+      "AWS KMS"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Amazon S3 and Amazon DynamoDB are the only two AWS services that support Gateway VPC Endpoints."
+  },
+  {
+    "q": "How does a Gateway VPC Endpoint route traffic to Amazon S3 or Amazon DynamoDB from within a VPC?",
+    "o": [
+      "It assigns an Elastic Network Interface (ENI) with a private IP to each subnet",
+      "It adds a prefix list entry for the AWS service (e.g., `pl-63a5400a` for S3) to the VPC route table as a route target pointing to the Gateway Endpoint ID",
+      "It creates a public DNS record in Route 53",
+      "It routes all traffic through an on-premises proxy server"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Gateway Endpoints add a prefix list route (e.g., `pl-63a5400a`) to VPC route tables directing S3/DynamoDB traffic to the gateway."
+  },
+  {
+    "q": "A developer needs to allow an application running in a private subnet to retrieve secrets from AWS Secrets Manager without routing traffic through a NAT Gateway or traversing the public internet. Which type of VPC endpoint is required?",
+    "o": [
+      "Gateway VPC Endpoint",
+      "Interface VPC Endpoint (powered by AWS PrivateLink)",
+      "Internet Gateway Endpoint",
+      "S3 Select Endpoint"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS Secrets Manager supports Interface VPC Endpoints (AWS PrivateLink), creating private ENIs inside VPC subnets."
+  },
+  {
+    "q": "What infrastructure component is provisioned inside your VPC subnets when an Interface VPC Endpoint (AWS PrivateLink) is created for an AWS service?",
+    "o": [
+      "An Elastic Network Interface (ENI) with a private IP address from the subnet's CIDR range",
+      "A new EC2 instance running Linux",
+      "A physical router appliance",
+      "A public Internet Gateway"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Interface VPC Endpoints create Elastic Network Interfaces (ENIs) with private IP addresses from the chosen subnets."
+  },
+  {
+    "q": "How does an application running in a private subnet resolve the standard public endpoint hostname (e.g., `secretsmanager.us-east-1.amazonaws.com`) to the private IP of an Interface VPC Endpoint?",
+    "o": [
+      "By enabling \"Private DNS\" on the Interface VPC Endpoint, which creates an AWS-managed private hosted zone that resolves the service's public DNS name to the endpoint's private ENI IP",
+      "By manually editing the `/etc/hosts` file on every EC2 instance",
+      "By configuring an S3 bucket policy",
+      "By purchasing a public domain name in Route 53"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Enabling Private DNS on an Interface Endpoint resolves the standard public service DNS name to the private endpoint ENI IP."
+  },
+  {
+    "q": "How is access control enforced on an Interface VPC Endpoint? (Select TWO.)",
+    "o": [
+      "Attaching a VPC Endpoint Policy (a resource-based JSON policy) that restricts which principals, actions, and resources are allowed through the endpoint",
+      "Attaching Security Groups to the endpoint's Elastic Network Interfaces (ENIs) to restrict incoming traffic by IP or source security group",
+      "Enabling MFA Delete on the endpoint",
+      "Disabling IPv4 across the entire VPC",
+      "Configuring Route 53 latency routing"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Interface Endpoints are secured using attached Security Groups (on ENIs) and Endpoint Policies (restricting IAM actions/resources)."
+  },
+  {
+    "q": "An enterprise with an on-premises data center connected via AWS Direct Connect wants on-premises servers to query Amazon S3 buckets privately using private IP addresses. Why must the company use an S3 Interface Endpoint (PrivateLink) instead of an S3 Gateway Endpoint for this on-premises use case?",
+    "o": [
+      "Gateway Endpoints are accessible only from within the VPC and cannot be accessed over Direct Connect or AWS Site-to-Site VPN from on-premises; Interface Endpoints have private IPs reachable over Direct Connect",
+      "Gateway Endpoints do not support encryption",
+      "Interface Endpoints are completely free of charge",
+      "Gateway Endpoints only work with DynamoDB"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Interface Endpoints have private IPs reachable over Direct Connect/VPN from on-premises; Gateway Endpoints are VPC-internal only."
+  },
+  {
+    "q": "A developer is designing a security policy for a Gateway VPC Endpoint to Amazon S3. The developer wants to ensure that instances in the VPC can ONLY access the company's specific S3 bucket (`my-company-data`) and cannot exfiltrate data to external S3 buckets. How can this be enforced?",
+    "o": [
+      "Attach an Endpoint Policy to the Gateway Endpoint with `Effect: Allow`, `Action: s3:*`, and `Resource: [arn:aws:s3:::my-company-data, arn:aws:s3:::my-company-data/*]`",
+      "Delete all other S3 buckets in the AWS account",
+      "Disable DNS resolution in the VPC",
+      "Block port 443 in the subnet NACL"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An Endpoint Policy with an explicit `Allow` on `Resource: [arn:aws:s3:::my-company-data/*]` restricts access to the designated bucket only."
+  },
+  {
+    "q": "What is the pricing model for Gateway VPC Endpoints for Amazon S3 and DynamoDB?",
+    "o": [
+      "$0.01 per hour plus $0.05 per GB processed",
+      "There is NO hourly fee and NO data processing fee for Gateway VPC Endpoints",
+      "Flat fee of $100 per month per VPC",
+      "Billed based on the number of Lambda functions in the account"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Gateway VPC Endpoints for S3 and DynamoDB have no hourly or data processing charges."
+  },
+  {
+    "q": "What is the pricing model for Interface VPC Endpoints (AWS PrivateLink)?",
+    "o": [
+      "Free for all AWS services",
+      "An hourly charge per provisioned endpoint ENI (per AZ) plus a per-GB data processing charge",
+      "$500 per month flat fee",
+      "Billed based on the number of IAM users in the account"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Interface VPC Endpoints (PrivateLink) are billed per hourly ENI provisioned per AZ plus per-GB data processed."
+  },
+  {
+    "q": "An application in a private subnet communicates with Amazon SQS, Amazon SNS, and AWS KMS. The developer wants all communication to remain strictly within the AWS network. How many Interface VPC Endpoints must be created?",
+    "o": [
+      "1 shared endpoint for all services",
+      "3 distinct Interface VPC Endpoints (one for SQS, one for SNS, and one for KMS)",
+      "0, because these services use Gateway Endpoints",
+      "10 endpoints per AZ"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Each distinct AWS service requires its own dedicated Interface VPC Endpoint (one for SQS, one for SNS, one for KMS)."
+  },
+  {
+    "q": "What AWS feature allows an organization to create their own custom service behind an Application Load Balancer or Network Load Balancer in one VPC and expose it securely to consumers in other VPCs via Interface Endpoints (AWS PrivateLink) without VPC peering?",
+    "o": [
+      "VPC Peering",
+      "VPC Endpoint Services (PrivateLink)",
+      "Route 53 Resolver",
+      "NAT Gateway"
+    ],
+    "a": [
+      1
+    ],
+    "e": "VPC Endpoint Services (PrivateLink) allow exposing custom services behind an NLB/ALB to other VPCs privately."
+  },
+  {
+    "q": "When an Interface VPC Endpoint is created in multiple Availability Zones, how does PrivateLink ensure high availability?",
+    "o": [
+      "By creating an Elastic Network Interface (ENI) with a private IP address in each specified Availability Zone's subnet",
+      "By launching an EC2 instance in each AZ",
+      "By replicating data across S3 Glacier",
+      "By creating multiple VPCs automatically"
+    ],
+    "a": [
+      0
+    ],
+    "e": "PrivateLink provisions an ENI with a private IP in each selected AZ's subnet to ensure Multi-AZ fault tolerance."
+  },
+  {
+    "q": "An engineer attempts to associate a Gateway VPC Endpoint with a private subnet, but the route is not added. What VPC configuration must be selected when creating a Gateway Endpoint?",
+    "o": [
+      "The specific Route Table(s) associated with the subnets that should route traffic through the Gateway Endpoint",
+      "The IAM Instance Profile",
+      "The Elastic IP address",
+      "The CloudFront distribution ID"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Gateway Endpoints must be associated with the specific Route Tables used by the subnets that need private access."
+  },
+  {
+    "q": "Which of the following AWS services can be accessed privately from a VPC via an Interface VPC Endpoint?",
+    "o": [
+      "Amazon CloudWatch Logs, AWS Secrets Manager, Amazon Kinesis Data Streams, and AWS CodeCommit",
+      "Only Amazon S3 and DynamoDB",
+      "Only third-party SaaS applications outside of AWS",
+      "No AWS services support Interface Endpoints"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudWatch Logs, Secrets Manager, Kinesis, CodeCommit, and dozens of other AWS services support Interface Endpoints."
+  },
+  {
+    "q": "A developer wants to restrict access to an Amazon S3 bucket so that objects can ONLY be accessed from within a specific VPC via a Gateway VPC Endpoint (`vpce-1a2b3c4d`). What condition key should be added to the S3 bucket policy?",
+    "o": [
+      "`\"Condition\": { \"StringEquals\": { \"aws:sourceVpce\": \"vpce-1a2b3c4d\" } }`",
+      "`\"Condition\": { \"IpAddress\": { \"aws:SourceIp\": \"10.0.0.0/16\" } }`",
+      "`\"Condition\": { \"StringEquals\": { \"aws:PrincipalType\": \"VPC\" } }`",
+      "`\"Condition\": { \"Bool\": { \"aws:SecureTransport\": \"true\" } }`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `aws:sourceVpce` condition key restricts S3 bucket access to requests routed through the specified VPC Endpoint ID."
+  },
+  {
+    "q": "What happens if a VPC contains both a Gateway Endpoint for S3 in its route table and a NAT Gateway with a route for `0.0.0.0/0`?",
+    "o": [
+      "All S3 traffic is dropped due to routing conflict",
+      "Traffic destined for Amazon S3 matches the more specific S3 prefix list route and goes directly through the Gateway Endpoint, while general internet traffic routes to the NAT Gateway",
+      "Traffic is randomly split 50/50 between the two gateways",
+      "The NAT Gateway overrides the Gateway Endpoint"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The more specific S3 prefix list route takes precedence over the default `0.0.0.0/0` route, directing S3 traffic to the Gateway Endpoint."
+  },
+  {
+    "q": "A developer configures an Interface VPC Endpoint for Amazon SQS. The application running on private EC2 instances attempts to send messages to SQS, but the connection times out. What is the most likely cause?",
+    "o": [
+      "The Security Group attached to the Interface Endpoint ENI does not allow inbound HTTPS (port 443) traffic from the application instances",
+      "Amazon SQS is offline",
+      "SQS only accepts unencrypted HTTP traffic on port 80",
+      "The EC2 instances must be in a public subnet"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The Security Group attached to the Interface Endpoint ENI must permit inbound HTTPS (port 443) from the application instances."
+  },
+  {
+    "q": "Can an Interface VPC Endpoint be used to connect to an Amazon API Gateway Private REST API?",
+    "o": [
+      "No, API Gateway only supports public endpoints",
+      "Yes, an Interface VPC Endpoint for `execute-api` enables private access to Private REST APIs from within the VPC or over Direct Connect",
+      "Only if the API Gateway uses SOAP protocol",
+      "Only when paired with an Internet Gateway"
+    ],
+    "a": [
+      1
+    ],
+    "e": "An Interface VPC Endpoint for `execute-api` allows private access to API Gateway Private REST APIs from within the VPC."
+  },
+  {
+    "q": "What is the difference between `aws:sourceVpc` and `aws:sourceVpce` condition keys in IAM and S3 bucket policies?",
+    "o": [
+      "`aws:sourceVpc` restricts requests originating from a specific VPC ID (e.g., `vpc-xxxx`); `aws:sourceVpce` restricts requests flowing through a specific VPC Endpoint ID (e.g., `vpce-xxxx`)",
+      "`aws:sourceVpc` is used for EC2; `aws:sourceVpce` is used for Lambda",
+      "`aws:sourceVpc` is deprecated",
+      "Both condition keys are identical"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`aws:sourceVpc` restricts by VPC ID; `aws:sourceVpce` restricts by VPC Endpoint ID."
+  },
+  {
+    "q": "When an application in a VPC accesses DynamoDB through a Gateway VPC Endpoint, does the application code need to change its DynamoDB endpoint URL or SDK configuration?",
+    "o": [
+      "Yes, the application must specify the private IP address of the gateway",
+      "No, the application continues calling the standard regional DynamoDB endpoint (e.g., `dynamodb.us-east-1.amazonaws.com`), and routing is handled transparently at the VPC route table level",
+      "Yes, the developer must switch to JDBC drivers",
+      "Yes, the table name must be prefixed with `vpce-`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The application uses standard DynamoDB SDK calls and URLs; traffic routing to the Gateway Endpoint is handled transparently by route tables."
+  },
+  {
+    "q": "A developer wants to verify whether S3 requests from a private EC2 instance are utilizing the Gateway VPC Endpoint. What tool or data source can confirm this?",
+    "o": [
+      "S3 Server Access Logs or VPC Flow Logs, checking that the requester IP is a private VPC IP and/or the endpoint ID matches",
+      "Route 53 query logs",
+      "CloudFront edge metrics",
+      "AWS CodeArtifact logs"
+    ],
+    "a": [
+      0
+    ],
+    "e": "S3 Server Access Logs and VPC Flow Logs record private IP addresses and endpoint identifiers for verified private routing."
+  },
+  {
+    "q": "An enterprise mandates that all CloudWatch Logs emitted by containerized microservices in private subnets must never leave the AWS internal network. Which VPC endpoint should be deployed?",
+    "o": [
+      "Interface VPC Endpoint for `logs` (CloudWatch Logs)",
+      "Gateway Endpoint for CloudWatch",
+      "NAT Gateway with TLS 1.3",
+      "Internet Gateway with WAF"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An Interface VPC Endpoint for `logs` keeps all CloudWatch Logs traffic within the AWS private network."
+  },
+  {
+    "q": "What is a key architectural benefit of using VPC Endpoints over NAT Gateways for AWS API traffic?",
+    "o": [
+      "Increased security and compliance (traffic never leaves the private AWS network), lower latency, and reduced data processing costs",
+      "Automatic conversion of all REST APIs to GraphQL",
+      "Ability to run EC2 instances without EBS volumes",
+      "Elimination of all IAM permission requirements --- ### Lambda in VPC: ENIs, Routing, Private Databases & Troubleshooting (51–75)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "VPC Endpoints enhance security (traffic stays on private AWS network), lower latency, and eliminate NAT Gateway data processing fees."
+  },
+  {
+    "q": "By default, what network environment does an AWS Lambda function run in when NO VPC configuration is specified?",
+    "o": [
+      "Inside the default VPC of the AWS account",
+      "In a secure, AWS-managed VPC with direct access to the public internet and public AWS service endpoints (S3, DynamoDB, SQS)",
+      "In a private subnet with no internet access",
+      "On an on-premises server"
+    ],
+    "a": [
+      1
+    ],
+    "e": "By default, Lambda runs in a managed execution environment with direct outbound access to the internet and public AWS endpoints."
+  },
+  {
+    "q": "When does an AWS Lambda function NEED to be configured with VPC access?",
+    "o": [
+      "Whenever the function needs to call Amazon S3 or Amazon DynamoDB",
+      "Only when the function needs to access private resources that reside inside a VPC and have no public endpoint (such as an Amazon RDS database in a private subnet or an internal ElastiCache cluster)",
+      "Whenever the function runtime is Python or Node.js",
+      "Whenever the function uses environment variables"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Lambda requires VPC configuration only when it needs to reach private resources with no public endpoint (e.g., RDS in private subnets)."
+  },
+  {
+    "q": "A developer attaches a Lambda function to an Amazon VPC by specifying private subnets and a Security Group so it can query a private Amazon RDS MySQL instance. Immediately after this configuration, the function can query RDS, but its existing HTTP call to a public third-party weather API begins timing out. What is the root cause?",
+    "o": [
+      "The Lambda function runtime ran out of memory",
+      "Attaching a Lambda function to private subnets routes all outbound traffic through the VPC, removing its default public internet route; without a NAT Gateway in the VPC, external internet calls fail",
+      "MySQL blocks all outbound HTTP connections from the Lambda function",
+      "The third-party weather API blocked AWS IP ranges"
+    ],
+    "a": [
+      1
+    ],
+    "e": "VPC attachment routes all outbound Lambda traffic through the private subnet; without a NAT Gateway, internet calls fail."
+  },
+  {
+    "q": "How can the developer resolve the issue in the previous question so the Lambda function can access BOTH the private RDS database AND the public weather API?",
+    "o": [
+      "Deploy a NAT Gateway in a public subnet of the VPC, and add a route in the private subnet's route table directing `0.0.0.0/0` to the NAT Gateway",
+      "Move the Lambda function into a public subnet",
+      "Assign an Elastic IP address directly to the Lambda function",
+      "Disable the Security Group on the RDS database"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Adding a NAT Gateway in a public subnet and routing private subnet `0.0.0.0/0` traffic to it restores internet connectivity for Lambda."
+  },
+  {
+    "q": "Why does placing a VPC-attached Lambda function in a public subnet NOT grant it direct internet access?",
+    "o": [
+      "Lambda functions attached to a VPC do not receive public IP addresses; even in a public subnet, without a public IP, traffic cannot be routed through an Internet Gateway",
+      "Public subnets do not support Lambda execution roles",
+      "Internet Gateways block all Lambda traffic",
+      "Lambda only supports private subnets"
+    ],
+    "a": [
+      0
+    ],
+    "e": "VPC-attached Lambda functions do not receive public IP addresses, so they cannot route through an Internet Gateway even in a public subnet."
+  },
+  {
+    "q": "What underlying technology did AWS introduce in 2019 (Hyperplane ENIs) to dramatically reduce cold-start latency for VPC-enabled Lambda functions?",
+    "o": [
+      "Pre-provisioned, shared Elastic Network Interfaces (ENIs) created per unique subnet and security group combination, shared across multiple execution environments and functions rather than creating a new ENI per function instance",
+      "Moving all Lambda functions onto physical bare-metal servers",
+      "Running Lambda exclusively in AWS CloudFront edge locations",
+      "Eliminating VPC security groups"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Hyperplane ENIs use shared, pre-provisioned network interfaces per subnet/security group, drastically reducing cold-start latency."
+  },
+  {
+    "q": "When configuring a Lambda function for VPC access, what two networking attributes must be specified in the function configuration? (Select TWO.)",
+    "o": [
+      "At least two private subnets across different Availability Zones (for high availability)",
+      "One or more Security Groups to control network access for the function's ENIs",
+      "The root password of the VPC Internet Gateway",
+      "An Elastic IP address allocated to the Lambda function",
+      "A public Route 53 domain name"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Configuring VPC access for Lambda requires selecting private subnets (across multiple AZs) and Security Groups."
+  },
+  {
+    "q": "An order processing Lambda function in a VPC needs to query an Amazon RDS PostgreSQL database in a private subnet. How should the RDS database's Security Group be configured to allow connections from Lambda?",
+    "o": [
+      "Add an inbound rule on TCP port 5432 with the source set to `0.0.0.0/0`",
+      "Add an inbound rule on TCP port 5432 with the source set to the Security Group ID assigned to the Lambda function",
+      "Add an inbound rule allowing all ICMP traffic from the Internet Gateway",
+      "Disable the RDS Security Group completely"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The RDS Security Group should allow inbound traffic on port 5432 sourcing the Lambda function's Security Group ID."
+  },
+  {
+    "q": "What IAM permissions must be included in a Lambda function's execution role to allow it to create and manage Elastic Network Interfaces (ENIs) when attached to a VPC?",
+    "o": [
+      "`AWSLambdaVPCAccessExecutionRole` managed policy (which grants `ec2:CreateNetworkInterface`, `ec2:DescribeNetworkInterfaces`, and `ec2:DeleteNetworkInterface`)",
+      "`AdministratorAccess`",
+      "`AmazonS3FullAccess`",
+      "`AWSLambdaBasicExecutionRole` only"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `AWSLambdaVPCAccessExecutionRole` policy grants permissions to create, describe, and delete ENIs."
+  },
+  {
+    "q": "What happens if a Lambda function configured for VPC access has an execution role that lacks the `ec2:CreateNetworkInterface` permission?",
+    "o": [
+      "The function executes without VPC access",
+      "Function invocations fail with an `InvalidParameterValueException` or `EC2AccessDeniedException` indicating missing ENI creation permissions",
+      "The VPC is automatically deleted",
+      "The function switches to an on-premises execution environment"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Without `ec2:CreateNetworkInterface` permissions, VPC-attached Lambda function invocations fail with authorization errors."
+  },
+  {
+    "q": "A VPC-attached Lambda function needs to write execution logs to Amazon CloudWatch Logs. The private subnets do NOT have a NAT Gateway. How can the developer ensure CloudWatch Logs continue to be captured?",
+    "o": [
+      "Create an Interface VPC Endpoint for CloudWatch Logs (`com.amazonaws.<region>.logs`) in the VPC private subnets",
+      "CloudWatch Logs cannot be used with VPC-attached Lambda functions",
+      "Store logs in local `/tmp` storage only",
+      "Re-deploy the Lambda function every 5 minutes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Deploying an Interface VPC Endpoint for CloudWatch Logs allows VPC-attached Lambda functions to ship logs without a NAT Gateway."
+  },
+  {
+    "q": "An application experiences intermittent Lambda throttling and failures when creating VPC connections during sudden traffic spikes. What VPC subnet configuration issue could cause this?",
+    "o": [
+      "The specified private subnets ran out of available private IP addresses, preventing the creation or scaling of Hyperplane ENIs",
+      "The VPC CIDR block is too large",
+      "The NAT Gateway was assigned an Elastic IP",
+      "The Lambda function memory was set to 10 GB"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Exhausting available private IP addresses in the configured subnets prevents Lambda from allocating Hyperplane ENIs during scaling."
+  },
+  {
+    "q": "What is the AWS best practice recommendation for sizing VPC subnets used by VPC-attached Lambda functions?",
+    "o": [
+      "Use small `/28` subnets with only 11 available IP addresses",
+      "Use adequately sized subnets (such as `/24` or `/22`) across multiple Availability Zones to ensure sufficient free IP addresses for ENI allocation during scaling",
+      "Share a single `/30` subnet with all RDS databases",
+      "Use public subnets exclusively"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS recommends using sufficiently large subnets (e.g., `/24`) across multiple AZs to ensure adequate IP availability."
+  },
+  {
+    "q": "A developer wants a VPC-attached Lambda function to access an Amazon DynamoDB table without sending traffic through a NAT Gateway. What should the developer configure?",
+    "o": [
+      "Add a Gateway VPC Endpoint for DynamoDB and associate it with the route table of the Lambda function's subnets",
+      "Assign an Elastic IP to the DynamoDB table",
+      "Connect DynamoDB to the Lambda function via an SSH tunnel",
+      "Disable encryption on the DynamoDB table"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An S3 or DynamoDB Gateway VPC Endpoint associated with the Lambda subnets provides private access without a NAT Gateway."
+  },
+  {
+    "q": "A developer is testing a VPC-attached Lambda function that communicates with an Amazon ElastiCache for Redis cluster. The function times out after 15 seconds. What is the most common misconfiguration?",
+    "o": [
+      "The ElastiCache security group does not allow inbound traffic on port 6379 from the Lambda function's security group, or the subnets lack network connectivity",
+      "Redis does not support Lambda connections",
+      "Lambda functions cannot run in the same VPC as ElastiCache",
+      "ElastiCache requires an Internet Gateway"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Timeouts connecting to ElastiCache are typically caused by missing inbound rules on port 6379 in the Redis Security Group."
+  },
+  {
+    "q": "How does AWS Lambda handle ENI lifecycle management for VPC-attached functions when functions are deleted or updated?",
+    "o": [
+      "Lambda automatically reclaims and deletes unused Hyperplane ENIs after a period of inactivity",
+      "Developers must manually delete ENIs using the EC2 console",
+      "ENIs remain forever and incur continuous billing",
+      "The VPC must be deleted to release ENIs"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Lambda automatically reclaims and deletes unneeded Hyperplane ENIs after periods of inactivity."
+  },
+  {
+    "q": "A Lambda function attached to a VPC needs to retrieve database credentials from AWS Secrets Manager on every cold start. The VPC has no NAT Gateway. What solution provides the fastest, most secure, and cost-effective access?",
+    "o": [
+      "Interface VPC Endpoint for Secrets Manager (`com.amazonaws.<region>.secretsmanager`) deployed in the Lambda subnets",
+      "Hardcoding the database password in the Lambda environment variables in plain text",
+      "Creating an Internet Gateway in the private subnet",
+      "Emailing the password to the Lambda function via SNS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An Interface VPC Endpoint for Secrets Manager provides secure, private, and low-latency credential retrieval without internet egress."
+  },
+  {
+    "q": "When deploying a VPC-attached Lambda function using AWS SAM or CloudFormation, how is the VPC configuration defined in YAML?",
+    "o": [
+      "Under `VpcConfig: { SubnetIds: [...], SecurityGroupIds: [...] }`",
+      "Under `Network: { VPC: \"vpc-xxxx\" }`",
+      "In `Parameters: VPC:`",
+      "In `Outputs: VPC:`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "In CloudFormation/SAM, VPC settings are configured under `VpcConfig: { SubnetIds: [...], SecurityGroupIds: [...] }`."
+  },
+  {
+    "q": "What is a key architectural reason to AVOID attaching a Lambda function to a VPC if it only interacts with Amazon S3, Amazon DynamoDB, and Amazon SQS?",
+    "o": [
+      "Lambda functions cannot access S3 from within a VPC",
+      "Lambda by default can access S3, DynamoDB, and SQS securely over AWS service endpoints without the added complexity, ENI management, or potential cold-start overhead of VPC attachment",
+      "SQS requires physical server hardware",
+      "DynamoDB requires public IP addresses"
+    ],
+    "a": [
+      1
+    ],
+    "e": "If Lambda only interacts with public AWS services (S3, DynamoDB, SQS), VPC attachment adds unnecessary complexity and ENI overhead."
+  },
+  {
+    "q": "If a Lambda function in a VPC needs to communicate with an external SaaS service that requires IP whitelisting (firewall allowlist), how can the developer provide a fixed, predictable public IP for the Lambda traffic?",
+    "o": [
+      "Route the Lambda function's outbound traffic through a NAT Gateway with an associated static Elastic IP (EIP), and provide that EIP to the SaaS provider",
+      "Assign an Elastic IP directly to the Lambda function",
+      "Lambda cannot support IP whitelisting",
+      "Ask the SaaS provider to allow all AWS IP ranges"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Routing Lambda outbound traffic through a NAT Gateway with a fixed Elastic IP allows whitelisting that static IP on external services."
+  },
+  {
+    "q": "A developer observes that Lambda function execution duration increased by 200ms after configuring VPC access. What is the primary contributor to this duration increase?",
+    "o": [
+      "Network hop latency through ENIs and VPC routing compared to direct internal AWS service endpoints",
+      "Lambda allocating less CPU when in a VPC",
+      "CloudWatch disabling metrics",
+      "DynamoDB throttling the function"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Network hops through ENIs and VPC routing introduce minor additional latency compared to direct AWS service endpoints."
+  },
+  {
+    "q": "An organization requires that all Lambda functions accessing sensitive patient health data (PHI) in an Aurora PostgreSQL database must be isolated from the public internet entirely (no NAT Gateway, no IGW). How can the function still download required data from an S3 bucket in the same Region?",
+    "o": [
+      "Create an S3 Gateway VPC Endpoint in the VPC and attach it to the private route table",
+      "Enable public access on the S3 bucket",
+      "Copy the data to an EBS volume attached to Lambda",
+      "Send the data over an unencrypted email"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An S3 Gateway VPC Endpoint enables private S3 access for fully isolated VPC subnets with no internet gateways."
+  },
+  {
+    "q": "What tool can a developer use to capture and inspect IP traffic flowing to and from a VPC-attached Lambda function's network interface for security auditing?",
+    "o": [
+      "VPC Flow Logs",
+      "AWS Cloud9 terminal",
+      "S3 Select",
+      "Route 53 Health Checks"
+    ],
+    "a": [
+      0
+    ],
+    "e": "VPC Flow Logs capture network traffic metadata at the ENI level for security analysis and connection troubleshooting."
+  },
+  {
+    "q": "A developer is designing a serverless backend. The architecture includes an API Gateway, Lambda functions in a VPC, Amazon RDS Proxy, and Amazon Aurora. What is the role of Amazon RDS Proxy in this VPC architecture?",
+    "o": [
+      "It manages a shared connection pool between the bursty Lambda execution environments and the Aurora database, preventing connection exhaustion on Aurora",
+      "It converts SQL queries into GraphQL",
+      "It replaces the need for a VPC Security Group",
+      "It acts as an Internet Gateway"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon RDS Proxy pools and multiplexes database connections, preventing Lambda concurrency spikes from overwhelming RDS."
+  },
+  {
+    "q": "If a developer removes the VPC configuration from a Lambda function, what immediate change occurs to its networking?",
+    "o": [
+      "The function is terminated immediately",
+      "The function's execution environments revert to running in the standard AWS-managed Lambda network with direct public internet access and no access to private VPC resources",
+      "All S3 buckets in the account are deleted",
+      "The Lambda function code is deleted --- ### Elastic Load Balancing, Route 53 & CloudFront for Developers (76–125)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Removing VPC configuration returns the Lambda function to the standard AWS-managed network with direct internet access."
+  },
+  {
+    "q": "A developer is deploying an Application Load Balancer (ALB) to route public HTTP and HTTPS traffic to an application running on EC2 instances in private subnets. In which subnets must the ALB itself be provisioned?",
+    "o": [
+      "In at least two public subnets across different Availability Zones",
+      "In private subnets only",
+      "In a single subnet in `us-east-1a`",
+      "On an on-premises router"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An internet-facing ALB must be deployed in at least two public subnets across different Availability Zones."
+  },
+  {
+    "q": "What is the primary difference between an Internet-Facing Load Balancer and an Internal Load Balancer in AWS?",
+    "o": [
+      "An internet-facing load balancer has public IP addresses and routes public internet traffic to targets; an internal load balancer has private IP addresses only and routes traffic strictly within a VPC or connected networks",
+      "Internal load balancers do not support HTTP",
+      "Internet-facing load balancers cannot perform health checks",
+      "Internal load balancers are only available in GovCloud"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Internet-facing load balancers route public internet traffic; internal load balancers have private IPs and route internal VPC traffic."
+  },
+  {
+    "q": "A company wants to register a root domain name `example.com` (zone apex) and point it to an Application Load Balancer. Standard DNS specification (RFC 1034) prohibits CNAME records at the zone apex. Which Amazon Route 53 record type solves this limitation?",
+    "o": [
+      "A Record (standard IPv4) with a hardcoded IP",
+      "Route 53 Alias Record (pointing to the ALB's dualstack DNS name)",
+      "PTR Record",
+      "TXT Record"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Route 53 Alias records resolve directly to the ALB's dualstack DNS name, supporting zone apex (`example.com`) mapping."
+  },
+  {
+    "q": "What are two key advantages of using Route 53 Alias records instead of standard CNAME records when pointing to AWS resources like CloudFront, ALBs, or S3 website endpoints? (Select TWO.)",
+    "o": [
+      "Alias records can be created at the zone apex (`example.com`)",
+      "Route 53 does not charge for queries to Alias records that resolve to AWS resources (e.g., ALBs, CloudFront distributions, S3 buckets)",
+      "Alias records work with external non-AWS servers",
+      "Alias records disable SSL/TLS requirements",
+      "Alias records eliminate the need for Route 53 Hosted Zones"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Alias records work at the zone apex (`example.com`) and queries to AWS resource targets are free of charge."
+  },
+  {
+    "q": "What is the difference between a Route 53 Public Hosted Zone and a Private Hosted Zone?",
+    "o": [
+      "A Public Hosted Zone resolves DNS queries on the public internet; a Private Hosted Zone resolves DNS queries only within one or more specified Amazon VPCs",
+      "Private Hosted Zones do not support A records",
+      "Public Hosted Zones are completely free of charge",
+      "Private Hosted Zones can only be queried from on-premises"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Public Hosted Zones resolve queries on the internet; Private Hosted Zones resolve queries strictly within associated VPCs."
+  },
+  {
+    "q": "A company runs an active-passive disaster recovery architecture. Primary traffic goes to an ALB in `us-east-1`, while backup traffic routes to a static error site hosted on Amazon S3 in `us-west-2`. Which Route 53 routing policy automatically redirects traffic to the backup site when the primary ALB fails a health check?",
+    "o": [
+      "Simple routing",
+      "Failover routing policy (with a Route 53 Health Check on the primary record)",
+      "Geolocation routing policy",
+      "Multivalue answer routing policy"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A Failover routing policy coupled with a Route 53 Health Check automatically routes traffic to a secondary target upon primary failure."
+  },
+  {
+    "q": "A developer wants to split user traffic 80/20 between an existing production version (80%) and a newly deployed canary version (20%) of a web application to test stability under real load. Which Route 53 routing policy supports this traffic splitting?",
+    "o": [
+      "Latency routing policy",
+      "Weighted routing policy",
+      "Geoproximity routing policy",
+      "Failover routing policy"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Weighted routing policies split traffic based on assigned weight ratios (e.g., 80% to production, 20% to canary)."
+  },
+  {
+    "q": "A global web service has application deployments in `us-east-1`, `eu-west-1`, and `ap-southeast-1`. The team wants users in Europe to be routed to the European deployment and users in Asia to the Asian deployment to achieve the lowest network latency. Which Route 53 routing policy should be used?",
+    "o": [
+      "Latency-based routing policy (or Geolocation routing policy)",
+      "Simple routing policy",
+      "Failover routing policy",
+      "Weighted routing policy with equal weights"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Latency-based routing directs users to the AWS Region that delivers the lowest round-trip network latency."
+  },
+  {
+    "q": "How does a Route 53 Health Check monitor the health of an endpoint?",
+    "o": [
+      "By sending periodic HTTP, HTTPS, or TCP requests to the specified IP address or domain name and path from global Route 53 health checkers, verifying response status codes within a timeout threshold",
+      "By running an SSH script on the server",
+      "By checking the S3 bucket size",
+      "By inspecting IAM policies"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Route 53 Health Checks send periodic HTTP/HTTPS/TCP probes to endpoints and evaluate response codes against thresholds."
+  },
+  {
+    "q": "A media company hosts video files on Amazon S3 behind an Amazon CloudFront distribution. The company wants to ensure that users CANNOT bypass CloudFront and download videos directly from the S3 bucket URL. Which CloudFront feature restricts S3 bucket access exclusively to the CloudFront distribution?",
+    "o": [
+      "CloudFront Origin Access Control (OAC)",
+      "Route 53 Latency Routing",
+      "S3 Cross-Region Replication",
+      "S3 Transfer Acceleration alone"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Origin Access Control (OAC) restricts S3 bucket access so objects can only be fetched through CloudFront."
+  },
+  {
+    "q": "What bucket policy configuration is required when using CloudFront Origin Access Control (OAC) to secure an S3 bucket?",
+    "o": [
+      "A bucket policy granting `s3:GetObject` to the CloudFront service principal (`cloudfront.amazonaws.com`) with a condition matching the distribution's ARN (`StringEquals: { \"AWS:SourceArn\": \"arn:aws:cloudfront::.../distribution/<id>\" }`)",
+      "A bucket policy granting `s3:*` to `Principal: \"*\"`",
+      "Disabling S3 Block Public Access completely",
+      "A bucket policy allowing access to all IAM users"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The S3 bucket policy must grant `s3:GetObject` to `cloudfront.amazonaws.com` with a condition matching the distribution ARN."
+  },
+  {
+    "q": "Why is Origin Access Control (OAC) recommended over the legacy Origin Access Identity (OAI) for securing S3 origins in CloudFront?",
+    "o": [
+      "OAC supports all Amazon S3 buckets in all AWS Regions, supports SSE-KMS encrypted objects, supports dynamic HTTP methods (PUT, POST, DELETE), and provides enhanced security via SigV4 signing",
+      "OAI is slower than OAC",
+      "OAI requires an EC2 instance",
+      "OAC is completely free while OAI charges $10 per month"
+    ],
+    "a": [
+      0
+    ],
+    "e": "OAC supports all S3 buckets, SSE-KMS encryption, all HTTP methods, and enhanced SigV4 authentication over legacy OAI."
+  },
+  {
+    "q": "A premium video-on-demand platform wants to grant paying subscribers temporary access to download a specific high-resolution movie file through CloudFront. The download link must expire after 2 hours and be restricted to the user. Which CloudFront feature should the backend use to generate this secure link?",
+    "o": [
+      "CloudFront Signed URL",
+      "CloudFront Origin Request Policy",
+      "S3 Bucket ACL",
+      "Route 53 Weighted Record"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Signed URLs provide temporary, authenticated access to individual files for authorized users."
+  },
+  {
+    "q": "A subscription streaming website delivers HLS (HTTP Live Streaming) video content consisting of hundreds of `.ts` media segments and a master `.m3u8` playlist. Which CloudFront mechanism is BEST suited for controlling subscriber access across multiple related media files without rewriting hundreds of individual URLs?",
+    "o": [
+      "CloudFront Signed Cookies",
+      "CloudFront Signed URLs for every `.ts` segment file",
+      "AWS WAF Rate Limiting",
+      "S3 Object Versioning"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Signed Cookies grant access to multiple related files (like HLS video streams) without requiring individual signed URLs."
+  },
+  {
+    "q": "What cryptographic component is used by an application server to generate CloudFront Signed URLs and Signed Cookies?",
+    "o": [
+      "A private key from a CloudFront Key Group (or public/private key pair associated with an authorized account)",
+      "An AWS KMS customer master key directly without CloudFront integration",
+      "The root user password of the AWS account",
+      "An Amazon Cognito Identity Pool ID"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Signed URLs and Cookies are signed using a private key from an authorized CloudFront Key Group."
+  },
+  {
+    "q": "What are the two primary edge compute options available in Amazon CloudFront for running code close to end users? (Select TWO.)",
+    "o": [
+      "CloudFront Functions",
+      "AWS Lambda@Edge",
+      "AWS Step Functions Edge",
+      "Amazon EC2 Spot Fleet",
+      "Amazon EMR on EKS"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "CloudFront Functions (lightweight JS) and AWS Lambda@Edge (full Node.js/Python) are the two edge compute mechanisms in CloudFront."
+  },
+  {
+    "q": "A developer needs to inspect incoming HTTP request headers, normalize the `Accept-Language` header to 2-character country codes, and rewrite URL paths at edge locations before the CloudFront cache key is computed. The operation must execute in sub-milliseconds with ultra-low cost and requires no network access. Which edge compute solution is the BEST fit?",
+    "o": [
+      "CloudFront Functions (executed on Viewer Request)",
+      "Lambda@Edge",
+      "Amazon Athena",
+      "AWS CodeBuild"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Functions execute in sub-milliseconds at edge PoPs, ideal for lightweight header and URL manipulation without network calls."
+  },
+  {
+    "q": "A developer needs to authenticate incoming requests at the CloudFront edge by validating JWT tokens against an external OAuth authorization server, and perform dynamic image resizing on origin response before returning the image to the client. Which edge compute solution is required?",
+    "o": [
+      "AWS Lambda@Edge (supports third-party network calls, external libraries, and origin-request/origin-response trigger events)",
+      "CloudFront Functions",
+      "S3 Select",
+      "Route 53 Resolver"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Lambda@Edge supports third-party network calls, external libraries, and complex compute at Regional Edge Caches."
+  },
+  {
+    "q": "What are the four trigger lifecycle events supported by Lambda@Edge in a CloudFront distribution?",
+    "o": [
+      "Viewer Request, Origin Request, Origin Response, and Viewer Response",
+      "PreBuild, Build, PostBuild, and Deploy",
+      "ClientInit, ServerInit, Handshake, and Close",
+      "GET, POST, PUT, and DELETE"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Lambda@Edge can be triggered on Viewer Request, Origin Request, Origin Response, and Viewer Response events."
+  },
+  {
+    "q": "Which two trigger events are supported by CloudFront Functions? (Select TWO.)",
+    "o": [
+      "Viewer Request",
+      "Viewer Response",
+      "Origin Request",
+      "Origin Response",
+      "Edge Failover"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "CloudFront Functions only support Viewer Request and Viewer Response triggers."
+  },
+  {
+    "q": "In which AWS Region must an AWS Lambda function be authored and published as a numbered version before it can be associated with a CloudFront distribution as a Lambda@Edge function?",
+    "o": [
+      "`us-east-1` (N. Virginia)",
+      "`us-west-2` (Oregon)",
+      "Any Region where the user resides",
+      "`eu-west-1` (Ireland)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Lambda@Edge functions must be created and published as numbered versions in the `us-east-1` (N. Virginia) Region."
+  },
+  {
+    "q": "An e-commerce website uses CloudFront in front of an Application Load Balancer. The developer wants to automatically redirect all HTTP traffic to HTTPS at the edge before requests reach the origin. Which setting in the CloudFront Cache Behavior enforces this?",
+    "o": [
+      "Viewer Protocol Policy set to `Redirect HTTP to HTTPS` (or `HTTPS Only`)",
+      "Origin Protocol Policy set to HTTP Only",
+      "Invalidation of `/*`",
+      "S3 Transfer Acceleration"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting Viewer Protocol Policy to `Redirect HTTP to HTTPS` automatically redirects insecure requests to HTTPS at the edge."
+  },
+  {
+    "q": "A company wants to restrict access to a CloudFront distribution so that users from specific sanctioned countries cannot access the content. Which CloudFront feature enforces geographic access restrictions?",
+    "o": [
+      "CloudFront Geographic Restrictions (Geo-blocking allowlist or blocklist)",
+      "Route 53 Simple Routing",
+      "Amazon RDS Parameter Groups",
+      "S3 Bucket Encryption"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Geographic Restrictions (Geo-blocking) allow or restrict content delivery based on viewer country codes."
+  },
+  {
+    "q": "A developer wants to cache static images (`/images/*`) for 30 days in CloudFront, while routing dynamic API calls (`/api/*`) directly to an ALB without caching. How is this configured in a single CloudFront distribution?",
+    "o": [
+      "Create multiple Cache Behaviors with distinct Path Patterns: configure `/images/*` with high TTLs and `/api/*` with caching disabled (TTL=0 / Managed-CachingDisabled policy) pointing to the ALB origin",
+      "Deploy two separate CloudFront distributions",
+      "Disable CloudFront caching globally",
+      "Write custom bash scripts in EC2 UserData"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Defining multiple Cache Behaviors in CloudFront allows applying distinct TTL and caching rules based on path patterns."
+  },
+  {
+    "q": "What is a CloudFront Cache Policy?",
+    "o": [
+      "A configuration object that defines which query strings, headers, and cookies are included in the cache key, as well as minimum, maximum, and default TTL settings",
+      "An IAM user permission policy",
+      "A database backup schedule",
+      "A VPC route table entry"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A CloudFront Cache Policy defines the cache key (headers, cookies, query strings) and TTL settings for cached responses."
+  },
+  {
+    "q": "What is the difference between a CloudFront Cache Policy and an Origin Request Policy?",
+    "o": [
+      "A Cache Policy defines what values participate in the cache key to determine cache hits; an Origin Request Policy defines which headers, cookies, and query strings are forwarded to the origin on a cache miss without affecting the cache key",
+      "A Cache Policy is for S3; an Origin Request Policy is for EC2",
+      "Both policies are identical",
+      "Origin Request Policies only apply to Route 53"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Cache Policy defines the cache key; an Origin Request Policy defines what headers/cookies are forwarded to the origin on a miss."
+  },
+  {
+    "q": "An API Gateway REST API is deployed in `us-west-2`. The developer wants to reduce latency for global API callers by using CloudFront. What type of API Gateway endpoint type automatically provisions and manages an integrated CloudFront distribution in front of the API?",
+    "o": [
+      "Edge-Optimized API Endpoint",
+      "Regional API Endpoint",
+      "Private API Endpoint",
+      "VPC Endpoint"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Edge-Optimized API Gateway endpoints automatically provision and manage an integrated CloudFront distribution."
+  },
+  {
+    "q": "When should a developer choose a Regional API Gateway endpoint paired with a custom CloudFront distribution instead of a standard Edge-Optimized API Gateway endpoint?",
+    "o": [
+      "When the developer needs custom cache behaviors, AWS WAF rules, Lambda@Edge functions, or multi-origin routing under a single domain name",
+      "When the API must only be called from inside a VPC",
+      "When the API is written in Python",
+      "When the API has fewer than 10 users"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Combining a Regional API Gateway with a custom CloudFront distribution allows custom cache behaviors, WAF rules, and edge compute."
+  },
+  {
+    "q": "A developer configures Custom Error Responses in Amazon CloudFront. What capability does this feature provide for Single Page Applications (SPAs)?",
+    "o": [
+      "It intercepts HTTP 403 or 404 errors from an S3 origin and returns `index.html` with an HTTP 200 status code, allowing client-side routers (e.g., React Router) to handle the URL route",
+      "It reboots the origin server upon receiving a 500 error",
+      "It deletes corrupt S3 objects",
+      "It converts XML responses to JSON"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront Custom Error Responses return `index.html` with a 200 status for 403/404 errors, enabling client-side SPA routing."
+  },
+  {
+    "q": "What is the maximum file size supported for a single object uploaded or downloaded through Amazon CloudFront?",
+    "o": [
+      "30 GB",
+      "5 GB",
+      "5 TB (matching Amazon S3 maximum object size)",
+      "100 MB"
+    ],
+    "a": [
+      2
+    ],
+    "e": "CloudFront supports objects up to 5 TB in size, matching the Amazon S3 maximum object size."
+  },
+  {
+    "q": "An ALB targets EC2 instances in private subnets across two AZs. The ALB is internet-facing and has Cross-Zone Load Balancing enabled. How does Cross-Zone Load Balancing improve application traffic distribution?",
+    "o": [
+      "It distributes incoming traffic evenly across all registered backend targets in all enabled Availability Zones, preventing unbalanced load when AZ traffic is uneven",
+      "It routes traffic to instances in other AWS accounts",
+      "It replicates EBS volumes across AZs",
+      "It converts HTTP requests to UDP"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cross-Zone Load Balancing distributes traffic evenly across all backend instances in all enabled AZs, balancing instance utilization."
+  },
+  {
+    "q": "Which load balancer type operates at Layer 7 (Application Layer) of the OSI model and supports path-based routing, host-based routing, HTTP/2, and native WebSocket protocols?",
+    "o": [
+      "Application Load Balancer (ALB)",
+      "Network Load Balancer (NLB)",
+      "Gateway Load Balancer (GWLB)",
+      "Classic Load Balancer (CLB)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Application Load Balancers operate at Layer 7 and support path/host routing, HTTP/2, and WebSockets."
+  },
+  {
+    "q": "Which load balancer type operates at Layer 4 (Transport Layer), is capable of handling millions of requests per second with ultra-low latency, and provides static IP addresses per Availability Zone?",
+    "o": [
+      "Network Load Balancer (NLB)",
+      "Application Load Balancer (ALB)",
+      "Classic Load Balancer (CLB)",
+      "Gateway Load Balancer (GWLB)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Network Load Balancers operate at Layer 4, handling millions of requests per second with ultra-low latency and static IPs."
+  },
+  {
+    "q": "How does an Application Load Balancer verify whether an EC2 target is healthy before routing user traffic to it?",
+    "o": [
+      "By sending periodic health check requests to a configured path (e.g., `GET /health`) and verifying that the target responds with a success HTTP status code (e.g., 200) within the threshold",
+      "By pinging the instance using ICMP",
+      "By checking the instance CPU utilization in CloudWatch",
+      "By inspecting the git commit history"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ALBs send periodic HTTP/HTTPS health checks to a designated path (e.g., `/health`) to verify target health."
+  },
+  {
+    "q": "A developer wants an ALB to route requests for `example.com/api/*` to an API Target Group and requests for `example.com/static/*` to a Static Target Group. What ALB feature enables this routing?",
+    "o": [
+      "Path-Based Listener Rules",
+      "Host-Based Listener Rules",
+      "Route 53 Weighted Records",
+      "Security Group ingress rules"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Path-Based Listener Rules on an ALB route requests to specific Target Groups based on URL path patterns."
+  },
+  {
+    "q": "What HTTP header does an Application Load Balancer append to incoming client requests so that backend EC2 instances know the original IP address of the calling client?",
+    "o": [
+      "`X-Forwarded-For`",
+      "`X-Amzn-Trace-Id`",
+      "`User-Agent`",
+      "`Authorization`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ALBs append the client's original IP address to the `X-Forwarded-For` HTTP request header."
+  },
+  {
+    "q": "What HTTP header does an Application Load Balancer append to incoming requests to support end-to-end distributed tracing with AWS X-Ray?",
+    "o": [
+      "`X-Amzn-Trace-Id`",
+      "`X-Forwarded-Proto`",
+      "`Content-Type`",
+      "`Host`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ALBs append the `X-Amzn-Trace-Id` header to enable distributed request tracing with AWS X-Ray."
+  },
+  {
+    "q": "An application running on EC2 instances behind an ALB requires sticky sessions (session affinity) so that requests from the same user are consistently routed to the same backend instance. What mechanism does the ALB use to maintain stickiness?",
+    "o": [
+      "An HTTP cookie (either ALB-generated duration-based cookie or application-based cookie)",
+      "Client IP address hashing only",
+      "DNS round-robin",
+      "Hardcoding the instance ID in the URL"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ALBs maintain session stickiness using HTTP cookies (either duration-based or application-based)."
+  },
+  {
+    "q": "A developer wants to terminate SSL/TLS encryption at the Application Load Balancer and use a free SSL certificate that automatically renews. Which AWS service provides and manages this certificate?",
+    "o": [
+      "AWS Certificate Manager (ACM)",
+      "AWS Secrets Manager",
+      "AWS KMS",
+      "AWS Directory Service"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Certificate Manager (ACM) provisions and automatically renews free SSL/TLS certificates for use with ALBs and CloudFront."
+  },
+  {
+    "q": "What ALB feature allows hosting multiple websites with different SSL/TLS certificates on the same ALB listener and port (443)?",
+    "o": [
+      "Server Name Indication (SNI)",
+      "Cross-Origin Resource Sharing (CORS)",
+      "Route 53 Geolocation",
+      "VPC Peering"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Server Name Indication (SNI) enables hosting multiple domains with distinct SSL certificates on a single ALB listener."
+  },
+  {
+    "q": "When an ALB targets AWS Lambda functions in a Target Group, what data format does the ALB use to pass incoming HTTP requests to the Lambda handler?",
+    "o": [
+      "A standardized JSON event object containing HTTP method, path, headers, query string parameters, and body",
+      "Raw TCP byte stream",
+      "An XML document",
+      "A CSV string"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ALBs pass incoming HTTP requests to Lambda functions as structured JSON event objects."
+  },
+  {
+    "q": "What status code does an ALB return to clients when all target instances in a Target Group fail health checks?",
+    "o": [
+      "503 Service Unavailable (or 502 Bad Gateway)",
+      "200 OK",
+      "404 Not Found",
+      "301 Moved Permanently"
+    ],
+    "a": [
+      0
+    ],
+    "e": "When all backend targets in a Target Group fail health checks, the ALB returns HTTP 503 Service Unavailable (or 502)."
+  },
+  {
+    "q": "A developer wants to register an Amazon Route 53 private hosted zone `corp.internal` to resolve internal domain names. Which requirement must be met?",
+    "o": [
+      "The private hosted zone must be associated with at least one Amazon VPC in the AWS account",
+      "The domain must be registered through an external registrar",
+      "The VPC must have an Internet Gateway attached",
+      "Public DNS queries must be allowed from `0.0.0.0/0`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Route 53 Private Hosted Zone must be associated with at least one Amazon VPC to resolve DNS queries."
+  },
+  {
+    "q": "What Route 53 routing policy should be used when a developer wants to return up to 8 randomly selected healthy IP addresses in response to DNS queries, providing DNS-level load balancing with health checking?",
+    "o": [
+      "Multivalue Answer routing policy",
+      "Simple routing policy",
+      "Geolocation routing policy",
+      "Failover routing policy"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Multivalue Answer routing returns up to 8 healthy records randomly, providing DNS-based load balancing with health checks."
+  },
+  {
+    "q": "How does Amazon Route 53 Resolver handle DNS queries from resources within an Amazon VPC?",
+    "o": [
+      "By querying the VPC Route 53 Resolver (the `.2` IP address of the VPC CIDR block, e.g., `10.0.0.2` or AmazonProvidedDNS)",
+      "By querying public Google DNS `8.8.8.8`",
+      "By routing DNS queries through an S3 bucket",
+      "By executing a Lambda function on every query"
+    ],
+    "a": [
+      0
+    ],
+    "e": "VPC instances query the Route 53 Resolver at the base VPC network CIDR `.2` address (e.g., `10.0.0.2` or AmazonProvidedDNS)."
+  },
+  {
+    "q": "An application deployed across two AWS accounts needs to share a private Route 53 hosted zone. Is this supported?",
+    "o": [
+      "Yes, by authorizing the VPC in the second account to associate with the private hosted zone using the Route 53 API (`CreateVPCAssociationAuthorization`)",
+      "No, private hosted zones can only be associated with VPCs in the same AWS account",
+      "Yes, but only if both accounts use the same credit card",
+      "No, Route 53 does not support multiple VPCs"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`CreateVPCAssociationAuthorization` allows associating VPCs from different AWS accounts with a shared Private Hosted Zone."
+  },
+  {
+    "q": "A developer wants to invalidate a cached file `/index.html` in an Amazon CloudFront distribution immediately following a software update. What is the syntax of the invalidation path?",
+    "o": [
+      "`/index.html` (or `/*` for all files)",
+      "`s3://bucket/index.html`",
+      "`DELETE /index.html`",
+      "`RESET CACHE`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFront invalidation uses the path format `/index.html` (or wildcard `/*`) to purge cached files from edge locations."
+  },
+  {
+    "q": "How are CloudFront invalidation requests priced?",
+    "o": [
+      "The first 1,000 invalidation paths submitted each month are free; subsequent invalidation paths incur a small fee per path",
+      "$10 per invalidation request",
+      "Invalidation is completely free without limits",
+      "Invalidation is only available to Enterprise Support customers"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The first 1,000 invalidation paths per month are free; subsequent paths incur a small fee."
+  },
+  {
+    "q": "An application uses Amazon CloudFront to serve videos. The developer wants to restrict access so that requests are only served if they arrive over HTTPS. What setting enforces this in the CloudFront distribution?",
+    "o": [
+      "Set Viewer Protocol Policy to `HTTPS Only`",
+      "Delete all HTTP ports",
+      "Disable DNS",
+      "Block port 80 in the client browser"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting Viewer Protocol Policy to `HTTPS Only` ensures CloudFront rejects unencrypted HTTP requests."
+  }
+];
+
+let idx = 0, score = 0, answered = new Array(QUESTIONS.length).fill(false), correctFlags = new Array(QUESTIONS.length).fill(false), missed = [];
+const STORAGE_KEY = "aws-dva-quiz-15";
+
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({idx, score, answered, correctFlags}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(d && Array.isArray(d.answered) && d.answered.length === QUESTIONS.length){
+      idx = d.idx; score = d.score; answered = d.answered; correctFlags = d.correctFlags;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+const quizArea = document.getElementById("quizArea");
+const posNum = document.getElementById("posNum");
+const scoreNum = document.getElementById("scoreNum");
+const progressFill = document.getElementById("progressFill");
+
+function updateTop(){
+  posNum.textContent = (idx+1) + " / " + QUESTIONS.length;
+  scoreNum.textContent = score;
+  const answeredCount = answered.filter(Boolean).length;
+  progressFill.style.width = (answeredCount / QUESTIONS.length * 100) + "%";
+}
+
+function renderQuestion(){
+  const item = QUESTIONS[idx];
+  const isMulti = !!item.multi;
+  const done = answered[idx];
+  let html = "";
+  html += '<div class="card">';
+  html += '<div class="qnum">Question ' + (idx+1) + '</div>';
+  if(isMulti) html += '<div class="multi-hint">Select all that apply</div><br>';
+  html += '<div class="qtext">' + escapeHtml(item.q) + '</div>';
+  item.o.forEach((optText, i)=>{
+    const letter = String.fromCharCode(65+i);
+    let cls = "opt";
+    if(done){
+      if(item.a.includes(i)) cls += " correct";
+      else if(item.picked && item.picked.includes(i)) cls += " incorrect";
+    } else if(item.picked && item.picked.includes(i)){
+      cls += " selected";
+    }
+    html += '<button class="' + cls + '" data-i="' + i + '" ' + (done?'disabled':'') + '>' +
+      '<span class="mark">' + letter + '</span><span>' + escapeHtml(optText) + '</span></button>';
+  });
+  if(done){
+    html += '<div class="explain"><b>' + (correctFlags[idx] ? "Correct. " : "Not quite. ") + '</b>' + escapeHtml(item.e) + '</div>';
+  }
+  html += '<div class="actions">';
+  if(isMulti && !done){
+    html += '<button class="btn btn-primary" id="submitBtn" disabled>Submit answer</button>';
+  }
+  if(done){
+    if(idx < QUESTIONS.length - 1){
+      html += '<button class="btn btn-primary" id="nextBtn">Next question</button>';
+    } else {
+      html += '<button class="btn btn-primary" id="finishBtn">See results</button>';
+    }
+  }
+  html += '<button class="btn btn-ghost" id="resetBtn">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  updateTop();
+  wireOptions(item, isMulti, done);
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function wireOptions(item, isMulti, done){
+  const opts = quizArea.querySelectorAll(".opt");
+  opts.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(done) return;
+      const i = parseInt(btn.dataset.i, 10);
+      if(isMulti){
+        item.picked = item.picked || [];
+        const pos = item.picked.indexOf(i);
+        if(pos >= 0) item.picked.splice(pos,1); else item.picked.push(i);
+        renderQuestion();
+        const submitBtn = document.getElementById("submitBtn");
+        if(submitBtn) submitBtn.disabled = !(item.picked && item.picked.length > 0);
+      } else {
+        item.picked = [i];
+        commitAnswer(item);
+      }
+    });
+  });
+  const submitBtn = document.getElementById("submitBtn");
+  if(submitBtn){
+    submitBtn.disabled = !(item.picked && item.picked.length > 0);
+    submitBtn.addEventListener("click", ()=> commitAnswer(item));
+  }
+  const nextBtn = document.getElementById("nextBtn");
+  if(nextBtn) nextBtn.addEventListener("click", ()=>{ idx++; save(); renderQuestion(); });
+  const finishBtn = document.getElementById("finishBtn");
+  if(finishBtn) finishBtn.addEventListener("click", renderSummary);
+  const resetBtn = document.getElementById("resetBtn");
+  if(resetBtn) resetBtn.addEventListener("click", resetAll);
+}
+
+function commitAnswer(item){
+  if(answered[idx]) return;
+  answered[idx] = true;
+  const correct = item.picked.length === item.a.length && item.picked.every(p => item.a.includes(p));
+  correctFlags[idx] = correct;
+  if(correct) score++; else missed.push(idx);
+  save();
+  renderQuestion();
+}
+
+function renderSummary(){
+  const pct = Math.round(score / QUESTIONS.length * 100);
+  const passed = pct >= 72;
+  let html = '<div class="card summary">';
+  html += '<div class="eyebrow">Results</div>';
+  html += '<div class="score-big">' + score + ' / ' + QUESTIONS.length + '</div>';
+  html += '<div class="score-pct ' + (passed?'pass':'fail') + '">' + pct + '% — ' + (passed ? "Solid, above the ~72% pass bar" : "Below the ~72% pass bar — revisit the notes") + '</div>';
+  const missedList = answered.map((_,i)=>i).filter(i => !correctFlags[i]);
+  if(missedList.length){
+    html += '<div class="miss-list"><h3>Review these questions</h3>';
+    missedList.forEach(i=>{
+      html += '<div class="miss-item"><b>Q' + (i+1) + '.</b> ' + escapeHtml(QUESTIONS[i].q) + '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="actions" style="justify-content:center; margin-top:22px;">';
+  html += '<button class="btn btn-primary" id="restartBtn">Restart quiz</button>';
+  html += '<button class="btn btn-ghost" id="resetBtn2">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  document.getElementById("restartBtn").addEventListener("click", resetAll);
+  document.getElementById("resetBtn2").addEventListener("click", resetAll);
+}
+
+function resetAll(){
+  idx = 0; score = 0; missed = [];
+  answered = new Array(QUESTIONS.length).fill(false);
+  correctFlags = new Array(QUESTIONS.length).fill(false);
+  QUESTIONS.forEach(q => { delete q.picked; });
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  renderQuestion();
+}
+
+document.addEventListener("keydown", (e)=>{
+  const map = {"1":0,"2":1,"3":2,"4":3,"5":4,"a":0,"b":1,"c":2,"d":3,"e":4,"A":0,"B":1,"C":2,"D":3,"E":4};
+  if(e.key in map){
+    const opts = quizArea.querySelectorAll(".opt:not(:disabled)");
+    const i = map[e.key];
+    if(opts[i]) opts[i].click();
+  } else if(e.key === "Enter"){
+    const nb = document.getElementById("nextBtn") || document.getElementById("finishBtn") || document.getElementById("submitBtn");
+    if(nb && !nb.disabled) nb.click();
+  }
+});
+
+if(load()){
+  if(answered.every(Boolean)) renderSummary(); else renderQuestion();
+} else {
+  renderQuestion();
+}
+</script>
