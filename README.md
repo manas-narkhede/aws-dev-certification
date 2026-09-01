@@ -80,7 +80,7 @@ Status legend: ✅ complete (all 3 files) · 🟡 partial (see note) · ⬜ not 
 - [x] ✅ 11 — Elastic Beanstalk, Amplify & Copilot
 - [x] ✅ 12 — Containers (ECS, ECR, Fargate, EKS)
 - [x] ✅ 13 — IaC (CloudFormation, SAM, CDK)
-- [ ] ⬜ 14 — Security Deep Dive (IAM, KMS, Secrets Manager, Cognito, STS, ACM, WAF) — not started, biggest remaining module
+- [x] ✅ 14 — Security Deep Dive (IAM, KMS, Secrets Manager, Cognito, STS, ACM, WAF)
 - [x] ✅ 15 — Networking for Developers (VPC, Route 53, CloudFront)
 - [x] ✅ 16 — Monitoring, Logging & Observability (CloudWatch, X-Ray, CloudTrail, CodeGuru)
 - [ ] ⬜ 17 — Well-Architected & Exam Strategy — not started
