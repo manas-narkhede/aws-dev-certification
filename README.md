@@ -64,24 +64,26 @@ Weekdays ~2-3 hrs/day; the two weekend days are your **heavy-lift** days — pla
 - [ ] **Day 10 — Wed Sep 09**: **Mock Exam 2** (timed, 130 min) + final weak-spot review + exam-day checklist
 
 ## Module checklist
-- [x] 00 — Exam Overview & AWS Fundamentals
-- [x] 01 — EC2 & Compute Basics
-- [ ] 02 — S3 & Storage
-- [ ] 03 — DynamoDB
-- [ ] 04 — App Design Patterns & AWS Lambda
-- [ ] 05 — API Gateway & AppSync
-- [ ] 06 — Messaging, Streaming & Analytics (SQS, SNS, EventBridge, Kinesis, Athena, OpenSearch)
-- [ ] 07 — Step Functions & Orchestration
-- [ ] 08 — Relational & In-Memory Databases (RDS, Aurora, ElastiCache, MemoryDB)
-- [ ] 09 — Caching Strategies & Performance
-- [ ] 10 — CI/CD & Developer Tooling (CodeCommit, CodeBuild, CodeDeploy, CodePipeline, CodeArtifact, CodeStar, AppConfig)
-- [ ] 11 — Elastic Beanstalk, Amplify & Copilot
-- [ ] 12 — Containers (ECS, ECR, Fargate, EKS)
-- [ ] 13 — IaC (CloudFormation, SAM, CDK)
-- [ ] 14 — Security Deep Dive (IAM, KMS, Secrets Manager, Cognito, STS, ACM, WAF)
-- [ ] 15 — Networking for Developers (VPC, Route 53, CloudFront)
-- [ ] 16 — Monitoring, Logging & Observability (CloudWatch, X-Ray, CloudTrail, CodeGuru)
-- [ ] 17 — Well-Architected & Exam Strategy
-- [ ] 18 — Mock Exams (×2)
+Status legend: ✅ complete (all 3 files) · 🟡 partial (see note) · ⬜ not started. See `HANDOVER.md` for the full continuation brief if you're picking this project back up in a new session.
+
+- [x] ✅ 00 — Exam Overview & AWS Fundamentals
+- [x] ✅ 01 — EC2 & Compute Basics
+- [ ] 🟡 02 — S3 & Storage — notes.md done, needs questions.md + quiz.html
+- [ ] 🟡 03 — DynamoDB — notes.md done, needs questions.md + quiz.html
+- [ ] 🟡 04 — App Design Patterns & AWS Lambda — notes.md done, needs questions.md + quiz.html
+- [ ] 🟡 05 — API Gateway & AppSync — notes.md + questions.md done (142 Q), needs quiz.html
+- [ ] 🟡 06 — Messaging, Streaming & Analytics (SQS, SNS, EventBridge, Kinesis, Athena, OpenSearch) — notes.md + questions.md done (134 Q), needs quiz.html
+- [ ] 🟡 07 — Step Functions & Orchestration — notes.md + questions.md done (125 Q), needs quiz.html
+- [ ] 🟡 08 — Relational & In-Memory Databases (RDS, Aurora, ElastiCache, MemoryDB) — notes.md done, needs questions.md + quiz.html
+- [ ] 🟡 09 — Caching Strategies & Performance — notes.md done, needs questions.md + quiz.html
+- [ ] 🟡 10 — CI/CD & Developer Tooling (CodeCommit, CodeBuild, CodeDeploy, CodePipeline, CodeArtifact, CodeStar, AppConfig) — notes.md + questions.md done (135 Q), needs quiz.html
+- [ ] 🟡 11 — Elastic Beanstalk, Amplify & Copilot — notes.md done, needs questions.md + quiz.html
+- [ ] 🟡 12 — Containers (ECS, ECR, Fargate, EKS) — notes.md + questions.md done (123 Q), needs quiz.html
+- [ ] 🟡 13 — IaC (CloudFormation, SAM, CDK) — notes.md done, needs questions.md + quiz.html
+- [ ] ⬜ 14 — Security Deep Dive (IAM, KMS, Secrets Manager, Cognito, STS, ACM, WAF) — not started, biggest remaining module
+- [ ] 🟡 15 — Networking for Developers (VPC, Route 53, CloudFront) — notes.md done, needs questions.md + quiz.html
+- [ ] 🟡 16 — Monitoring, Logging & Observability (CloudWatch, X-Ray, CloudTrail, CodeGuru) — notes.md done, needs questions.md + quiz.html
+- [ ] ⬜ 17 — Well-Architected & Exam Strategy — not started
+- [ ] ⬜ 18 — Mock Exams (×2) — build last, once 00-17 are complete
 
 Tick a box in either checklist as you finish it — it's your progress tracker for the sprint.
