@@ -1,0 +1,1905 @@
+<title>IaC (CloudFormation, SAM, CDK) Quiz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eceeec; --ink:#141a1f; --muted:#5c6670;
+  --border:#dde1de; --accent:#0d7377; --accent-ink:#ffffff; --accent-soft:#e3f1f0;
+  --success:#1f8a44; --success-bg:#e5f6ea; --success-border:#a9dfb8;
+  --danger:#c8402f; --danger-bg:#fbe9e6; --danger-border:#f0b8ac;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+    --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+    --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+    --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+  --border:#2b343c; --accent:#37c9c2; --accent-ink:#08211f; --accent-soft:#173430;
+  --success:#5fd489; --success-bg:#123321; --success-border:#256b45;
+  --danger:#f38672; --danger-bg:#3a1c17; --danger-border:#7a3226;
+}
+*{box-sizing:border-box;}
+body{background:var(--bg); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;}
+.wrap{max-width:760px; margin:0 auto; padding:28px 20px 80px;}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600;}
+h1{font-size:22px; font-weight:800; margin:4px 0 18px; text-wrap:balance; letter-spacing:-.01em;}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px; flex-wrap:wrap;}
+.stat{display:flex; flex-direction:column; align-items:flex-end;}
+.stat .num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:18px; font-weight:600;}
+.stat .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+.progress-track{height:8px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin:14px 0 28px; border:1px solid var(--border);}
+.progress-fill{height:100%; background:var(--accent); border-radius:999px; transition:width .35s ease;}
+@media (prefers-reduced-motion: reduce){ .progress-fill{transition:none;} }
+
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px; box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.qnum{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin-bottom:10px;}
+.qtext{font-size:16.5px; font-weight:600; line-height:1.55; margin-bottom:20px; text-wrap:balance;}
+.multi-hint{display:inline-block; font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:999px; padding:3px 10px; margin-bottom:14px;}
+
+.opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:13px 14px; margin-bottom:10px; cursor:pointer; font:inherit; color:var(--ink); font-size:14.5px; line-height:1.5; transition:border-color .15s, background .15s;}
+.opt:hover{border-color:var(--accent);}
+.opt:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+.opt .mark{flex:0 0 22px; height:22px; border-radius:6px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--muted); margin-top:1px;}
+.opt.selected{border-color:var(--accent); background:var(--accent-soft);}
+.opt.selected .mark{border-color:var(--accent); color:var(--accent);}
+.opt.correct{border-color:var(--success-border); background:var(--success-bg);}
+.opt.correct .mark{border-color:var(--success); color:var(--success); background:var(--success-bg);}
+.opt.incorrect{border-color:var(--danger-border); background:var(--danger-bg);}
+.opt.incorrect .mark{border-color:var(--danger); color:var(--danger); background:var(--danger-bg);}
+.opt:disabled{cursor:default;}
+.opt:disabled:hover{border-color:var(--border);}
+.opt.correct:hover, .opt.incorrect:hover{border-color:inherit;}
+
+.actions{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+button.btn{font:inherit; font-weight:700; font-size:14px; border-radius:9px; padding:11px 18px; cursor:pointer; border:1.5px solid transparent;}
+.btn-primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+.btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+.btn-ghost{background:transparent; color:var(--ink); border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--accent);}
+button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+.explain{margin-top:16px; padding:14px 16px; border-radius:10px; font-size:14px; line-height:1.55; border:1px solid var(--border); background:var(--surface-2);}
+.explain b{color:var(--accent);}
+
+.summary{text-align:center; padding:10px 0 20px;}
+.score-big{font-family:"IBM Plex Mono",monospace; font-size:52px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+.score-pct{color:var(--muted); font-size:15px; margin-top:2px;}
+.score-pct.pass{color:var(--success); font-weight:700;}
+.score-pct.fail{color:var(--danger); font-weight:700;}
+.miss-list{margin-top:28px; text-align:left; border-top:1px solid var(--border); padding-top:20px;}
+.miss-list h3{font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:12px; font-family:"IBM Plex Mono",monospace;}
+.miss-item{padding:10px 12px; background:var(--surface-2); border-radius:8px; margin-bottom:8px; font-size:13.5px; line-height:1.45; border-left:3px solid var(--danger);}
+.miss-item b{color:var(--ink);}
+
+.footer-note{text-align:center; color:var(--muted); font-size:12px; margin-top:24px; font-family:"IBM Plex Mono",monospace;}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Module 13 • Practice Quiz</div>
+      <h1>IaC (CloudFormation, SAM, CDK) Quiz</h1>
+    </div>
+    <div class="stat">
+      <span class="num" id="posNum">1 / 125</span>
+      <span class="lbl">Question</span>
+    </div>
+    <div class="stat">
+      <span class="num" id="scoreNum">0</span>
+      <span class="lbl">Correct</span>
+    </div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <div id="quizArea"></div>
+  <div class="footer-note">Progress is saved automatically in this browser. Use 1–5 or A–E on your keyboard to answer.</div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    "q": "A developer is authoring an AWS CloudFormation template to deploy an application across `dev`, `test`, and `prod` environments. The developer wants to use the exact same template file for all environments while passing different instance types and VPC IDs during stack creation. Which section of the CloudFormation template defines these dynamic runtime inputs?",
+    "o": [
+      "`Mappings`",
+      "`Parameters`",
+      "`Conditions`",
+      "`Outputs`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `Parameters` section enables custom runtime input values to be passed to a CloudFormation template during stack creation or updates."
+  },
+  {
+    "q": "A CloudFormation template requires a static lookup table that maps AWS Regions (e.g., `us-east-1`, `eu-west-1`) to specific regional AMI IDs. This mapping is fixed, known at template authoring time, and should not be passed as user input during stack creation. Which CloudFormation template section should be used?",
+    "o": [
+      "`Parameters`",
+      "`Mappings`",
+      "`Resources`",
+      "`Metadata`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `Mappings` section provides static key-value lookup tables (such as mapping Regions to AMI IDs) defined at template authoring time."
+  },
+  {
+    "q": "In a CloudFormation template, a developer needs to retrieve an AMI ID from a lookup table named `RegionToAmiMap` based on the current deployment Region (`AWS::Region`) and architecture (`HVM64`). Which intrinsic function should the developer use?",
+    "o": [
+      "`!Ref RegionToAmiMap`",
+      "`!FindInMap [RegionToAmiMap, !Ref \"AWS::Region\", HVM64]`",
+      "`!GetAtt RegionToAmiMap.HVM64`",
+      "`!ImportValue RegionToAmiMap`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`!FindInMap [MapName, TopLevelKey, SecondLevelKey]` retrieves values from a named table in the `Mappings` section."
+  },
+  {
+    "q": "Requirement 3: Multi-account compliance guardrails deployed across an entire AWS Organization. Which mapping of requirements to AWS tools is correct?",
+    "o": [
+      "Requirement 1: AWS SAM; Requirement 2: AWS CDK; Requirement 3: CloudFormation StackSets",
+      "Requirement 1: AWS CDK; Requirement 2: AWS SAM; Requirement 3: AWS Amplify",
+      "Requirement 1: CloudFormation StackSets; Requirement 2: AWS SAM; Requirement 3: AWS CDK",
+      "Requirement 1: AWS Amplify; Requirement 2: CloudFormation; Requirement 3: AWS SAM"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`!FindInMap [MapName, TopLevelKey, SecondLevelKey]` retrieves values from a named table in the `Mappings` section."
+  },
+  {
+    "q": "A developer needs to conditionally provision an Amazon SNS topic named `ProdAlertTopic` only when the `EnvironmentName` parameter is set to `prod`. What combination of template constructs is required?",
+    "o": [
+      "Define a condition `IsProd: !Equals [!Ref EnvironmentName, prod]` in the `Conditions` section, and add `Condition: IsProd` to the `ProdAlertTopic` resource",
+      "Write an if/else bash script in `UserData`",
+      "Use AWS Lambda to delete the topic after stack creation if not in prod",
+      "Define three separate templates for dev, test, and prod"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Conditions are declared under `Conditions:` using intrinsic condition functions and attached to resources via the `Condition:` property."
+  },
+  {
+    "q": "A developer wants to construct an S3 bucket name dynamically by combining an environment parameter (`EnvironmentName`) with the account ID and region (e.g., `mycompany-dev-123456789012-us-east-1-data`). Which intrinsic function provides the cleanest string interpolation syntax?",
+    "o": [
+      "`!Sub \"mycompany-${EnvironmentName}-${AWS::AccountId}-${AWS::Region}-data\"`",
+      "`!Join [\"-\", [\"mycompany\", !Ref EnvironmentName, !Ref \"AWS::AccountId\", !Ref \"AWS::Region\", \"data\"]]`",
+      "`!Ref EnvironmentName`",
+      "`!GetAtt EnvironmentName.BucketName`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!Sub` performs clean variable substitution/string interpolation using `${VariableName}` syntax."
+  },
+  {
+    "q": "What is the fundamental difference between the `!Ref` function and the `!GetAtt` function when referencing an `AWS::EC2::Instance` resource named `MyInstance`?",
+    "o": [
+      "`!Ref` returns the instance ID (e.g., `i-0123456789abcdef0`), whereas `!GetAtt MyInstance.PublicIp` returns specific named attributes such as the instance's public IP address or Availability Zone",
+      "`!Ref` can only be used on Parameters; `!GetAtt` can only be used on Resources",
+      "`!Ref` decrypts KMS keys; `!GetAtt` encrypts S3 objects",
+      "`!Ref` and `!GetAtt` are completely identical and interchangeable in all scenarios"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!Ref` returns the primary resource identifier (e.g., instance ID), while `!GetAtt` retrieves specific named attributes (e.g., `PublicIp`)."
+  },
+  {
+    "q": "A developer is referencing an `AWS::EC2::SecurityGroup` resource named `AppSecurityGroup` inside an `AWS::EC2::Instance` resource definition. What does `!GetAtt AppSecurityGroup.GroupId` return?",
+    "o": [
+      "The physical ID of the security group (e.g., `sg-0123456789abcdef0`)",
+      "The VPC CIDR block",
+      "The list of inbound rules",
+      "The security group description string"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!GetAtt AppSecurityGroup.GroupId` returns the physical ID of the security group (`sg-xxxx`)."
+  },
+  {
+    "q": "Which intrinsic function in CloudFormation allows a template to evaluate whether a condition is true and return one value if true, and a different value if false (e.g., setting instance type to `t3.large` if `IsProd`, otherwise `t3.micro`)?",
+    "o": [
+      "`!If [IsProd, \"t3.large\", \"t3.micro\"]`",
+      "`!Switch [IsProd, \"t3.large\", \"t3.micro\"]`",
+      "`!Select [0, [\"t3.large\", \"t3.micro\"]]`",
+      "`!Condition [IsProd]`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!If [ConditionName, ValueIfTrue, ValueIfFalse]` returns one of two values depending on the evaluation of the named condition."
+  },
+  {
+    "q": "Which section of a CloudFormation template is the ONLY mandatory section required for a template to be valid?",
+    "o": [
+      "`Parameters`",
+      "`Resources`",
+      "`Outputs`",
+      "`AWSTemplateFormatVersion`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `Resources` section is the only required section in a CloudFormation template; all other sections are optional."
+  },
+  {
+    "q": "A developer needs to construct a comma-delimited string of subnet IDs from a list parameter `SubnetList`. Which intrinsic function takes a delimiter and a list of values to produce a concatenated string?",
+    "o": [
+      "`!Split`",
+      "`!Join [\",\", !Ref SubnetList]`",
+      "`!Sub`",
+      "`!GetAZs`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`!Join [delimiter, [list]]` concatenates an array of values into a single string separated by the specified delimiter."
+  },
+  {
+    "q": "A developer is writing a CloudFormation template and needs to split a comma-separated string parameter `SubnetCIDRs` (e.g., `\"10.0.1.0/24,10.0.2.0/24\"`) into an importable list of strings. Which intrinsic function performs this operation?",
+    "o": [
+      "`!Split [\",\", !Ref SubnetCIDRs]`",
+      "`!Join`",
+      "`!Select`",
+      "`!FindInMap`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!Split [delimiter, source_string]` splits a string into an array of string values based on the specified delimiter."
+  },
+  {
+    "q": "In CloudFormation, what pseudo parameter automatically resolves to the 12-digit AWS account ID of the account in which the stack is being created?",
+    "o": [
+      "`AWS::AccountId`",
+      "`AWS::StackId`",
+      "`AWS::Region`",
+      "`AWS::NotificationARNs`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AWS::AccountId` is a CloudFormation pseudo parameter that returns the 12-digit AWS account ID where the stack is deployed."
+  },
+  {
+    "q": "Which pseudo parameter in CloudFormation resolves to the name of the current stack being created or updated?",
+    "o": [
+      "`AWS::StackName`",
+      "`AWS::StackId`",
+      "`AWS::URLSuffix`",
+      "`AWS::NoValue`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AWS::StackName` resolves to the name assigned to the CloudFormation stack."
+  },
+  {
+    "q": "What is the purpose of the `AWS::NoValue` pseudo parameter when used in conjunction with the `!If` intrinsic function on an optional resource property?",
+    "o": [
+      "It causes CloudFormation to remove or omit the property from the resource definition if the condition evaluates to false",
+      "It sets the property value to an empty string `\"\"`",
+      "It deletes the entire stack immediately",
+      "It throws a validation exception during stack creation"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Returning `AWS::NoValue` inside an `!If` expression instructs CloudFormation to omit the optional property from the resource."
+  },
+  {
+    "q": "A developer wants to restrict the allowed values of a `DBInstanceClass` parameter in a CloudFormation template to only `db.t3.micro`, `db.t3.small`, and `db.t3.medium`. Which parameter attribute enforces this constraint?",
+    "o": [
+      "`AllowedValues: [db.t3.micro, db.t3.small, db.t3.medium]`",
+      "`ConstraintDescription: \"Only small instances\"`",
+      "`AllowedPattern: \"^db\\..*\"`",
+      "`MaxLength: 3`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AllowedValues` defines a fixed list of permitted string or numeric values for a CloudFormation parameter."
+  },
+  {
+    "q": "A developer wants to mask sensitive parameter input (such as a database master password) in the AWS Management Console and CLI output during stack creation. Which parameter attribute achieves this?",
+    "o": [
+      "`NoEcho: true`",
+      "`Secret: true`",
+      "`Encrypted: true`",
+      "`MaskInput: true`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting `NoEcho: true` masks parameter values with asterisks in the console, CLI descriptions, and event logs."
+  },
+  {
+    "q": "A CloudFormation template requires the ID of the latest Amazon Linux 2 AMI without hardcoding AMI IDs or updating mappings every month. Which CloudFormation parameter type allows referencing the latest AMI ID directly from the AWS Systems Manager Parameter Store public parameter hierarchy?",
+    "o": [
+      "`AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>` with Default `/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2`",
+      "`AWS::EC2::KeyPair::KeyName`",
+      "`CommaDelimitedList`",
+      "`List<AWS::EC2::VPC::Id>`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `AWS::SSM::Parameter::Value<...>` parameter type dynamically fetches the latest parameter value from SSM Parameter Store."
+  },
+  {
+    "q": "A developer wants to ensure that a CloudFormation parameter for `VpcId` only accepts valid, existing Amazon VPC IDs from the target AWS account in the console dropdown. Which AWS-specific parameter type should be used?",
+    "o": [
+      "`String`",
+      "`AWS::EC2::VPC::Id`",
+      "`AWS::RDS::DBInstance::Id`",
+      "`Number`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`AWS::EC2::VPC::Id` is an AWS-specific parameter type that validates and populates existing VPC IDs in the console dropdown."
+  },
+  {
+    "q": "In a CloudFormation template, what is the purpose of the `Outputs` section?",
+    "o": [
+      "To print debug log messages during stack execution",
+      "To declare output values (such as an ALB DNS name or S3 bucket ARN) that can be viewed in the console, returned by CLI descriptions, or exported for cross-stack references",
+      "To define database schemas",
+      "To terminate EC2 instances upon stack completion"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `Outputs` section declares output values visible after deployment and exportable for cross-stack references."
+  },
+  {
+    "q": "A developer needs to export an S3 bucket ARN created in a storage stack so that an application stack can reference it. What attribute must be added under the output item in the `Outputs` section?",
+    "o": [
+      "`Export: Name: SharedBucketArn`",
+      "`Import: Name: SharedBucketArn`",
+      "`Public: true`",
+      "`Global: true`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Adding `Export: Name: <ExportName>` under an output item exposes it for cross-stack importation via `!ImportValue`."
+  },
+  {
+    "q": "In an application stack, how does the developer import the exported value named `SharedBucketArn` from the storage stack?",
+    "o": [
+      "`!Ref SharedBucketArn`",
+      "`!ImportValue SharedBucketArn`",
+      "`!GetAtt SharedBucketArn.Arn`",
+      "`!FindInMap [SharedBucketArn]`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`!ImportValue <ExportName>` imports a value exported by another stack's `Outputs` section."
+  },
+  {
+    "q": "A developer is writing a CloudFormation template in YAML and wants to reference a resource in a shorthand format. Which two notations are valid equivalent syntax for calling `Fn::GetAtt` on a resource `MyBucket` to get its `Arn`? (Select TWO.)",
+    "o": [
+      "`!GetAtt MyBucket.Arn`",
+      "`Fn::GetAtt: [MyBucket, Arn]`",
+      "`!Ref MyBucket.Arn`",
+      "`!GetAtt [MyBucket.Arn]`",
+      "`Fn::Ref: MyBucket.Arn`"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "`!GetAtt Resource.Attribute` and `Fn::GetAtt: [Resource, Attribute]` are the two valid shorthand and full YAML syntaxes."
+  },
+  {
+    "q": "A developer wants to retrieve the list of Availability Zones available in the Region where the stack is being deployed. Which intrinsic function returns this list?",
+    "o": [
+      "`!GetAZs \"\"` (or `!GetAZs !Ref \"AWS::Region\"`)",
+      "`!ListAZs`",
+      "`!GetAtt AWS::Region.AZs`",
+      "`!FindInMap [AZMap]`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!GetAZs \"\"` returns an array of Availability Zones for the current deployment Region."
+  },
+  {
+    "q": "In CloudFormation, what does the `!Base64` intrinsic function do when applied to a string in the `UserData` property of an `AWS::EC2::Instance`?",
+    "o": [
+      "Encrypts the string using AWS KMS",
+      "Converts a plain text string into a Base64-encoded representation required by the EC2 UserData API",
+      "Compresses the string into a ZIP file",
+      "Hashes the string using SHA-256"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`!Base64` encodes plain text into a Base64 string required by EC2 UserData."
+  },
+  {
+    "q": "A developer is authoring a CloudFormation template and wants to include comments and documentation that explain complex logic. Which template format supports native comments using the `#` character?",
+    "o": [
+      "JSON format only",
+      "YAML format only",
+      "Both JSON and YAML formats",
+      "Neither format supports comments"
+    ],
+    "a": [
+      1
+    ],
+    "e": "YAML supports native `#` comments, whereas standard JSON does not support comments."
+  },
+  {
+    "q": "When using `!Sub` with a mapping of variable names, which syntax correctly substitutes custom variables?",
+    "o": [
+      "`!Sub [\"https://${DomainName}/api\", { DomainName: !Ref MyDomainParam }]`",
+      "`!Sub \"https://${MyDomainParam}/api\"`",
+      "`!Sub [!Ref MyDomainParam, \"/api\"]`",
+      "`!Join [\"https://\", !Ref MyDomainParam]`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!Sub [String, { VarMap }]` substitutes explicit mapping variables defined in the second argument dictionary."
+  },
+  {
+    "q": "A developer defines a condition `CreateDevResources: !Equals [!Ref EnvironmentName, \"dev\"]`. How can the developer define a second condition `CreateProdResources` that is the exact logical opposite?",
+    "o": [
+      "`CreateProdResources: !Not [!Condition CreateDevResources]`",
+      "`CreateProdResources: !Inverse [CreateDevResources]`",
+      "`CreateProdResources: !Opposite [CreateDevResources]`",
+      "`CreateProdResources: !If [CreateDevResources, false, true]`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!Not [!Condition ConditionName]` inverts the boolean result of an existing condition."
+  },
+  {
+    "q": "Which intrinsic function selects a single object from a list by its zero-based index (e.g., picking the first subnet from a list of subnets)?",
+    "o": [
+      "`!Select [0, !Ref SubnetList]`",
+      "`!Index [0, !Ref SubnetList]`",
+      "`!First [!Ref SubnetList]`",
+      "`!GetItem [0, !Ref SubnetList]`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`!Select [index, list]` retrieves a single element from an array by its zero-based index."
+  },
+  {
+    "q": "A developer writes a template that includes the `Transform: AWS::Serverless-2016-10-31` macro at the top level. What does this macro tell CloudFormation to do?",
+    "o": [
+      "Execute the AWS Serverless Application Model (SAM) transform to process and expand serverless shorthand resources into standard CloudFormation syntax before deploying",
+      "Deploy the template to AWS Lambda directly without using CloudFormation",
+      "Convert the template to Docker Compose syntax",
+      "Encrypt the template in an S3 bucket"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`Transform: AWS::Serverless-2016-10-31` instructs CloudFormation to execute the SAM macro and expand serverless shorthand resources."
+  },
+  {
+    "q": "A developer wants to add metadata to an EC2 instance in CloudFormation that instructs the `cfn-init` helper script to install packages, create files, and start services. Under which section of the resource is this configured?",
+    "o": [
+      "`Metadata: AWS::CloudFormation::Init`",
+      "`Properties: UserData: Init`",
+      "`Parameters: InitConfig`",
+      "`Outputs: cfn-init` --- ### Cross-Stack References, Nested Stacks, Change Sets & Operations (31–55)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `Metadata: AWS::CloudFormation::Init` section defines configuration directives processed by the `cfn-init` helper script."
+  },
+  {
+    "q": "A company separates its infrastructure into two CloudFormation stacks: a `NetworkStack` (creates VPC, subnets, route tables) and an `AppStack` (creates EC2 instances and load balancers). The `AppStack` uses `!ImportValue` to reference the VPC ID exported by `NetworkStack`. An engineer attempts to update `NetworkStack` to delete the exported VPC ID output. What happens when the update is executed?",
+    "o": [
+      "`NetworkStack` deletes the output, causing `AppStack` instances to lose network connectivity",
+      "CloudFormation rejects the update and fails because an exported output cannot be modified or deleted while another stack is actively importing it",
+      "CloudFormation automatically deletes `AppStack`",
+      "CloudFormation converts `NetworkStack` into a nested stack"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudFormation prevents modifying or deleting an exported output while another active stack imports it via `!ImportValue`."
+  },
+  {
+    "q": "What is the recommended operational workflow to safely remove a cross-stack reference between an exporting stack (`StackA`) and an importing stack (`StackB`)?",
+    "o": [
+      "Delete `StackA` first, then delete `StackB`",
+      "Modify `StackB` to remove the `!ImportValue` call, update `StackB`, and once `StackB` no longer references the export, update `StackA` to remove the `Export` output",
+      "Run `aws cloudformation force-delete-export`",
+      "Disable CloudFormation rollback on `StackA`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "To break a cross-stack dependency, update the importing stack first to remove `!ImportValue`, then update the exporting stack to remove `Export`."
+  },
+  {
+    "q": "An enterprise has modularized its infrastructure into reusable templates (e.g., a standard VPC template, an ALB template, an ECS cluster template). A master template composes these components together and deploys them as a single cohesive unit using `AWS::CloudFormation::Stack` resources. What architecture pattern is being used?",
+    "o": [
+      "Stack Sets",
+      "Nested Stacks",
+      "Cross-Region Replication",
+      "Dynamic Parameter Mappings"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Nested Stacks compose multiple templates together using `AWS::CloudFormation::Stack` resources managed under a parent stack lifecycle."
+  },
+  {
+    "q": "Where must the child templates of a Nested Stack be stored so that the parent CloudFormation stack can reference them in its `TemplateURL` property?",
+    "o": [
+      "On a local laptop hard drive",
+      "In an Amazon S3 bucket accessible by CloudFormation (via HTTPS URL or S3 ARN)",
+      "In an Amazon DynamoDB table",
+      "In a Git commit message"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Child templates in a Nested Stack must be uploaded to an Amazon S3 bucket accessible by CloudFormation."
+  },
+  {
+    "q": "What is the primary difference between Nested Stacks and Cross-Stack references via `Export`/`ImportValue`?",
+    "o": [
+      "Nested stacks are composed and deployed together as parent-child units sharing the parent lifecycle; cross-stack references connect independently-authored, separately-deployed stacks",
+      "Nested stacks can only run in `us-east-1`; cross-stack references run in all regions",
+      "Cross-stack references require AWS SAM; nested stacks require AWS CDK",
+      "Nested stacks cannot provision EC2 instances"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Nested stacks are composed and deployed together as parent-child units; cross-stack references loosely couple independent stacks."
+  },
+  {
+    "q": "An engineer wants to preview the exact changes CloudFormation will make to running infrastructure (e.g., which resources will be added, modified, or replaced) before applying a template update to a production stack. Which CloudFormation feature provides this preview without altering running resources?",
+    "o": [
+      "Stack Drift Detection",
+      "Change Sets (via `CreateChangeSet`)",
+      "Stack Events",
+      "CloudWatch Logs Insights"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudFormation Change Sets preview the exact additions, modifications, and replacements before executing a stack update."
+  },
+  {
+    "q": "While reviewing a CloudFormation Change Set for a database update, the developer notices that the `AWS::RDS::DBInstance` resource has `Replacement: True`. What does this indicate?",
+    "o": [
+      "CloudFormation will modify the existing database instance in-place with zero downtime",
+      "CloudFormation will delete the existing database instance and create a brand-new instance, resulting in data loss if no snapshot or retention policy exists",
+      "CloudFormation will rename the database parameter group",
+      "The database engine will be updated to a beta version"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`Replacement: True` in a change set indicates the resource will be deleted and recreated, which causes data loss for databases."
+  },
+  {
+    "q": "A developer needs to deploy a baseline security configuration (IAM roles, CloudTrail alarms, AWS Config rules) consistently across 50 AWS accounts and multiple AWS Regions within an AWS Organization. Which CloudFormation feature is designed for multi-account, multi-region deployments from a single administrator account?",
+    "o": [
+      "CloudFormation Nested Stacks",
+      "CloudFormation StackSets",
+      "CloudFormation Change Sets",
+      "CloudFormation Macro transforms"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudFormation StackSets deploys stacks across multiple AWS accounts and Regions from a central administrator account."
+  },
+  {
+    "q": "A junior administrator manually modified a security group rule in the AWS Management Console to allow SSH from `0.0.0.0/0`, bypassing the CloudFormation template that manages the stack. The lead engineer wants to verify whether the live infrastructure matches the template definition. Which CloudFormation feature should the engineer run?",
+    "o": [
+      "Change Set Execution",
+      "Stack Drift Detection",
+      "Stack Rollback",
+      "Template Validation (`aws cloudformation validate-template`)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Stack Drift Detection compares the live state of AWS resources against the template definition and reports drifted properties."
+  },
+  {
+    "q": "What is the outcome of running CloudFormation Drift Detection on a stack where resources have been manually altered?",
+    "o": [
+      "CloudFormation automatically reverts the manual changes to match the template",
+      "CloudFormation reports a status of `DRIFTED` and provides a detailed property-by-property difference between the expected template state and the actual live resource state without modifying the live resources",
+      "CloudFormation terminates the drifted EC2 instances",
+      "CloudFormation updates the template file on the developer's laptop"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Drift detection is read-only; it reports differences between actual and expected configurations without modifying live resources."
+  },
+  {
+    "q": "During a stack creation, CloudFormation successfully creates 5 resources, but the 6th resource fails due to an invalid subnet configuration. By default, what action does CloudFormation take?",
+    "o": [
+      "It leaves the 5 created resources running and stops",
+      "It triggers a rollback (`ROLLBACK_IN_PROGRESS`), deleting all 5 previously created resources, and ends in `ROLLBACK_COMPLETE` status",
+      "It retries the 6th resource indefinitely",
+      "It converts the stack into a nested stack"
+    ],
+    "a": [
+      1
+    ],
+    "e": "On stack creation failure, CloudFormation initiates a rollback by default, deleting all created resources (`ROLLBACK_COMPLETE`)."
+  },
+  {
+    "q": "A developer is testing a complex CloudFormation template and wants to debug a resource failure without CloudFormation immediately deleting all successfully created resources on failure. Which CLI flag should be passed during `aws cloudformation create-stack`?",
+    "o": [
+      "`--disable-rollback` (or `--on-failure DO_NOTHING`)",
+      "`--force-create`",
+      "`--skip-errors`",
+      "`--debug-mode`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Passing `--disable-rollback` preserves successfully created resources on failure for easier troubleshooting."
+  },
+  {
+    "q": "What is the behavior of CloudFormation when an `update-stack` operation fails midway through updating an existing, healthy production stack?",
+    "o": [
+      "The stack is permanently deleted",
+      "CloudFormation automatically rolls back the changes, restoring all modified resources to their last known good, working configuration (`UPDATE_ROLLBACK_COMPLETE`)",
+      "The stack is left in an unrecoverable state",
+      "CloudFormation halts all network traffic in the VPC"
+    ],
+    "a": [
+      1
+    ],
+    "e": "On update failure, CloudFormation rolls back to the last known good configuration (`UPDATE_ROLLBACK_COMPLETE`)."
+  },
+  {
+    "q": "A developer attempts to update a stack that is currently in `UPDATE_ROLLBACK_FAILED` status. What action must be taken before the stack can be updated again?",
+    "o": [
+      "Use the `ContinueUpdateRollback` API action (optionally skipping specific unrecoverable resources) to return the stack to a stable state",
+      "Terminate the AWS account",
+      "Manually delete the S3 bucket where CloudFormation stores templates",
+      "Run `aws cloudformation validate-template`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`ContinueUpdateRollback` resumes a failed rollback, allowing unrecoverable resources to be skipped to restore stack stability."
+  },
+  {
+    "q": "How can a developer validate the syntax and structure of a CloudFormation template JSON/YAML file locally before attempting to create a stack in AWS?",
+    "o": [
+      "Run `aws cloudformation validate-template --template-body file://template.yaml` (or use linters like `cfn-lint`)",
+      "Run `aws ec2 describe-instances`",
+      "Upload the file to S3 Glacier",
+      "Execute `cdk bootstrap`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`aws cloudformation validate-template` verifies the syntax and structure of a template file before deployment."
+  },
+  {
+    "q": "What is a CloudFormation Macro?",
+    "o": [
+      "A keyboard shortcut in the AWS Console",
+      "A custom transform powered by an AWS Lambda function that processes, modifies, or generates template syntax dynamically before CloudFormation processes the template",
+      "A bash script embedded in UserData",
+      "An Amazon CloudFront edge function"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A CloudFormation Macro is a custom Lambda-backed transform that manipulates template syntax dynamically before stack processing."
+  },
+  {
+    "q": "A developer wants to prevent accidental deletion of a production CloudFormation stack via the AWS Console or CLI. Which stack protection feature should be enabled?",
+    "o": [
+      "Stack Termination Protection",
+      "MFA Delete on the S3 bucket only",
+      "IAM Deny All policy on root account",
+      "CloudFormation Drift Lock"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Stack Termination Protection prevents a stack from being deleted accidentally via the console or API."
+  },
+  {
+    "q": "When Stack Termination Protection is enabled on a CloudFormation stack, what happens if an administrator attempts to delete the stack using `aws cloudformation delete-stack`?",
+    "o": [
+      "The stack is deleted immediately without warning",
+      "CloudFormation rejects the delete request and returns an error indicating that termination protection is enabled",
+      "CloudFormation deletes the resources but retains the stack metadata",
+      "CloudFormation reboots all instances in the stack"
+    ],
+    "a": [
+      1
+    ],
+    "e": "With Termination Protection enabled, CloudFormation blocks delete requests until protection is explicitly disabled."
+  },
+  {
+    "q": "What is the maximum size of a CloudFormation template passed directly as a string in the `--template-body` parameter, versus uploading the template to an Amazon S3 bucket and passing `--template-url`?",
+    "o": [
+      "51,200 bytes (51.2 KB) for direct template body; up to 1 MB (1,024,000 bytes) when passed via S3 `TemplateURL`",
+      "10 MB for direct template body; 100 MB for S3",
+      "1 KB for direct template body; unlimited for S3",
+      "There is no size limit on template bodies"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Direct template bodies are limited to 51,200 bytes; templates up to 1 MB can be deployed by uploading to S3 (`TemplateURL`)."
+  },
+  {
+    "q": "In CloudFormation, what does a Stack Policy do?",
+    "o": [
+      "It defines IAM permissions for users creating stacks",
+      "It acts as a preventive guardrail that explicitly prevents stack updates from modifying or deleting protected resources (e.g., `Effect: Deny, Action: Update:*, Resource: LogicalResourceId/ProdDatabase`) during stack updates",
+      "It configures Route 53 DNS routing policies",
+      "It manages Auto Scaling group capacity"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A Stack Policy prevents stack updates from accidentally modifying or replacing critical protected resources."
+  },
+  {
+    "q": "A developer wants to pass a specific IAM role to CloudFormation so that CloudFormation assumes this role for all resource provisioning operations, rather than using the credentials of the logged-in user. What is this role called?",
+    "o": [
+      "CloudFormation Service Role",
+      "EC2 Instance Profile",
+      "IAM Root Credentials",
+      "Cognito Identity Pool Role"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A CloudFormation Service Role allows CloudFormation to assume a dedicated IAM role for resource provisioning operations."
+  },
+  {
+    "q": "What is the primary benefit of assigning a dedicated Service Role to a CloudFormation stack?",
+    "o": [
+      "It allows developers to deploy stacks without needing broad direct IAM permissions to create EC2, RDS, or IAM resources, adhering to the principle of least privilege",
+      "It reduces AWS CloudFormation billing costs by 50%",
+      "It speeds up EC2 boot times",
+      "It eliminates the need for template parameters"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A dedicated Service Role enables least-privilege deployments without granting broad direct permissions to developers."
+  },
+  {
+    "q": "An operations team wants to monitor CloudFormation deployment progress and receive real-time notifications on mobile/email whenever a stack event occurs (e.g., `CREATE_IN_PROGRESS`, `CREATE_COMPLETE`). What CloudFormation parameter configures this?",
+    "o": [
+      "`NotificationARNs` pointing to an Amazon SNS topic",
+      "`EventBridgeRuleArn`",
+      "`SQSQueueUrl`",
+      "`CloudWatchLogGroup`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`NotificationARNs` publishes stack event notifications to specified Amazon SNS topics."
+  },
+  {
+    "q": "How does CloudFormation determine the order in which resources are created when building a stack?",
+    "o": [
+      "It creates resources in random order",
+      "It analyzes implicit dependencies (via `!Ref` and `!GetAtt`) and explicit dependencies (via the `DependsOn` attribute) to construct a dependency graph and create resources in parallel where possible",
+      "It creates resources strictly from top to bottom based on line numbers in the YAML file",
+      "It creates all resources strictly one at a time sequentially"
+    ],
+    "a": [
+      1
+    ],
+    "e": "CloudFormation builds a dependency graph using implicit references (`!Ref`/`!GetAtt`) and explicit `DependsOn` declarations."
+  },
+  {
+    "q": "When would a developer explicitly add the `DependsOn` attribute to a resource in a CloudFormation template?",
+    "o": [
+      "When a resource relies on another resource being fully created and active first, but does NOT reference it via `!Ref` or `!GetAtt` (e.g., an EC2 instance requiring an Internet Gateway attachment to be active before running UserData scripts that download packages)",
+      "When a resource is an S3 bucket",
+      "When creating IAM roles",
+      "When deleting a stack --- ### Protecting Stateful Resources & Custom Resources (56–75)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`DependsOn` enforces ordering when resources depend on each other without an explicit `!Ref` or `!GetAtt` reference."
+  },
+  {
+    "q": "A developer is writing a CloudFormation template for a production Amazon RDS MySQL database. If the stack is accidentally deleted, the database must NOT be deleted; instead, it should remain running as a standalone resource in AWS. Which attribute must be added to the RDS resource definition?",
+    "o": [
+      "`DeletionPolicy: Retain`",
+      "`DeletionPolicy: Snapshot`",
+      "`DeletionPolicy: Delete`",
+      "`TerminationProtection: true`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`DeletionPolicy: Retain` preserves the resource when its CloudFormation stack is deleted."
+  },
+  {
+    "q": "A company’s security policy mandates that whenever an Amazon RDS DB instance or Amazon EBS volume managed by CloudFormation is deleted upon stack deletion, a final backup snapshot must be created automatically before the resource is removed. Which attribute meets this requirement?",
+    "o": [
+      "`DeletionPolicy: Snapshot`",
+      "`DeletionPolicy: Retain`",
+      "`BackupPolicy: Mandatory`",
+      "`SnapshotPolicy: Enable`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`DeletionPolicy: Snapshot` takes a final backup snapshot of supported resources (RDS, EBS) before deletion."
+  },
+  {
+    "q": "What is the default `DeletionPolicy` behavior for an `AWS::S3::Bucket` or `AWS::RDS::DBInstance` if no `DeletionPolicy` attribute is explicitly defined in the CloudFormation template?",
+    "o": [
+      "`Retain`",
+      "`Delete`",
+      "`Snapshot`",
+      "`Archive`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The default `DeletionPolicy` is `Delete` for resources if not explicitly specified."
+  },
+  {
+    "q": "What happens if a CloudFormation stack with an `AWS::S3::Bucket` (configured with `DeletionPolicy: Delete`) is deleted, but the S3 bucket currently contains objects?",
+    "o": [
+      "CloudFormation automatically deletes all objects and then deletes the bucket",
+      "The stack deletion fails with a `BucketNotEmpty` error on the S3 resource because S3 requires buckets to be completely empty before deletion",
+      "The objects are archived to S3 Glacier",
+      "The bucket is renamed"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Deleting an S3 bucket resource fails if the bucket contains objects; S3 requires buckets to be empty before deletion."
+  },
+  {
+    "q": "An engineer updates a CloudFormation template to change an RDS DB instance property that requires resource replacement (such as changing the underlying DB engine). The engineer wants to ensure that the old database instance is backed up as a final snapshot before being replaced and destroyed. Which attribute must be configured on the resource?",
+    "o": [
+      "`UpdateReplacePolicy: Snapshot`",
+      "`DeletionPolicy: Retain`",
+      "`AutoRollback: true`",
+      "`UpdatePolicy: Rolling`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`UpdateReplacePolicy: Snapshot` creates a final snapshot of a resource before it is replaced during a stack update."
+  },
+  {
+    "q": "What are the three valid values for the `UpdateReplacePolicy` attribute in AWS CloudFormation?",
+    "o": [
+      "`Delete`, `Retain`, `Snapshot`",
+      "`Ignore`, `Replace`, `Abort`",
+      "`True`, `False`, `Maybe`",
+      "`Backup`, `Restore`, `Archive`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The three valid options for `UpdateReplacePolicy` are `Delete`, `Retain`, and `Snapshot`."
+  },
+  {
+    "q": "A developer needs to execute a custom task during a CloudFormation deployment that is not supported natively by any CloudFormation resource type (e.g., looking up a third-party SSL certificate, generating an RSA key pair, or populating an initial dataset into an external database). Which CloudFormation mechanism solves this?",
+    "o": [
+      "AWS CloudFormation Custom Resources (backed by an AWS Lambda function or Amazon SNS topic)",
+      "CloudFormation Drift Detection",
+      "EC2 Launch Templates",
+      "CloudFormation Nested Stacks"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFormation Custom Resources (Lambda-backed) execute custom logic during stack creation, update, and deletion."
+  },
+  {
+    "q": "In a CloudFormation Custom Resource definition, what property specifies the ARN of the Lambda function that handles the resource lifecycle events?",
+    "o": [
+      "`ServiceToken`",
+      "`FunctionArn`",
+      "`HandlerToken`",
+      "`ExecutionRole`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`ServiceToken` specifies the ARN of the Lambda function or SNS topic that handles custom resource events."
+  },
+  {
+    "q": "What event types does CloudFormation send to the Lambda function backing a Custom Resource during stack operations?",
+    "o": [
+      "`Create`, `Update`, and `Delete`",
+      "`Start`, `Stop`, and `Restart`",
+      "`GET`, `POST`, and `DELETE`",
+      "`Init`, `Build`, and `Deploy`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFormation sends `Create`, `Update`, and `Delete` request types to Custom Resource handlers."
+  },
+  {
+    "q": "How does a Lambda function backing a CloudFormation Custom Resource notify CloudFormation of success or failure and return output attributes?",
+    "o": [
+      "By sending an HTTP PUT request containing a JSON payload (status `SUCCESS` or `FAILED`, `PhysicalResourceId`, `Data`) to the pre-signed S3 URL provided in the `ResponseURL` field of the event object (commonly using the `cfnresponse` library)",
+      "By printing to `stdout` in CloudWatch Logs",
+      "By throwing a Python runtime exception",
+      "By sending an email via Amazon SES"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The Lambda function must send an HTTP PUT request with status and data to the pre-signed S3 `ResponseURL`."
+  },
+  {
+    "q": "What happens if a Lambda function backing a CloudFormation Custom Resource fails to send a response to the `ResponseURL` (e.g., due to a function timeout or unhandled exception)?",
+    "o": [
+      "CloudFormation assumes success after 10 seconds",
+      "CloudFormation hangs in `CREATE_IN_PROGRESS` (or `UPDATE_IN_PROGRESS`) until the stack operation timeout elapses (default 1 hour), after which the stack fails and rolls back",
+      "CloudFormation automatically restarts the Lambda function 50 times",
+      "The AWS account is suspended"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Failing to respond to `ResponseURL` causes CloudFormation to hang until the 1-hour stack timeout elapses, then fail."
+  },
+  {
+    "q": "A developer is writing a Custom Resource in Python. What built-in utility module provided by AWS can be imported to easily send success/failure responses back to CloudFormation?",
+    "o": [
+      "`cfnresponse`",
+      "`aws_cdk`",
+      "`boto3_cfn`",
+      "`cloudformation_helper`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `cfnresponse` Python module provides helper functions to send success/failure responses to CloudFormation."
+  },
+  {
+    "q": "How can other resources in a CloudFormation template retrieve data values returned by a Custom Resource in its response `Data` dictionary?",
+    "o": [
+      "`!GetAtt MyCustomResource.DataAttributeName`",
+      "`!Ref MyCustomResource`",
+      "`!ImportValue MyCustomResource`",
+      "`!FindInMap [MyCustomResource]`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Values returned in the `Data` object of a Custom Resource response are accessed using `!GetAtt ResourceName.AttributeName`."
+  },
+  {
+    "q": "What is the importance of properly handling the `Delete` event in a Custom Resource Lambda function?",
+    "o": [
+      "It ensures that external resources created by the custom resource (e.g., external DNS records or database users) are cleanly cleaned up, and that a `SUCCESS` response is always sent so stack deletion can complete cleanly",
+      "It triggers an automatic backup of the Lambda function code",
+      "It deletes the CloudFormation template",
+      "It reboots the AWS Region"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Properly handling `Delete` ensures external resources are cleaned up and stack deletion is not blocked."
+  },
+  {
+    "q": "When a stack update modifies properties on a Custom Resource, what does CloudFormation do?",
+    "o": [
+      "It invokes the backing Lambda function with `RequestType: Update`, passing the `OldResourceProperties` and `ResourceProperties`",
+      "It skips the custom resource",
+      "It deletes the stack",
+      "It converts the custom resource to an S3 bucket"
+    ],
+    "a": [
+      0
+    ],
+    "e": "During updates, CloudFormation invokes the custom resource Lambda with `RequestType: Update` and previous/new properties."
+  },
+  {
+    "q": "A developer wants to manage an Amazon OpenSearch index creation via CloudFormation. Since CloudFormation does not have an `AWS::OpenSearch::Index` resource type, what is the best practice solution?",
+    "o": [
+      "Write a Custom Resource backed by a Python Lambda function that uses the OpenSearch SDK to create, update, and delete the index",
+      "Ask developers to create the index manually after deployment",
+      "Store the index in Amazon S3",
+      "Use AWS Step Functions outside of CloudFormation"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Lambda-backed Custom Resource manages non-native resources (like OpenSearch indexes) within the CloudFormation lifecycle."
+  },
+  {
+    "q": "An `AWS::AutoScaling::AutoScalingGroup` in a CloudFormation template needs to perform rolling updates when the launch template changes. Which CloudFormation attribute controls how the Auto Scaling group handles updates?",
+    "o": [
+      "`UpdatePolicy` (specifically `AutoScalingRollingUpdate` or `AutoScalingReplacingUpdate`)",
+      "`DeletionPolicy`",
+      "`UpdateReplacePolicy`",
+      "`Metadata`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`UpdatePolicy` controls rolling update and replacement behaviors for Auto Scaling groups in CloudFormation."
+  },
+  {
+    "q": "A developer configures `CreationPolicy` on an `AWS::EC2::Instance` in CloudFormation. What is the purpose of this attribute?",
+    "o": [
+      "It tells CloudFormation to pause stack creation and wait for a success signal from the instance (sent via `cfn-signal`) within a configured timeout before marking the instance as `CREATE_COMPLETE`",
+      "It sets the instance creation date",
+      "It determines which AZ the instance is created in",
+      "It automatically formats the EBS volume"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`CreationPolicy` pauses stack creation until a specified number of success signals are received from instances."
+  },
+  {
+    "q": "If an EC2 instance configured with a `CreationPolicy` fails to send a `cfn-signal` within the specified `Timeout` duration (e.g., `PT15M`), what occurs?",
+    "o": [
+      "CloudFormation marks the resource as failed (`Failed to receive 1 resource signal(s) within the specified duration`) and initiates a stack rollback",
+      "CloudFormation assumes the instance is healthy",
+      "CloudFormation sends an SMS alert",
+      "CloudFormation switches the instance to an ARM processor"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Failing to receive required signals within the timeout causes CloudFormation to fail and roll back the stack."
+  },
+  {
+    "q": "What command does a developer include in an EC2 instance's `UserData` script to signal CloudFormation that application setup is complete and successful?",
+    "o": [
+      "`cfn-signal -e $? --stack ${AWS::StackName} --resource MyInstance --region ${AWS::Region}`",
+      "`aws cloudformation complete-instance`",
+      "`systemctl status ec2`",
+      "`echo \"SUCCESS\"` --- ### AWS Serverless Application Model (SAM) (76–105)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `cfn-signal` helper script sends success/failure signals back to CloudFormation from within EC2 UserData."
+  },
+  {
+    "q": "A developer is building a serverless REST API consisting of multiple AWS Lambda functions, Amazon API Gateway endpoints, and Amazon DynamoDB tables. What AWS IaC framework provides serverless shorthand syntax, automatic IAM policy generation, and local testing tools?",
+    "o": [
+      "AWS Cloud Development Kit (CDK) only",
+      "AWS Serverless Application Model (AWS SAM)",
+      "AWS OpsWorks",
+      "AWS Elastic Beanstalk"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS SAM is an open-source framework extending CloudFormation with shorthand serverless syntax and local testing tools."
+  },
+  {
+    "q": "What header line is required in a YAML file to identify it as an AWS SAM template?",
+    "o": [
+      "`Transform: AWS::Serverless-2016-10-31`",
+      "`Framework: Serverless-v1`",
+      "`SAMVersion: 2.0`",
+      "`Engine: SAM-Transform`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`Transform: AWS::Serverless-2016-10-31` is the required header that activates the SAM transform."
+  },
+  {
+    "q": "Which SAM resource type simplifies declaring a Lambda function along with its execution role, environment variables, and event source triggers (such as API Gateway, SQS, or S3)?",
+    "o": [
+      "`AWS::Lambda::Function`",
+      "`AWS::Serverless::Function`",
+      "`AWS::Serverless::Lambda`",
+      "`AWS::Compute::Serverless`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`AWS::Serverless::Function` defines a Lambda function, its IAM role, environment variables, and event triggers."
+  },
+  {
+    "q": "A developer wants to define common configuration settings (such as `Runtime: nodejs20.x`, `Timeout: 30`, and `MemorySize: 512`) once so they apply automatically to all `AWS::Serverless::Function` resources in a SAM template. Which top-level section of the SAM template should be used?",
+    "o": [
+      "`Parameters`",
+      "`Globals`",
+      "`Mappings`",
+      "`Metadata`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `Globals` section defines common configuration properties (runtime, timeout, memory) shared by all SAM functions."
+  },
+  {
+    "q": "How does a developer attach an API Gateway HTTP trigger to an `AWS::Serverless::Function` in a SAM template?",
+    "o": [
+      "Add an entry under the function's `Events:` property with `Type: Api` (or `Type: HttpApi`), specifying the `Path` and `Method`",
+      "Write an explicit `AWS::Lambda::Permission` and `AWS::ApiGateway::Method` resource by hand",
+      "Write a bash script in `samconfig.toml`",
+      "Configure Route 53 DNS records"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Adding an event of `Type: Api` under `Events:` automatically generates the API Gateway route and invocation permissions."
+  },
+  {
+    "q": "A SAM template defines an `AWS::Serverless::Function` that needs read and write permissions to an Amazon DynamoDB table. Instead of authoring a 30-line IAM policy statement in JSON, what SAM feature provides pre-canned, scoped policy templates?",
+    "o": [
+      "SAM Policy Templates (e.g., `DynamoDBCrudPolicy: { TableName: !Ref MyTable }` or `DynamoDBReadPolicy`)",
+      "IAM Root Access",
+      "AWS Managed Policy `AdministratorAccess`",
+      "DynamoDB Local Secondary Indexes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SAM Policy Templates (e.g., `DynamoDBCrudPolicy`) generate scoped IAM policies with minimal boilerplate."
+  },
+  {
+    "q": "Which SAM policy template grants a Lambda function permissions to decrypt data using an AWS KMS key?",
+    "o": [
+      "`KMSDecryptPolicy: { KeyId: !Ref MyKey }`",
+      "`KMSEncryptAllPolicy`",
+      "`S3ReadPolicy`",
+      "`SecretsManagerWritePolicy`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`KMSDecryptPolicy` grants permissions to decrypt data using the specified AWS KMS key ID."
+  },
+  {
+    "q": "A developer wants to test an `AWS::Serverless::Function` locally on their laptop by passing a mock JSON event payload, without deploying the function to AWS. Which SAM CLI command executes this local invocation?",
+    "o": [
+      "`sam local invoke <FunctionName> --event <event.json>`",
+      "`sam test <FunctionName>`",
+      "`sam run <FunctionName>`",
+      "`aws lambda invoke-local`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sam local invoke <Function>` invokes a Lambda function locally with an event payload without deploying to AWS."
+  },
+  {
+    "q": "How does the SAM CLI simulate the Lambda execution environment locally when running `sam local invoke` or `sam local start-api`?",
+    "o": [
+      "It runs the function inside a local Docker container that mirrors the official AWS Lambda runtime environment",
+      "It connects to an active EC2 instance in `us-east-1`",
+      "It compiles the code to WebAssembly",
+      "It uploads the code to S3 and runs it on AWS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The SAM CLI runs local invocations inside Docker containers that emulate official AWS Lambda runtime environments."
+  },
+  {
+    "q": "A developer wants to run a local HTTP server that emulates Amazon API Gateway and routes local HTTP requests to corresponding local Lambda functions on `localhost:3000`. Which SAM CLI command starts this local API emulator?",
+    "o": [
+      "`sam local start-api`",
+      "`sam local start-lambda`",
+      "`sam serve`",
+      "`sam http-server`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sam local start-api` starts a local HTTP server on `localhost:3000` emulating Amazon API Gateway."
+  },
+  {
+    "q": "Which SAM CLI command compiles application dependencies (e.g., executing `npm install` for Node.js or `pip install` for Python) and packages the artifacts into a `.aws-sam/build` directory?",
+    "o": [
+      "`sam init`",
+      "`sam build`",
+      "`sam package`",
+      "`sam validate`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`sam build` installs dependencies and compiles source artifacts into `.aws-sam/build`."
+  },
+  {
+    "q": "A developer wants to package local Lambda source code artifacts, upload them to an Amazon S3 deployment bucket, and generate an updated CloudFormation template referencing the S3 object locations. Which SAM CLI command performs these actions?",
+    "o": [
+      "`sam package --s3-bucket <bucket-name> --output-template-file packaged.yaml`",
+      "`sam upload`",
+      "`sam s3 sync`",
+      "`sam bundle`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sam package` uploads local build artifacts to S3 and outputs a template with updated S3 URIs."
+  },
+  {
+    "q": "What configuration file does `sam deploy --guided` interactively generate to save deployment settings (such as stack name, region, S3 bucket, parameter overrides, and confirmation preferences) for future non-interactive deployments?",
+    "o": [
+      "`samconfig.toml`",
+      "`sam.json`",
+      "`config.yaml`",
+      "`buildspec.yml`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`samconfig.toml` stores default parameters and environment configurations generated by `sam deploy --guided`."
+  },
+  {
+    "q": "A development team wants to use a single SAM `template.yaml` file to deploy to three distinct environments: `dev`, `staging`, and `prod`. How does `samconfig.toml` support multi-environment deployments?",
+    "o": [
+      "By defining separate configuration environment sections (e.g., `[dev.deploy.parameters]`, `[staging.deploy.parameters]`, `[prod.deploy.parameters]`), invoked using `sam deploy --config-env <env-name>`",
+      "By creating three copies of the SAM CLI binary",
+      "By requiring three separate AWS accounts for each developer",
+      "By creating three separate Git repositories"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`samconfig.toml` defines named environment sections (`[env.deploy.parameters]`) selected via `--config-env <name>`."
+  },
+  {
+    "q": "How can a developer override specific template parameters on the command line during a `sam deploy` command?",
+    "o": [
+      "`--parameter-overrides \"StageName=prod DatabaseCapacity=10\"`",
+      "`--set-param StageName=prod`",
+      "`--params \"StageName: prod\"`",
+      "`--env-vars StageName=prod`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`--parameter-overrides` passes parameter key-value overrides during `sam deploy`."
+  },
+  {
+    "q": "What SAM resource type represents a serverless DynamoDB table with a single primary key?",
+    "o": [
+      "`AWS::Serverless::SimpleTable`",
+      "`AWS::Serverless::DynamoDB`",
+      "`AWS::NoSQL::Table`",
+      "`AWS::DynamoDB::Simple`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AWS::Serverless::SimpleTable` creates a basic DynamoDB table with a single primary key."
+  },
+  {
+    "q": "When should a developer use standard CloudFormation `AWS::DynamoDB::Table` instead of `AWS::Serverless::SimpleTable` in a SAM template?",
+    "o": [
+      "Whenever the table requires advanced features such as Global Secondary Indexes (GSIs), Local Secondary Indexes (LSIs), DynamoDB Streams, or Point-in-Time Recovery",
+      "`AWS::Serverless::SimpleTable` is deprecated and should never be used",
+      "Only when using Java runtimes",
+      "`AWS::DynamoDB::Table` cannot be used in a SAM template"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Standard `AWS::DynamoDB::Table` is used when tables require GSIs, LSIs, Streams, or complex configurations."
+  },
+  {
+    "q": "A developer wants to configure automated traffic shifting (e.g., Canary or Linear deployments) for an `AWS::Serverless::Function` using AWS CodeDeploy when updating function versions. What property under `AWS::Serverless::Function` enables this?",
+    "o": [
+      "`DeploymentPreference: { Type: Canary10Percent10Minutes }`",
+      "`AutoScaling: { Policy: Linear }`",
+      "`TrafficShift: true`",
+      "`CodeDeploy: { Mode: BlueGreen }`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`DeploymentPreference: { Type: Canary... }` configures automated CodeDeploy traffic shifting for SAM functions."
+  },
+  {
+    "q": "What pre-traffic and post-traffic verification mechanism can be configured in a SAM `DeploymentPreference` to validate that a new Lambda version is working before and after traffic shifting?",
+    "o": [
+      "`Hooks: { PreTraffic: !Ref PreTrafficLambdaFunction, PostTraffic: !Ref PostTrafficLambdaFunction }`",
+      "`HealthCheckPath: /health`",
+      "`Alarms: CloudWatch5xx`",
+      "`UnitTests: npm_test`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`Hooks: { PreTraffic: ..., PostTraffic: ... }` executes Lambda validation functions before and after traffic shifting."
+  },
+  {
+    "q": "Which SAM resource type defines a serverless state machine managed by AWS Step Functions?",
+    "o": [
+      "`AWS::Serverless::StateMachine`",
+      "`AWS::Serverless::StepFunction`",
+      "`AWS::StepFunctions::ServerlessWorkflow`",
+      "`AWS::Serverless::Workflow`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AWS::Serverless::StateMachine` defines a serverless Step Functions workflow in SAM."
+  },
+  {
+    "q": "A developer wants to sync local code changes directly to an active development stack in AWS in near real-time without running a full CloudFormation deployment pipeline on every keystroke. Which SAM CLI command provides this accelerated development synchronization?",
+    "o": [
+      "`sam sync --watch --stack-name <stack-name>`",
+      "`sam deploy --fast`",
+      "`sam live-reload`",
+      "`sam push`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sam sync --watch` synchronizes local code changes directly to an active development stack in near real-time."
+  },
+  {
+    "q": "What SAM resource type defines a serverless GraphQL API managed by AWS AppSync?",
+    "o": [
+      "`AWS::Serverless::GraphQLApi`",
+      "`AWS::AppSync::ServerlessApi`",
+      "`AWS::Serverless::AppSync`",
+      "`AWS::GraphQL::Api`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AWS::Serverless::GraphQLApi` defines an AWS AppSync GraphQL API in SAM."
+  },
+  {
+    "q": "How can a developer declare environment variables that are available to all Lambda functions in a SAM template?",
+    "o": [
+      "In `Globals: Function: Environment: Variables:`",
+      "In `Parameters: EnvVars:`",
+      "In `Mappings: EnvironmentVariables:`",
+      "In `Outputs: Env:`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Declaring variables under `Globals: Function: Environment: Variables:` makes them available across all SAM functions."
+  },
+  {
+    "q": "Which SAM CLI command initializes a new serverless project from a curated starter template for a specified runtime (e.g., Python, Node.js, Java, Go)?",
+    "o": [
+      "`sam init`",
+      "`sam new`",
+      "`sam create`",
+      "`sam bootstrap`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sam init` scaffolds a new serverless application from curated starter templates."
+  },
+  {
+    "q": "When `sam deploy` executes, what underlying AWS service does it interact with to provision and update the cloud resources?",
+    "o": [
+      "AWS CloudFormation (by creating and executing Change Sets)",
+      "AWS OpsWorks",
+      "Amazon EC2 API directly",
+      "AWS Systems Manager Run Command"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sam deploy` interacts with AWS CloudFormation by creating and executing Change Sets."
+  },
+  {
+    "q": "A developer wants to validate that a SAM template is valid against the AWS SAM specification. Which command performs this validation?",
+    "o": [
+      "`sam validate`",
+      "`sam check`",
+      "`sam lint`",
+      "`sam test-template`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sam validate` validates SAM templates against the JSON schema specification."
+  },
+  {
+    "q": "Can standard CloudFormation resources (e.g., `AWS::S3::Bucket`, `AWS::SQS::Queue`, `AWS::RDS::DBInstance`) be included inside the same `template.yaml` file as `AWS::Serverless::*` resources?",
+    "o": [
+      "Yes, SAM is a superset/transform of CloudFormation, allowing full mixing of standard CloudFormation resources and SAM shorthand resources in the same template",
+      "No, SAM templates can only contain `AWS::Serverless::*` resources",
+      "Only if the template is written in JSON",
+      "Only if the resources are in `us-east-1`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Standard CloudFormation resources and SAM shorthand resources can be freely mixed in the same template."
+  },
+  {
+    "q": "A developer wants to configure an SQS queue trigger on an `AWS::Serverless::Function`. What event type should be used under `Events:`?",
+    "o": [
+      "`Type: SQS` with `Properties: { Queue: !GetAtt MyQueue.Arn, BatchSize: 10 }`",
+      "`Type: MessageQueue`",
+      "`Type: SQSStream`",
+      "`Type: EventBridge`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`Type: SQS` under `Events:` configures an Amazon SQS event source mapping for a Lambda function."
+  },
+  {
+    "q": "In SAM, what does the `AutoPublishAlias` property on an `AWS::Serverless::Function` do?",
+    "o": [
+      "It automatically publishes a new Lambda function version and updates a named alias (e.g., `live` or `prod`) to point to the new version on every code update",
+      "It publishes the code to GitHub",
+      "It creates a public Route 53 DNS record",
+      "It sends an SNS notification"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AutoPublishAlias` automatically creates new function versions and points a named alias to the latest version on deploy."
+  },
+  {
+    "q": "A developer wants to trace incoming requests across API Gateway and Lambda functions declared in a SAM template. What property enables AWS X-Ray tracing globally across all functions and APIs?",
+    "o": [
+      "`Globals: Function: Tracing: Active` and `Globals: Api: TracingEnabled: true`",
+      "`Globals: XRay: Enable`",
+      "`Parameters: Trace: true`",
+      "`Outputs: XRayArn` --- ### AWS CDK (Cloud Development Kit) & Comparative IaC Selection (106–125)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting `Tracing: Active` under `Globals` enables AWS X-Ray tracing across SAM functions and APIs."
+  },
+  {
+    "q": "A software engineering team wants to define AWS infrastructure using familiar, general-purpose programming languages (such as TypeScript, Python, Java, C#, or Go) rather than writing declarative YAML or JSON files. Which AWS framework allows defining infrastructure as code using object-oriented abstractions?",
+    "o": [
+      "AWS Cloud Development Kit (AWS CDK)",
+      "AWS SAM",
+      "AWS Elastic Beanstalk",
+      "AWS CloudFormation Templates (YAML)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Cloud Development Kit (AWS CDK) enables defining cloud infrastructure using general-purpose programming languages."
+  },
+  {
+    "q": "When a developer executes `cdk synth` in an AWS CDK project, what artifact is produced?",
+    "o": [
+      "An AWS CloudFormation template (JSON/YAML) generated from the construct tree",
+      "A compiled binary executable for Linux",
+      "An Amazon Machine Image (AMI)",
+      "A Docker container image in Amazon ECR"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`cdk synth` synthesizes the CDK construct tree into a standard AWS CloudFormation template."
+  },
+  {
+    "q": "In AWS CDK, what are the three levels of Constructs and what do they represent?",
+    "o": [
+      "L1 (Cfn primitives, 1:1 with raw CloudFormation resources); L2 (AWS curated constructs with sane defaults, helper methods, and security policies); L3 (Higher-level opinionated architectural patterns combining multiple services)",
+      "L1 (Frontend), L2 (Backend), L3 (Database)",
+      "L1 (Development), L2 (Staging), L3 (Production)",
+      "L1 (Small), L2 (Medium), L3 (Large)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "L1 = raw CloudFormation Cfn primitives; L2 = curated constructs with defaults; L3 = architectural patterns."
+  },
+  {
+    "q": "A developer writes the following TypeScript code in an AWS CDK stack: ```typescript const table = new dynamodb.Table(this, 'UsersTable', { partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING } }); const fn = new lambda.Function(this, 'UserHandler', { runtime: lambda.Runtime.NODEJS_20_X, handler: 'index.handler', code: lambda.Code.fromAsset('lambda') }); table.grantReadWriteData(fn); ``` What does the `table.grantReadWriteData(fn)` method call do?",
+    "o": [
+      "It automatically creates and attaches a least-privilege IAM policy to the Lambda function's execution role, granting it permissions to perform read and write actions on the `UsersTable` DynamoDB table",
+      "It connects the database via a physical fiber optic cable",
+      "It makes the DynamoDB table public",
+      "It reboots the Lambda function"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`table.grantReadWriteData(fn)` generates and attaches a scoped IAM policy granting read/write access to the table."
+  },
+  {
+    "q": "Which AWS CDK construct level does `aws_lambda.Function` belong to, as opposed to `aws_lambda.CfnFunction`?",
+    "o": [
+      "L2 construct (curated with defaults and helper methods)",
+      "L1 construct (low-level CloudFormation primitive)",
+      "L3 construct (architectural pattern)",
+      "L0 construct"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`aws_lambda.Function` is an L2 curated construct; `aws_lambda.CfnFunction` is an L1 primitive."
+  },
+  {
+    "q": "What is an example of an L3 construct (pattern) in the AWS CDK?",
+    "o": [
+      "`ApplicationLoadBalancedFargateService` from `@aws-cdk/aws-ecs-patterns` (provisions an ALB, ECS Fargate cluster, task definition, service, and security groups in a single class)",
+      "`CfnBucket`",
+      "`s3.Bucket`",
+      "`iam.Role`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`ApplicationLoadBalancedFargateService` is an L3 pattern combining ALB, ECS, Fargate, and IAM resources."
+  },
+  {
+    "q": "What one-time command must be executed in an AWS account and Region before deploying CDK applications that contain assets (such as Lambda code bundles or Docker container images)?",
+    "o": [
+      "`cdk bootstrap` (provisions an S3 bucket, ECR repository, and IAM roles for the CDK toolkit)",
+      "`cdk init`",
+      "`cdk install`",
+      "`cdk setup-account`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`cdk bootstrap` provisions the S3 bucket, ECR repository, and IAM roles required by the CDK toolkit."
+  },
+  {
+    "q": "Which AWS CDK CLI command compares the synthesized CloudFormation template of the local code against the currently deployed stack in AWS, displaying a visual diff of additions, modifications, and deletions?",
+    "o": [
+      "`cdk diff`",
+      "`cdk compare`",
+      "`cdk status`",
+      "`cdk test`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`cdk diff` compares the synthesized local template against the deployed CloudFormation stack in AWS."
+  },
+  {
+    "q": "Which CDK CLI command compiles the application, synthesizes the CloudFormation template, and creates or updates the stack in AWS?",
+    "o": [
+      "`cdk deploy`",
+      "`cdk push`",
+      "`cdk release`",
+      "`cdk apply`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`cdk deploy` synthesizes and deploys the CloudFormation stack to AWS."
+  },
+  {
+    "q": "How does a developer define multiple deployment environments (e.g., `dev` in `us-east-1` and `prod` in `us-west-2`) in an AWS CDK application?",
+    "o": [
+      "By instantiating the Stack class multiple times with different `env: { account: '...', region: '...' }` properties in the CDK App entry point",
+      "By creating two separate CDK installations on their machine",
+      "By modifying the Linux `/etc/hosts` file",
+      "By deleting the `cdk.json` file"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Instantiating Stack classes with different `env: { account, region }` properties creates multi-environment stacks."
+  },
+  {
+    "q": "What is the root construct of an AWS CDK application that serves as the container for one or more Stacks?",
+    "o": [
+      "`App` (`cdk.App`)",
+      "`Stage`",
+      "`RootConstruct`",
+      "`Cluster`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`cdk.App` is the root construct containing one or more CDK Stacks."
+  },
+  {
+    "q": "What is a key advantage of writing Infrastructure as Code in AWS CDK compared to raw CloudFormation YAML?",
+    "o": [
+      "CDK allows using standard programming language constructs (like `for` loops, `if` statements, functions, classes, and inheritance) to dynamically generate repetitive infrastructure without copy-pasting YAML blocks",
+      "CDK bypasses CloudFormation entirely, reducing deployment times to zero seconds",
+      "CDK does not require an AWS account",
+      "CDK generates infrastructure for Google Cloud and Microsoft Azure automatically"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CDK allows using standard programming logic (loops, functions, classes) to generate repetitive infrastructure cleanly."
+  },
+  {
+    "q": "How does AWS CDK support unit testing infrastructure code?",
+    "o": [
+      "Through assertions and snapshot testing libraries (`aws-cdk-lib/assertions` or `jest`), allowing developers to assert that synthesized CloudFormation templates contain specific resource types and properties",
+      "By launching live EC2 instances on every test run",
+      "By sending requests to the production database",
+      "Unit testing is not supported in CDK"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CDK supports unit and assertion testing against synthesized templates using `@aws-cdk/assertions`."
+  },
+  {
+    "q": "What file in an AWS CDK project defines how to execute the CDK application (e.g., specifying `\"app\": \"npx ts-node bin/my-app.ts\"`)?",
+    "o": [
+      "`cdk.json`",
+      "`template.yaml`",
+      "`samconfig.toml`",
+      "`Dockerrun.aws.json`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`cdk.json` specifies configuration and the entry point command used by the CDK CLI."
+  },
+  {
+    "q": "A developer needs to reference an existing Amazon VPC created outside of the CDK application (e.g., in a separate networking stack) to launch ECS tasks inside it. Which CDK method imports an existing VPC by its ID?",
+    "o": [
+      "`ec2.Vpc.fromLookup(this, 'ExistingVpc', { vpcId: 'vpc-0123456789' })`",
+      "`new ec2.Vpc(this, 'ExistingVpc')`",
+      "`ec2.Vpc.createFromScratch()`",
+      "`cdk.import('vpc-0123456789')`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`ec2.Vpc.fromLookup` imports an existing VPC into a CDK stack without managing its lifecycle."
+  },
+  {
+    "q": "An organization wants to create a company-wide library of standardized, compliant infrastructure constructs (e.g., an S3 bucket that always enforces SSE-KMS encryption and public access block) and publish it as an NPM/PyPI package for internal teams. Which AWS tool is designed for authoring and distributing multi-language CDK construct libraries?",
+    "o": [
+      "JSII (used by AWS CDK to compile TypeScript constructs into Python, Java, C#, and Go packages)",
+      "AWS SAM CLI",
+      "AWS CloudFormation Designer",
+      "AWS OpsWorks"
+    ],
+    "a": [
+      0
+    ],
+    "e": "JSII compiles TypeScript CDK constructs into multiple programming languages (Python, Java, C#, Go)."
+  },
+  {
+    "q": "A development team is building a serverless web application consisting of 4 Lambda functions, an API Gateway REST API, and a DynamoDB table. The team wants rapid local development with the ability to emulate API Gateway on their local machines and test Lambda functions locally using Docker. Which IaC tool is the BEST fit?",
+    "o": [
+      "AWS SAM (Serverless Application Model)",
+      "Raw CloudFormation JSON",
+      "AWS OpsWorks Stacks",
+      "HashiCorp Nomad"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS SAM is ideal for serverless apps requiring local API Gateway and Lambda emulation."
+  },
+  {
+    "q": "A platform engineering team needs to provision 50 identical microservice environments containing S3 buckets, SQS queues, and IAM roles. The team requires type-safe reusable classes, object-oriented inheritance, and unit test coverage in TypeScript. Which IaC tool is the BEST fit?",
+    "o": [
+      "AWS Cloud Development Kit (AWS CDK)",
+      "AWS SAM",
+      "AWS Elastic Beanstalk",
+      "AWS Amplify Studio only"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS CDK is ideal for complex infrastructure requiring object-oriented abstractions, loops, and type checking in TypeScript."
+  },
+  {
+    "q": "An enterprise operations team is deploying baseline compliance guardrails (IAM password policies, CloudTrail logging) across 100 AWS accounts in an AWS Organization. Which tool natively orchestrates multi-account, multi-region CloudFormation deployments?",
+    "o": [
+      "CloudFormation StackSets",
+      "AWS SAM Local",
+      "AWS CDK `cdk synth`",
+      "AWS Amplify CLI"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudFormation StackSets orchestrates multi-account, multi-region compliance deployments."
+  }
+];
+
+let idx = 0, score = 0, answered = new Array(QUESTIONS.length).fill(false), correctFlags = new Array(QUESTIONS.length).fill(false), missed = [];
+const STORAGE_KEY = "aws-dva-quiz-13";
+
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({idx, score, answered, correctFlags}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(d && Array.isArray(d.answered) && d.answered.length === QUESTIONS.length){
+      idx = d.idx; score = d.score; answered = d.answered; correctFlags = d.correctFlags;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+const quizArea = document.getElementById("quizArea");
+const posNum = document.getElementById("posNum");
+const scoreNum = document.getElementById("scoreNum");
+const progressFill = document.getElementById("progressFill");
+
+function updateTop(){
+  posNum.textContent = (idx+1) + " / " + QUESTIONS.length;
+  scoreNum.textContent = score;
+  const answeredCount = answered.filter(Boolean).length;
+  progressFill.style.width = (answeredCount / QUESTIONS.length * 100) + "%";
+}
+
+function renderQuestion(){
+  const item = QUESTIONS[idx];
+  const isMulti = !!item.multi;
+  const done = answered[idx];
+  let html = "";
+  html += '<div class="card">';
+  html += '<div class="qnum">Question ' + (idx+1) + '</div>';
+  if(isMulti) html += '<div class="multi-hint">Select all that apply</div><br>';
+  html += '<div class="qtext">' + escapeHtml(item.q) + '</div>';
+  item.o.forEach((optText, i)=>{
+    const letter = String.fromCharCode(65+i);
+    let cls = "opt";
+    if(done){
+      if(item.a.includes(i)) cls += " correct";
+      else if(item.picked && item.picked.includes(i)) cls += " incorrect";
+    } else if(item.picked && item.picked.includes(i)){
+      cls += " selected";
+    }
+    html += '<button class="' + cls + '" data-i="' + i + '" ' + (done?'disabled':'') + '>' +
+      '<span class="mark">' + letter + '</span><span>' + escapeHtml(optText) + '</span></button>';
+  });
+  if(done){
+    html += '<div class="explain"><b>' + (correctFlags[idx] ? "Correct. " : "Not quite. ") + '</b>' + escapeHtml(item.e) + '</div>';
+  }
+  html += '<div class="actions">';
+  if(isMulti && !done){
+    html += '<button class="btn btn-primary" id="submitBtn" disabled>Submit answer</button>';
+  }
+  if(done){
+    if(idx < QUESTIONS.length - 1){
+      html += '<button class="btn btn-primary" id="nextBtn">Next question</button>';
+    } else {
+      html += '<button class="btn btn-primary" id="finishBtn">See results</button>';
+    }
+  }
+  html += '<button class="btn btn-ghost" id="resetBtn">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  updateTop();
+  wireOptions(item, isMulti, done);
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function wireOptions(item, isMulti, done){
+  const opts = quizArea.querySelectorAll(".opt");
+  opts.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(done) return;
+      const i = parseInt(btn.dataset.i, 10);
+      if(isMulti){
+        item.picked = item.picked || [];
+        const pos = item.picked.indexOf(i);
+        if(pos >= 0) item.picked.splice(pos,1); else item.picked.push(i);
+        renderQuestion();
+        const submitBtn = document.getElementById("submitBtn");
+        if(submitBtn) submitBtn.disabled = !(item.picked && item.picked.length > 0);
+      } else {
+        item.picked = [i];
+        commitAnswer(item);
+      }
+    });
+  });
+  const submitBtn = document.getElementById("submitBtn");
+  if(submitBtn){
+    submitBtn.disabled = !(item.picked && item.picked.length > 0);
+    submitBtn.addEventListener("click", ()=> commitAnswer(item));
+  }
+  const nextBtn = document.getElementById("nextBtn");
+  if(nextBtn) nextBtn.addEventListener("click", ()=>{ idx++; save(); renderQuestion(); });
+  const finishBtn = document.getElementById("finishBtn");
+  if(finishBtn) finishBtn.addEventListener("click", renderSummary);
+  const resetBtn = document.getElementById("resetBtn");
+  if(resetBtn) resetBtn.addEventListener("click", resetAll);
+}
+
+function commitAnswer(item){
+  if(answered[idx]) return;
+  answered[idx] = true;
+  const correct = item.picked.length === item.a.length && item.picked.every(p => item.a.includes(p));
+  correctFlags[idx] = correct;
+  if(correct) score++; else missed.push(idx);
+  save();
+  renderQuestion();
+}
+
+function renderSummary(){
+  const pct = Math.round(score / QUESTIONS.length * 100);
+  const passed = pct >= 72;
+  let html = '<div class="card summary">';
+  html += '<div class="eyebrow">Results</div>';
+  html += '<div class="score-big">' + score + ' / ' + QUESTIONS.length + '</div>';
+  html += '<div class="score-pct ' + (passed?'pass':'fail') + '">' + pct + '% — ' + (passed ? "Solid, above the ~72% pass bar" : "Below the ~72% pass bar — revisit the notes") + '</div>';
+  const missedList = answered.map((_,i)=>i).filter(i => !correctFlags[i]);
+  if(missedList.length){
+    html += '<div class="miss-list"><h3>Review these questions</h3>';
+    missedList.forEach(i=>{
+      html += '<div class="miss-item"><b>Q' + (i+1) + '.</b> ' + escapeHtml(QUESTIONS[i].q) + '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="actions" style="justify-content:center; margin-top:22px;">';
+  html += '<button class="btn btn-primary" id="restartBtn">Restart quiz</button>';
+  html += '<button class="btn btn-ghost" id="resetBtn2">Reset progress</button>';
+  html += '</div></div>';
+  quizArea.innerHTML = html;
+  document.getElementById("restartBtn").addEventListener("click", resetAll);
+  document.getElementById("resetBtn2").addEventListener("click", resetAll);
+}
+
+function resetAll(){
+  idx = 0; score = 0; missed = [];
+  answered = new Array(QUESTIONS.length).fill(false);
+  correctFlags = new Array(QUESTIONS.length).fill(false);
+  QUESTIONS.forEach(q => { delete q.picked; });
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  renderQuestion();
+}
+
+document.addEventListener("keydown", (e)=>{
+  const map = {"1":0,"2":1,"3":2,"4":3,"5":4,"a":0,"b":1,"c":2,"d":3,"e":4,"A":0,"B":1,"C":2,"D":3,"E":4};
+  if(e.key in map){
+    const opts = quizArea.querySelectorAll(".opt:not(:disabled)");
+    const i = map[e.key];
+    if(opts[i]) opts[i].click();
+  } else if(e.key === "Enter"){
+    const nb = document.getElementById("nextBtn") || document.getElementById("finishBtn") || document.getElementById("submitBtn");
+    if(nb && !nb.disabled) nb.click();
+  }
+});
+
+if(load()){
+  if(answered.every(Boolean)) renderSummary(); else renderQuestion();
+} else {
+  renderQuestion();
+}
+</script>
