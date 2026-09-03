@@ -1,0 +1,2395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 14 — Security Deep Dive</title>
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="crumb" href="../index.html">&#8962; Hub</a>
+  <span class="divider">/</span>
+  <span class="page-title">Module 14 &mdash; Security Deep Dive</span>
+  <span class="domain-chip" style="background:var(--d2-bg);color:var(--d2);">Domain 2 · Security (26%)</span>
+  <span class="spacer"></span>
+  <div class="tabbar">
+    <button class="tabbtn active" data-tab="notes">Notes</button>
+    <button class="tabbtn" data-tab="quiz">Practice Questions (135)</button>
+  </div>
+</header>
+
+<main>
+  <section id="tab-notes" class="tabpanel active">
+    <div class="notes-wrap">
+      <nav id="notesToc" class="notes-toc"></nav>
+      <article id="notesBody" class="notes-body"></article>
+    </div>
+  </section>
+
+  <section id="tab-quiz" class="tabpanel">
+    <div class="quiz-wrap">
+      <div class="quiz-topline">
+        <div class="stat"><span class="num" id="posNum">1 / 135</span><span class="lbl">Question</span></div>
+        <div class="stat"><span class="num" id="scoreNum">0</span><span class="lbl">Correct</span></div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div id="quizArea"></div>
+      <div class="footer-note">Progress is saved automatically in this browser. Use 1&ndash;5 or A&ndash;E on your keyboard to answer.</div>
+    </div>
+  </section>
+</main>
+
+<script src="../assets/quiz-engine.js"></script>
+<script src="../assets/notes-render.js"></script>
+<script>
+const NOTES_MD = `# Module 14 — Security Deep Dive
+
+Domain focus: **Domain 2 — Security (26%) in its entirety**. This is the second highest-weighted domain on the AWS Certified Developer – Associate (DVA-C02) exam. It covers three foundational task statements:
+- **Task Statement 2.1**: Authenticate and authorize application access to AWS services (Identity Federation, OIDC, SAML 2.0, Bearer Tokens / JWTs, OAuth 2.0, AWS STS, Cognito User Pools vs. Identity Pools, IAM Policies, Resource-based Policies, Principal Policies, RBAC, ACLs, and Least Privilege).
+- **Task Statement 2.2**: Implement encryption at rest and in transit (ACM vs. ACM Private CA, Key Management Service / AWS KMS, Customer Managed Keys vs. AWS Managed Keys, Automatic Key Rotation, Envelope Encryption mechanisms \`GenerateDataKey\`/\`Decrypt\`, Client-side vs. Server-side encryption models \`SSE-S3\`/\`SSE-KMS\`/\`SSE-C\`, Key Policies, and Cross-Account Key Sharing).
+- **Task Statement 2.3**: Manage sensitive data in application code (Data classification for PII/PHI, Lambda environment variable encryption with helper keys, AWS Secrets Manager vs. AWS Systems Manager Parameter Store with automated credential rotation templates, Data Sanitization in logging pipelines, and AWS WAF integration).
+
+Security is not an isolated afterthought on the DVA-C02 exam; it is woven into every architecture and code implementation question. While Module 00 established basic IAM primitives, this module dives deep into developer-level security mechanics: token structure, cryptographic workflows, policy evaluation logic, secret lifecycle management, and defensive web application filtering.
+
+---
+
+## 1. Authentication and Authorization (Task Statement 2.1)
+
+Authentication establishes **who you are** (identity verification); Authorization establishes **what you are allowed to do** (permissions evaluation). In modern cloud applications, hardcoding static credentials into source code or config files is an immediate security vulnerability. AWS provides identity federation, token-based authentication, and temporary credential assumption to ensure least-privilege, dynamic access.
+
+\`\`\`
++------------------+         1. Authenticate         +-----------------------+
+|  End User / App  | ------------------------------> | Identity Provider IdP |
+|  (Client/Device) |                                 | (Cognito/OIDC/SAML)   |
++------------------+ <------------------------------ +-----------------------+
+        |                2. Returns JWT / SAML Token
+        |
+        | 3. Exchange Token for AWS Credentials (AssumeRoleWithWebIdentity)
+        v
++------------------+                                 +-----------------------+
+|     AWS STS      | ------------------------------> | Temporary Credentials |
+| (Security Token) |                                 | (AccessKey,Secret,Tok)|
++------------------+                                 +-----------------------+
+        |
+        | 4. Sign API Requests with SigV4
+        v
++------------------+
+|   AWS Service    | (DynamoDB, S3, SQS, etc.)
++------------------+
+\`\`\`
+
+### 1.1 Identity Federation: SAML 2.0 and OIDC
+
+Identity Federation allows users outside of AWS (such as corporate employees in Microsoft Active Directory or consumer users with Google/Facebook accounts) to access AWS resources or custom applications without creating separate IAM users in the AWS account.
+
+1. **Enterprise Identity Federation (SAML 2.0)**:
+   - Uses the Security Assertion Markup Language (SAML 2.0) XML standard.
+   - Typically used for workforce identity management (e.g., Okta, Ping Identity, Microsoft Entra ID / Azure AD, Active Directory Federation Services).
+   - **Flow**: The client authenticates against the corporate IdP. The IdP issues a signed SAML assertion. The client sends this assertion to the AWS Security Token Service (STS) via \`AssumeRoleWithSAML\`. STS validates the assertion signature and returns temporary AWS credentials (\`AccessKeyId\`, \`SecretAccessKey\`, \`SessionToken\`).
+   - The developer does not manage usernames or passwords in AWS.
+
+2. **Web Identity Federation (OpenID Connect / OIDC)**:
+   - Built on top of OAuth 2.0 using lightweight JSON Web Tokens (JWTs).
+   - Used for consumer-facing identities (Google, Apple, Amazon, Facebook) and OIDC-compliant providers (like GitHub Actions, GitLab CI, or custom OpenID servers).
+   - **Flow**: The client authenticates with the OIDC IdP and receives an ID Token (JWT). The application passes this token to AWS STS via \`AssumeRoleWithWebIdentity\` (or through Amazon Cognito Identity Pools) to obtain temporary, scoped AWS credentials.
+
+### 1.2 Bearer Tokens, JWT Architecture & OAuth 2.0
+
+A **Bearer Token** is a security token where possession of the token is sufficient for access (whoever "bears" the token is granted the access it describes). The standard format used across modern web APIs and AWS Cognito is the **JSON Web Token (JWT)** (RFC 7519).
+
+#### Structure of a JSON Web Token (JWT)
+A JWT consists of three distinct parts separated by dots (\`.\`): \`Header.Payload.Signature\`
+
+\`\`\`
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImFiYzEyMyJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkphbmUgRG9lIiwiZW1haWwiOiJqYW5lQGV4YW1wbGUuY29tIiwiaXNzIjoiaHR0cHM6Ly9jb2duaXRvLWlkcC51cy1lYXN0LTEuYW1hem9uYXdzLmNvbS91c19lYXN0XzFfWHhYIiwiZXhwIjoxNjkzNDk1MzI1LCJ0b2tlbl91c2UiOiJpZCJ9.dGhpcyBpcyBhIG1vY2sgc2lnbmF0dXJlIHZlcmlmaWVkIGJ5IHRoZSBwdWJsaWMga2V5
+\`\`\`
+
+1. **Header**: Base64URL-encoded JSON specifying the cryptographic algorithm and key ID:
+   \`\`\`json
+   {
+     "alg": "RS256",
+     "typ": "JWT",
+     "kid": "abc123keyId"
+   }
+   \`\`\`
+2. **Payload (Claims)**: Base64URL-encoded JSON containing entity attributes and token metadata:
+   - \`sub\` (Subject): The unique identifier for the user (UUID in Cognito).
+   - \`iss\` (Issuer): The URL of the token issuer (e.g., \`https://cognito-idp.us-east-1.amazonaws.com/us-east-1_abcdef\`).
+   - \`exp\` (Expiration time): Unix epoch timestamp when the token becomes invalid.
+   - \`iat\` (Issued at): Timestamp when the token was created.
+   - \`token_use\`: Cognito-specific claim (\`id\`, \`access\`, or \`refresh\`).
+   - \`cognito:groups\`: Array of Cognito User Pool user groups the user belongs to (e.g., \`["Admins", "Managers"]\`).
+   - Custom claims: \`email\`, \`custom:tenant_id\`, etc.
+3. **Signature**: Cryptographic hash calculated over the encoded header and payload using the issuer's private key (\`RS256\` or \`HS256\`).
+
+#### How an Application Validates a JWT Server-Side:
+1. Decode the unverified header to extract the \`kid\` (Key ID).
+2. Download the JSON Web Key Set (JWKS) public keys from the provider's well-known endpoint:
+   \`https://cognito-idp.<region>.amazonaws.com/<user-pool-id>/.well-known/jwks.json\`
+3. Verify the cryptographic signature using the matching public key.
+4. Verify standard claims:
+   - Check that \`exp\` is in the future (token is not expired).
+   - Check that \`iss\` matches your expected User Pool URL.
+   - Check that \`aud\` (or \`client_id\`) matches your registered App Client ID.
+   - Check \`token_use\` (e.g., ensure an API endpoint requiring authorization expects an \`access\` token rather than an \`id\` token).
+
+#### OAuth 2.0 Grant Types (Flows) Relevant to Developers
+- **Authorization Code Grant with PKCE** (Proof Key for Code Exchange): The most secure standard flow for Single Page Applications (SPAs) and mobile apps. Replaces the legacy Implicit Grant. The client generates a code verifier and code challenge to prevent authorization code interception attacks.
+- **Client Credentials Grant**: Used for machine-to-machine (M2M) communication without user interaction (e.g., a backend daemon microservice calling another backend API).
+- **Refresh Token Grant**: Exchanges a valid long-lived Refresh Token for a new short-lived ID/Access Token pair when the access token expires.
+
+### 1.3 AWS Security Token Service (STS)
+
+AWS STS is a global web service that provides short-lived temporary security credentials to IAM users or authenticated federated users. Temporary credentials consist of an **Access Key ID**, a **Secret Access Key**, and a mandatory **Security Token** (\`SessionToken\`).
+
+| STS API Action | Use Case | Typical Caller | Max Duration |
+|---|---|---|---|
+| \`AssumeRole\` | Cross-account access, EC2 instance profiles, Lambda execution roles, delegating permissions to IAM users | IAM User, EC2, Lambda, Automation | 1 hour (default) up to 12 hours |
+| \`AssumeRoleWithWebIdentity\` | Authenticating mobile/web users using OpenID Connect (OIDC) or social identity tokens (Google, Apple, Cognito) | Mobile app, SPA, GitHub Actions CI/CD | 1 hour (default) up to 12 hours |
+| \`AssumeRoleWithSAML\` | Enterprise Single Sign-On (SSO) using SAML 2.0 assertions from corporate IdP | Corporate browser client | 1 hour (default) up to 12 hours |
+| \`GetSessionToken\` | Generating temporary credentials for IAM users, typically to add Multi-Factor Authentication (MFA) validation | IAM User with MFA device | 15 minutes to 36 hours (default 12h) |
+| \`GetFederationToken\` | Custom identity broker issuing scoped temporary credentials to federated users | On-premises backend broker | 15 minutes to 36 hours |
+| \`GetCallerIdentity\` | Validating the current active IAM identity ARN, account ID, and user ID (debugging/sanity check) | Developer CLI / Application SDK | N/A (read-only) |
+
+\`\`\`python
+import boto3
+
+# Example: Assuming a cross-account role in production
+sts_client = boto3.client("sts")
+
+assumed_role_object = sts_client.assume_role(
+    RoleArn="arn:aws:iam::123456789012:role/CrossAccountDynamoDBAccess",
+    RoleSessionName="AppOrderProcessingSession",
+    DurationSeconds=3600
+)
+
+# Extract temporary credentials
+credentials = assumed_role_object["Credentials"]
+
+# Initialize a target service client using the temporary credentials
+dynamodb = boto3.client(
+    "dynamodb",
+    aws_access_key_id=credentials["AccessKeyId"],
+    aws_secret_access_key=credentials["SecretAccessKey"],
+    aws_session_token=credentials["SessionToken"],
+    region_name="us-east-1"
+)
+\`\`\`
+
+### 1.4 Amazon Cognito: User Pools vs. Identity Pools
+
+Amazon Cognito is divided into two distinct services that serve complementary purposes in application architecture:
+
+\`\`\`
++-----------------------------------------------------------------------------------+
+|                            AMAZON COGNITO ARCHITECTURE                            |
++-----------------------------------------------------------------------------------+
+
+   +--------------------------+                      +--------------------------+
+   |   COGNITO USER POOLS     |                      |  COGNITO IDENTITY POOLS  |
+   |     (Authentication)     |                      |     (Authorization)      |
+   +--------------------------+                      +--------------------------+
+   | - User directory         |                      | - Issues temporary AWS   |
+   | - Sign-up / Sign-in      |                      |   IAM credentials (STS)  |
+   | - MFA, Email/SMS verify  |                      | - Maps users/groups to   |
+   | - Social/SAML/OIDC login |                      |   specific IAM Roles     |
+   | - Issues JWT Tokens:     |                      | - Supports Authenticated |
+   |   (ID, Access, Refresh)  |                      |   and Guest access       |
+   +--------------------------+                      +--------------------------+
+                |                                                 ^
+                | 1. User signs in, receives JWT                  |
+                +-------------------------------------------------+
+                  2. App passes JWT to Identity Pool
+                     to exchange for temporary AWS IAM Credentials!
+\`\`\`
+
+#### Detailed Comparison:
+| Feature | Cognito User Pools (CUP) | Cognito Identity Pools (Federated Identities) |
+|---|---|---|
+| **Primary Purpose** | **Authentication** (Identity Provider / User Directory) | **Authorization** (Access Control to AWS Resources) |
+| **Output Token / Credential** | Issues **JWTs** (ID Token, Access Token, Refresh Token) | Issues **AWS IAM Credentials** (\`AccessKeyId\`, \`SecretAccessKey\`, \`SessionToken\`) |
+| **Target Consumers** | Web/mobile app user database, API Gateway Authorizers, ALB OIDC Auth | Direct SDK calls from mobile/web clients to AWS services (S3 upload, DynamoDB read) |
+| **Federation Sources** | Hosted UI with Google, Apple, Facebook, SAML 2.0, OIDC | Cognito User Pools, Google, Apple, SAML 2.0, OIDC, Developer Authenticated Identities |
+| **Guest Access** | Not supported (users must register/authenticate) | Supported (unauthenticated / guest roles for anonymous users) |
+| **Fine-Grained Access** | Custom attributes, groups, pre/post Lambda triggers | Role mapping based on claims, \`dynamodb:LeadingKeys\` IAM policies |
+
+#### How They Connect Together in a Modern Mobile/Web Architecture:
+1. User enters username and password in the mobile app.
+2. The app authenticates against **Cognito User Pool** and receives an ID Token, Access Token, and Refresh Token.
+3. The app presents the ID Token to the **Cognito Identity Pool**.
+4. The Identity Pool evaluates the token claims (and user groups), assumes the configured IAM Role via STS \`AssumeRoleWithWebIdentity\`, and returns temporary AWS IAM credentials.
+5. The mobile app uses these temporary AWS credentials directly in the AWS SDK to upload a photo to an S3 bucket (\`s3://my-app-uploads/\${cognito-identity.amazonaws.com:sub}/*\`).
+
+### 1.5 IAM Policies, Principal Policies & Permission Boundaries
+
+AWS evaluates policies using a strict deterministic decision model:
+1. By default, all requests are **implicitly denied**.
+2. An **explicit allow** in any applicable policy overrides the default implicit deny.
+3. An **explicit deny** anywhere overrides ANY and ALL allows, no matter what.
+
+\`\`\`
+       [ Request arrives at AWS API ]
+                     |
+                     v
+   +------------------------------------+
+   |   Is there an EXPLICIT DENY?       | ---- YES ----> [ DENY ACCESS ]
+   +------------------------------------+
+                     |
+                    NO
+                     v
+   +------------------------------------+
+   |   Is there an EXPLICIT ALLOW?      | ---- NO -----> [ DENY ACCESS (Implicit) ]
+   +------------------------------------+
+                     |
+                    YES
+                     v
+   +------------------------------------+
+   |   Within Permissions Boundary &    | ---- NO -----> [ DENY ACCESS ]
+   |   Organization SCP Limits?         |
+   +------------------------------------+
+                     |
+                    YES
+                     v
+             [ ALLOW ACCESS ]
+\`\`\`
+
+#### Types of IAM Policies:
+- **Identity-Based Policies**: Attached directly to IAM users, groups, or roles (e.g., Managed Policies or Inline Policies). Specifies what the identity can do.
+- **Resource-Based Policies**: Attached directly to an AWS resource (e.g., S3 Bucket Policy, KMS Key Policy, SQS Queue Policy, Lambda Resource-Based Policy). Specifies who (which \`Principal\`) can access that resource and what actions they can perform.
+- **Permissions Boundaries**: An advanced feature that uses a managed policy to set the **maximum possible permissions** an identity-based policy can grant to an IAM user or role. It acts as an upper limit guardrail (e.g., allowing developers to create IAM roles for Lambda functions, but enforcing a boundary so the created roles cannot grant \`AdministratorAccess\`).
+- **Service Control Policies (SCPs)**: Organization-level guardrails applied to AWS Accounts or Organizational Units (OUs). SCPs specify the maximum permissions for an entire AWS account, overriding account administrators.
+
+#### Fine-Grained Access Control: \`dynamodb:LeadingKeys\`
+In multi-tenant or mobile applications, you can restrict an authenticated user to reading or writing ONLY their own partition key in a DynamoDB table using the \`\${cognito-identity.amazonaws.com:sub}\` context variable:
+
+\`\`\`json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:Query"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:123456789012:table/UserProfiles",
+      "Condition": {
+        "ForAllValues:StringEquals": {
+          "dynamodb:LeadingKeys": [
+            "\${cognito-identity.amazonaws.com:sub}"
+          ]
+        }
+      }
+    }
+  ]
+}
+\`\`\`
+
+---
+
+## 2. Encryption at Rest and in Transit (Task Statement 2.2)
+
+Encryption protects data confidentiality. The DVA-C02 exam tests your knowledge of symmetric vs. asymmetric cryptographic keys, AWS Certificate Manager (ACM), AWS Key Management Service (KMS), and the mechanics of **Envelope Encryption**.
+
+\`\`\`
++-----------------------------------------------------------------------------------+
+|                          ENVELOPE ENCRYPTION MECHANISM                            |
++-----------------------------------------------------------------------------------+
+
+ 1. App calls KMS GenerateDataKey(KeyId='alias/MyKmsKey', KeySpec='AES_256')
+ 2. KMS returns:
+    - Plaintext Data Key (used in memory to encrypt large data)
+    - Ciphertext (Encrypted) Data Key (encrypted under the KMS Master Key)
+
+      +----------------------+          +--------------------------+
+      |  Plaintext Data Key  |          |  Encrypted Data Key (EK) |
+      +----------------------+          +--------------------------+
+                 |                                   |
+                 v                                   |
+      +----------------------+                       |
+      | Encrypt Data (Local) |                       |
+      +----------------------+                       |
+                 |                                   |
+                 v                                   v
+      +----------------------+          +--------------------------+
+      |    Encrypted Data    | ++++++++ |  Encrypted Data Key (EK) |
+      +----------------------+          +--------------------------+
+                 |
+                 +--> Stored together in Database / S3!
+                 
+ (Plaintext Data Key is immediately wiped from application memory!)
+\`\`\`
+
+### 2.1 Encryption in Transit & AWS Certificate Manager (ACM)
+
+Encryption in transit ensures that data cannot be intercepted or modified while moving across network connections (using TLS 1.2 / TLS 1.3).
+
+- **AWS Certificate Manager (ACM)**:
+  - Provisions, manages, and automatically renews public and private SSL/TLS certificates.
+  - **Public Certificates**: Free of charge when used with supported AWS services (Amazon CloudFront distributions, Application Load Balancers, Network Load Balancers with TLS listeners, API Gateway Custom Domains).
+  - Public certificates issued by ACM **cannot be exported or downloaded** as raw private key files; they can only be bound to integrated AWS services.
+  - Domain validation is performed via **DNS validation** (creating a CNAME record in Route 53 or your DNS registrar) or **Email validation**. DNS validation is strongly recommended because it enables automated certificate renewal.
+- **ACM Private CA (AWS Private Certificate Authority)**:
+  - Managed private CA for issuing internal certificates for microservices, internal VPC servers, mobile devices, and IoT endpoints.
+  - Charges a monthly fee per private CA plus a per-certificate fee.
+  - Private certificates can be exported and installed directly on EC2 instances or container hosts.
+
+### 2.2 AWS Key Management Service (KMS) & Key Types
+
+AWS KMS is a managed service that uses FIPS 140-2 validated Hardware Security Modules (HSMs) to generate and manage cryptographic keys.
+
+#### KMS Key Types:
+1. **AWS Owned Keys**:
+   - Internal keys used and managed exclusively by AWS services (e.g., default DynamoDB encryption).
+   - Free of charge, invisible in the KMS console, cannot be tracked in CloudTrail or managed by customers.
+2. **AWS Managed Keys**:
+   - Created automatically by AWS services when you enable encryption (e.g., \`aws/s3\`, \`aws/rds\`, \`aws/lambda\`).
+   - Named with the service prefix: \`aws/<service-name>\`.
+   - Free monthly key storage fee, but API requests incur standard KMS request fees.
+   - Rotated automatically by AWS every **1 year** (365 days) — cannot be disabled or customized.
+   - Key policies cannot be modified by the customer.
+3. **Customer Managed Keys (CMKs)**:
+   - Created, owned, and managed by the customer.
+   - Incurs a $1/month storage fee per key plus per-request API fees.
+   - Full control over Key Policies, IAM policies, aliases, tags, and deletion schedules (7 to 30 days pending deletion).
+   - **Automatic Key Rotation**: Can be enabled on symmetric CMKs (rotates every **1 year / 365 days** or custom 90-730 days depending on modern settings; previously fixed at 365 days). When rotated, the KMS Key ARN and Key ID remain identical; KMS retains backing keys to decrypt older data transparently.
+   - Can be used for **Cross-Account Access** (requires granting permissions in both the KMS Key Policy and the external account's IAM policy).
+
+### 2.3 Envelope Encryption: \`GenerateDataKey\` & \`Decrypt\`
+
+AWS KMS enforces a hard limit: **a KMS Customer Master Key can only directly encrypt up to 4 KB of data per API call.**
+To encrypt files, database rows, or payloads larger than 4 KB, AWS uses **Envelope Encryption** (encrypting plaintext data with a unique Data Key, and encrypting the Data Key under a KMS Key).
+
+#### How Envelope Encryption Works (Step-by-Step):
+
+#### Encryption Path:
+1. Application calls the KMS API: \`GenerateDataKey(KeyId="alias/MyKey", KeySpec="AES_256")\`.
+2. KMS returns two items:
+   - \`Plaintext\`: A 256-bit random data key.
+   - \`CiphertextBlob\`: The same data key, encrypted under the specified KMS Customer Master Key.
+3. The application uses the \`Plaintext\` data key to encrypt the large file locally in memory using AES-256-GCM.
+4. The application **immediately erases the plaintext data key from memory**.
+5. The application stores the encrypted data alongside the \`CiphertextBlob\` (Encrypted Data Key) in the storage target (e.g., S3 object metadata or a DynamoDB column).
+
+#### Decryption Path:
+1. The application retrieves the encrypted data and the \`CiphertextBlob\` (Encrypted Data Key).
+2. The application calls the KMS API: \`Decrypt(CiphertextBlob=encryptedDataKey)\`.
+3. KMS uses the backing master key in its HSM to decrypt the data key and returns the \`Plaintext\` data key to the application.
+4. The application uses the \`Plaintext\` data key to decrypt the payload locally.
+5. The application immediately wipes the plaintext data key from memory.
+
+#### KMS API Summary for Developers:
+- \`Encrypt\`: Encrypts small data (< 4 KB) directly in KMS HSMs.
+- \`Decrypt\`: Decrypts ciphertext (< 4 KB, or an encrypted data key) directly in KMS HSMs.
+- \`GenerateDataKey\`: Returns both the Plaintext Data Key and Encrypted Data Key.
+- \`GenerateDataKeyWithoutPlaintext\`: Returns ONLY the Encrypted Data Key (useful when encryption will happen on a separate worker node later).
+- \`ReEncrypt\`: Decrypts and re-encrypts data under a new KMS key in a single atomic server-side operation inside KMS without exposing plaintext to the caller.
+
+### 2.4 Server-Side vs. Client-Side Encryption Models
+
+\`\`\`
++-----------------------------------------------------------------------------------+
+|                        S3 ENCRYPTION MODELS COMPARISON                            |
++-----------------------------------------------------------------------------------+
+
+ 1. SSE-S3 (Default)   : Key managed by S3 (AES-256). Free, automatic.
+ 2. SSE-KMS            : Key managed in AWS KMS. Audit trail in CloudTrail, role-based access.
+ 3. SSE-C              : Customer provides raw 256-bit key in HTTP header (x-amz-server-side-encryption-customer-key). S3 does encryption, discards key.
+ 4. Client-Side        : App encrypts data BEFORE sending to S3 (AWS Encryption SDK). S3 only sees ciphertext.
+\`\`\`
+
+| Model | Who manages Keys? | Who does the Encryption work? | Key Features / Trade-offs |
+|---|---|---|---|
+| **SSE-S3** | Amazon S3 (AWS Owned Key) | S3 (Server-side) | Free, zero configuration, default for all new S3 buckets. No fine-grained key access control or CloudTrail key audit. |
+| **SSE-KMS** | AWS KMS (AWS Managed or CMK) | S3 (Server-side) | Provides per-key CloudTrail audit logging, key rotation, and separate IAM/Key Policy access control. Subject to KMS API request limits/costs. |
+| **SSE-C** | Customer (Customer-Provided) | S3 (Server-side) | Customer passes raw encryption key in HTTPS headers (\`x-amz-server-side-encryption-customer-key\`). AWS encrypts data, discards key immediately. Customer must track which key encrypted which object. |
+| **Client-Side Encryption** | Customer / AWS Encryption SDK | Application Client (Client-side) | Data is encrypted in memory before network transmission. S3 never sees plaintext or encryption keys. Highest compliance security. |
+
+### 2.5 KMS Key Policies & Cross-Account Sharing
+
+Every KMS key **MUST have a Key Policy**. IAM policies alone are not sufficient to grant access to a KMS key; the Key Policy itself must explicitly allow the IAM principal or delegate access to the root account.
+
+\`\`\`json
+{
+  "Version": "2012-10-17",
+  "Id": "CrossAccountKmsPolicy",
+  "Statement": [
+    {
+      "Sid": "Enable IAM User Permissions",
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::111122223333:root" },
+      "Action": "kms:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowExternalAccountAccess",
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::444455556666:role/CrossAccountLambdaRole" },
+      "Action": [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+\`\`\`
+
+#### Cross-Account KMS Access Prerequisites (Two-Way Handshake):
+1. **Account A (KMS Owner)**: The KMS Key Policy must explicitly grant \`kms:Decrypt\`, \`kms:GenerateDataKey\` to Account B's IAM Role ARN (or Account B's root).
+2. **Account B (Consumer)**: The IAM Policy attached to the Lambda Execution Role / EC2 Instance Profile must grant \`kms:Decrypt\`, \`kms:GenerateDataKey\` on the KMS Key ARN in Account A.
+
+---
+
+## 3. Sensitive Data in Application Code (Task Statement 2.3)
+
+Handling credentials, tokens, and personally identifiable information (PII) securely is a critical developer responsibility. This section covers secure configuration storage, automated rotation, log sanitization, and edge application firewalls.
+
+### 3.1 Data Classification: PII and PHI
+- **PII (Personally Identifiable Information)**: Social Security Numbers, Credit Card Numbers, Full Names, Home Addresses, Driver's License Numbers.
+- **PHI (Protected Health Information)**: Medical records, health insurance IDs, biometric data (subject to HIPAA compliance).
+- **Developer Guardrails**:
+  - Never log PII/PHI in plaintext to CloudWatch Logs or application traces.
+  - Encrypt all PII/PHI in transit (TLS 1.3) and at rest (KMS with Customer Managed Keys).
+  - Use tokenization or client-side masking before storage.
+
+### 3.2 Secrets Manager vs. Systems Manager Parameter Store
+
+A core DVA-C02 comparison topic is choosing between **AWS Secrets Manager** and **AWS Systems Manager Parameter Store**.
+
+| Feature | AWS Secrets Manager | SSM Parameter Store |
+|---|---|---|
+| **Primary Use Case** | Database credentials, OAuth API tokens, third-party API keys requiring **automated rotation** | Application configuration parameters, license codes, environment flags, static secrets |
+| **Native Automatic Rotation** | **Built-in native integration** with AWS Lambda rotation templates (RDS MySQL/PostgreSQL, Aurora, DocumentDB, Redshift) | No native automated rotation (requires custom manual EventBridge + Lambda trigger) |
+| **Cost** | **$0.40 per secret per month** + $0.05 per 10,000 API calls | **Standard tier: Free** (up to 10,000 params, 4 KB size). Advanced tier: $0.05/month (up to 8 KB size) |
+| **Cross-Account / Cross-Region** | Native **Multi-Region Secret Replication** (replicates secret and rotates automatically across regions) | Replicate manually via custom scripts / CI/CD pipelines |
+| **Encryption** | Always encrypted using AWS KMS | Supports \`String\`, \`StringList\`, and \`SecureString\` (encrypted via KMS) |
+| **Max Payload Size** | Up to **64 KB** per secret | Standard: **4 KB**; Advanced: **8 KB** |
+| **Integration with RDS Proxy** | **Native direct integration** (RDS Proxy retrieves DB credentials directly from Secrets Manager) | Not supported natively by RDS Proxy |
+
+\`\`\`python
+# Retrieving a secret from AWS Secrets Manager in Python (Boto3)
+import boto3
+from botocore.exceptions import ClientError
+import json
+
+def get_db_credentials(secret_name, region_name="us-east-1"):
+    client = boto3.client("secretsmanager", region_name=region_name)
+    try:
+        response = client.get_secret_value(SecretId=secret_name)
+    except ClientError as e:
+        raise e
+
+    if "SecretString" in response:
+        secret = json.loads(response["SecretString"])
+        return secret["username"], secret["password"]
+\`\`\`
+
+### 3.3 Automated Secret Rotation in Secrets Manager
+
+Secrets Manager uses an **AWS Lambda function** to rotate credentials without application downtime:
+1. Secrets Manager triggers the Lambda rotation function with four distinct step lifecycle events:
+   - \`createSecret\`: Generates a new version of the secret password in the database and stages it in Secrets Manager with version stage \`AWSPENDING\`.
+   - \`setSecret\`: Modifies the database user password in the target database to match the new \`AWSPENDING\` secret.
+   - \`testSecret\`: Tests the connection to the database using the new \`AWSPENDING\` secret to verify functionality.
+   - \`finishSecret\`: Promotes \`AWSPENDING\` to \`AWSCURRENT\` and moves the previous version to \`AWSPREVIOUS\`.
+
+\`\`\`
+[ Secrets Manager Schedule ] ---> [ Lambda Rotation Function ]
+                                         |
+                                         | 1. createSecret (generates new password)
+                                         | 2. setSecret (updates password in RDS)
+                                         | 3. testSecret (validates connection)
+                                         | 4. finishSecret (marks AWSCURRENT)
+                                         v
+                                  [ Amazon RDS Database ]
+\`\`\`
+
+### 3.4 Encrypting Lambda Environment Variables
+
+When deploying AWS Lambda functions with environment variables containing sensitive values (like API endpoints or tokens):
+- **Server-Side Encryption at Rest**: By default, AWS Lambda encrypts all environment variables at rest using an AWS Managed KMS key (\`aws/lambda\`) after deployment.
+- **Client-Side Helper Encryption (KMS Encryption Helpers)**: If sensitive environment variables must be protected against unauthorized IAM users viewing them in the AWS Lambda console or \`GetFunction\` API calls:
+  1. The developer uses a Customer Managed Key (CMK) in KMS.
+  2. In the Lambda console, enable "Encryption Helpers" to encrypt the variable values client-side before deployment.
+  3. Inside the Lambda function code, import Boto3 KMS and explicitly call \`kms.decrypt(CiphertextBlob=base64.b64decode(os.environ['MY_SECRET']))\` during runtime initialization.
+
+### 3.5 Sanitizing Sensitive Data in Logging Pipelines
+
+Application logs frequently leak sensitive data (such as API keys, authorization tokens, credit card numbers, or passwords) when raw request objects are dumped to \`stdout\`.
+
+#### Best Practices for Developers:
+1. **Application-Level Interceptors**: Implement logging interceptors/middleware that redact or hash sensitive fields (e.g., replacing \`password: "secret"\` with \`password: "********"\` or masking credit cards \`****-****-****-1234\`) before serializing log events.
+2. **CloudWatch Logs Data Protection Policies**: Configure automated data masking at the CloudWatch Log Group level using managed data identifiers (identifying credit cards, SSNs, AWS access keys) and replacing them with \`[MASKED]\`.
+
+### 3.6 AWS WAF (Web Application Firewall)
+
+AWS WAF is a Layer 7 (Application Layer) firewall that inspects incoming HTTP/HTTPS traffic to protect web applications against common web exploits and bots.
+
+- **Deployment Targets**:
+  - Amazon CloudFront distributions
+  - Amazon API Gateway REST APIs and HTTP APIs
+  - Application Load Balancers (ALB)
+  - AWS AppSync GraphQL APIs
+  - Amazon Cognito User Pools
+- **Core Components**:
+  - **Web ACL (Web Access Control List)**: The container containing a collection of rules and a default action (\`Allow\` or \`Block\`).
+  - **AWS Managed Rules (AMR)**: Pre-configured rule sets maintained by AWS threat intelligence (e.g., \`AWSManagedRulesCommonRuleSet\`, \`AWSManagedRulesSQLiRuleSet\`, \`AWSManagedRulesKnownBadInputsRuleSet\`).
+  - **Custom Rules**: Inspect request headers, HTTP methods, query strings, cookies, or URI paths using string matching or regular expressions.
+  - **Rate-Based Rules**: Automatically tracks request volume from individual IP addresses over a 5-minute sliding window and temporarily blocks (or challenges via CAPTCHA) any IP exceeding a configured threshold (e.g., > 2,000 requests per 5 minutes to mitigate brute-force and HTTP flood DDoS attacks).
+  - **IP Sets and Regex Pattern Sets**: Reusable collections of CIDR blocks (whitelists/blacklists) or regular expressions.
+
+---
+
+## 4. Worked Real-World Scenarios
+
+### Scenario A — Cross-Account S3 Upload with Customer Managed KMS Encryption
+**Context**: A multi-account enterprise architecture where an ingestion Lambda function in Account A (\`111122223333\`) uploads sensitive customer financial records to an Amazon S3 bucket in Account B (\`444455556666\`). The objects must be encrypted at rest using an AWS KMS Customer Managed Key (CMK) owned by Account B.
+**Implementation Steps**:
+1. In Account B, create a Customer Managed KMS Key. In the KMS **Key Policy**, add a statement granting \`kms:Encrypt\`, \`kms:GenerateDataKey\`, and \`kms:DescribeKey\` to Account A's Lambda execution role ARN.
+2. In Account B, update the **S3 Bucket Policy** to allow \`s3:PutObject\` and \`s3:PutObjectAcl\` from Account A's Lambda execution role.
+3. In Account A, attach an **IAM Policy** to the Lambda execution role granting \`s3:PutObject\` on the Account B bucket AND \`kms:GenerateDataKey\`, \`kms:Encrypt\` on the Account B KMS Key ARN.
+4. In the Lambda function code, when calling \`s3.put_object()\`, explicitly specify \`ServerSideEncryption="aws:kms"\` and \`SSEKMSKeyId="<Account-B-KMS-Key-ARN>"\`.
+
+### Scenario B — Automated Zero-Downtime RDS Credential Rotation
+**Context**: An enterprise application connects to an Amazon Aurora PostgreSQL database. The corporate compliance department mandates that all database passwords must be rotated every 30 days automatically with zero application downtime.
+**Implementation Steps**:
+1. Deploy **Amazon RDS Proxy** in front of the Aurora PostgreSQL database.
+2. Store the database master credentials in **AWS Secrets Manager**.
+3. Enable **Automatic Rotation** in Secrets Manager, choosing the AWS-managed PostgreSQL rotation Lambda template with a 30-day schedule.
+4. Configure RDS Proxy to retrieve credentials directly from the Secrets Manager secret ARN, and grant RDS Proxy's IAM role permission to decrypt the secret via KMS.
+5. Point application microservices to the RDS Proxy endpoint using IAM database authentication or retrieving credentials from Secrets Manager. During the 30-day rotation, the rotation Lambda updates the password in Aurora and Secrets Manager, while RDS Proxy seamlessly drains and updates connections without dropping user transactions.
+
+### Scenario C — Securing a Public API with CloudFront, WAF & Cognito Authorization
+**Context**: A SaaS company provides an API for mobile applications. The company wants to prevent SQL injection and DDoS attacks, authenticate users via mobile sign-in, and ensure that only authenticated users can invoke backend microservices.
+**Implementation Steps**:
+1. Configure **Amazon Cognito User Pool** with OAuth 2.0 PKCE flow for mobile user registration and login.
+2. Deploy **Amazon API Gateway** with a **Cognito User Pool Authorizer** attached to the \`/api/*\` resources, validating the incoming \`Authorization: Bearer <ID_Token>\` header.
+3. Place an **Amazon CloudFront** distribution in front of API Gateway for edge caching and SSL termination.
+4. Attach an **AWS WAF Web ACL** to the CloudFront distribution containing:
+   - \`AWSManagedRulesCommonRuleSet\` and \`AWSManagedRulesSQLiRuleSet\` to block malicious payloads.
+   - A **Rate-Based Rule** limiting requests to 1,000 per 5 minutes per IP address to block brute-force attempts.
+
+---
+
+## 5. Key Exam Traps from this Module
+
+- **Cognito User Pools vs. Identity Pools**: User Pools = Authentication / User Directory (returns JWTs); Identity Pools = Authorization / AWS Credentials (returns temporary IAM STS credentials).
+- **Public Certificates in ACM**: Free of charge, but cannot be downloaded/exported to EC2 instances directly; they can only be attached to ALB, CloudFront, or API Gateway.
+- **KMS 4 KB Limit**: A KMS key can only encrypt up to 4 KB directly. For files/data > 4 KB, you **must use Envelope Encryption** with \`GenerateDataKey\`.
+- **KMS Key Policy Requirement**: An IAM policy alone cannot grant access to a KMS CMK; the KMS **Key Policy** must delegate permissions to the root account or explicitly name the IAM principal.
+- **KMS Key Rotation**: Automatic rotation for CMKs creates a new backing key version every 365 days; the Key ID and ARN do NOT change, and previous backing keys are retained to decrypt old data.
+- **Secrets Manager vs. Parameter Store**: If a question mentions **native automatic rotation** or **multi-region replication**, the answer is **Secrets Manager**. If the question mentions **free configuration storage** or **storing static non-rotating strings**, the answer is **Parameter Store**.
+- **SSE-C**: The customer supplies the 256-bit key in HTTP request headers; AWS does the encryption/decryption on S3 but never stores the key.
+- **\`dynamodb:LeadingKeys\`**: The condition key used in IAM policies to restrict a user to accessing only the DynamoDB items matching their own Cognito Identity ID partition key.
+- **Explicit Deny Overrides All**: If an IAM policy allows an action but a Service Control Policy (SCP), Permissions Boundary, or Resource Policy explicitly denies it, access is strictly denied.
+- **AWS WAF Deployment Scope**: WAF attaches to CloudFront (global), ALB, API Gateway, AppSync, and Cognito User Pools (regional). WAF does NOT attach directly to EC2 instances or S3 buckets (attach to ALB or CloudFront instead).
+- **Lambda Environment Variable Encryption**: Variables are encrypted at rest with an AWS managed key (\`aws/lambda\`) by default; masking them from console viewers requires KMS Encryption Helpers and client-side \`kms:Decrypt\` code.
+`;
+const QUESTIONS = [
+  {
+    "q": "A mobile application needs to authenticate users using Google and Apple social identity providers, as well as an internal user directory with email/password authentication. Once authenticated, the application must obtain user profile attributes and authorization tokens. Which Amazon Cognito component should the developer use as the identity provider?",
+    "o": [
+      "Amazon Cognito User Pools",
+      "Amazon Cognito Identity Pools",
+      "AWS IAM Identity Center only",
+      "AWS Secrets Manager"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon Cognito User Pools acts as the identity provider (user directory) supporting social, SAML, OIDC, and username/password sign-in."
+  },
+  {
+    "q": "A single-page web application (SPA) authenticates users via Amazon Cognito User Pools. Which OAuth 2.0 grant type is the MOST secure industry standard for authenticating public web clients without exposing client secrets?",
+    "o": [
+      "Authorization Code Grant with Proof Key for Code Exchange (PKCE)",
+      "Implicit Grant",
+      "Resource Owner Password Credentials Grant",
+      "Client Credentials Grant"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Authorization Code Grant with PKCE is the recommended OAuth 2.0 flow for public web/mobile clients without client secrets."
+  },
+  {
+    "q": "An application receives a JSON Web Token (JWT) from Amazon Cognito. The developer needs to inspect the token's claims on the server side to determine if the user belongs to the \"Admins\" group. In which section of the JWT is this claim located?",
+    "o": [
+      "Header",
+      "Payload",
+      "Signature",
+      "Digest"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Token claims, user groups (`cognito:groups`), and attributes are located in the Payload (Claims) section of a JWT."
+  },
+  {
+    "q": "What cryptographic mechanism does a backend microservice use to verify that an incoming JSON Web Token (JWT) was genuinely issued by an Amazon Cognito User Pool and has not been tampered with?",
+    "o": [
+      "Verifying the JWT signature against the public JSON Web Key Set (JWKS) retrieved from `https://cognito-idp.<region>.amazonaws.com/<userPoolId>/.well-known/jwks.json`",
+      "Calling `sts:AssumeRole` with the token string",
+      "Encrypting the token with an AWS KMS Customer Managed Key",
+      "Querying Amazon DynamoDB for the raw password hash"
+    ],
+    "a": [
+      0
+    ],
+    "e": "JWT signatures are validated server-side by downloading and checking the public JWKS JSON file from the Cognito User Pool endpoint."
+  },
+  {
+    "q": "Data files stored in S3 are encrypted at rest with full per-operation CloudTrail audit logging. Which combination of AWS security services correctly fulfills this architecture?",
+    "o": [
+      "Amazon Cognito User Pools (Auth) + AWS WAF attached to API Gateway (Exploit & DDoS protection) + AWS Secrets Manager with Lambda rotation (DB Credential rotation) + Amazon S3 with SSE-KMS Customer Managed Key (Audited Encryption)",
+      "IAM static users + Route 53 simple routing + SSM Parameter Store standard + S3 SSE-S3",
+      "Amazon Cognito Identity Pools only + Security Groups on S3 + AWS CloudTrail Lake + AWS CodeGuru",
+      "AWS Secrets Manager for authentication + AWS KMS for DDoS protection + AWS WAF for database storage + S3 SSE-C"
+    ],
+    "a": [
+      0
+    ],
+    "e": "JWT signatures are validated server-side by downloading and checking the public JWKS JSON file from the Cognito User Pool endpoint."
+  },
+  {
+    "q": "A developer is designing an authorization flow for mobile users to upload photos directly to an Amazon S3 bucket (`my-photo-app-bucket`). Users authenticate with Amazon Cognito User Pools. How should the developer obtain temporary AWS credentials for the mobile app to call the S3 API directly?",
+    "o": [
+      "Pass the Cognito User Pool ID Token to an Amazon Cognito Identity Pool to exchange it for temporary AWS IAM credentials via AWS STS",
+      "Store AWS IAM user access keys in the mobile application binary",
+      "Generate a static IAM user for each registered mobile user",
+      "Use AWS Systems Manager Parameter Store to download root credentials"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cognito Identity Pools exchange authenticated User Pool tokens for temporary AWS IAM credentials via AWS STS."
+  },
+  {
+    "q": "Which claim inside a Cognito-issued JWT indicates whether the token is intended for identity verification (`id`) or API authorization (`access`)?",
+    "o": [
+      "`token_use`",
+      "`sub`",
+      "`iss`",
+      "`aud`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `token_use` claim indicates whether a Cognito token is an `id` or `access` token."
+  },
+  {
+    "q": "What is the primary difference between Amazon Cognito User Pools and Amazon Cognito Identity Pools?",
+    "o": [
+      "User Pools handle authentication (user directory and JWT issuance); Identity Pools handle authorization (exchanging tokens for temporary AWS IAM credentials)",
+      "User Pools are for EC2; Identity Pools are for Lambda",
+      "Identity Pools are only for corporate SAML federation; User Pools are for social login only",
+      "User Pools issue IAM access keys; Identity Pools issue JWTs"
+    ],
+    "a": [
+      0
+    ],
+    "e": "User Pools manage authentication (user directory & JWT issuance); Identity Pools manage authorization (issuing AWS IAM credentials)."
+  },
+  {
+    "q": "A developer wants to restrict authenticated mobile app users so that each user can ONLY query and write items in an Amazon DynamoDB table where the partition key matches their unique Cognito Identity ID. Which condition key must be included in the IAM policy attached to the authenticated role?",
+    "o": [
+      "`\"Condition\": { \"ForAllValues:StringEquals\": { \"dynamodb:LeadingKeys\": [\"${cognito-identity.amazonaws.com:sub}\"] } }`",
+      "`\"Condition\": { \"StringEquals\": { \"aws:username\": \"${aws:PrincipalArn}\" } }`",
+      "`\"Condition\": { \"NumericEquals\": { \"dynamodb:Select\": 1 } }`",
+      "`\"Condition\": { \"Bool\": { \"aws:MultiFactorAuthPresent\": \"true\" } }`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`dynamodb:LeadingKeys` matching `${cognito-identity.amazonaws.com:sub}` limits users to rows matching their own identity ID."
+  },
+  {
+    "q": "An enterprise uses Microsoft Active Directory Federation Services (AD FS) for employee authentication. The company wants employees to access the AWS Management Console and CLI using their existing corporate credentials. Which AWS STS API is used for enterprise identity federation using SAML 2.0?",
+    "o": [
+      "`AssumeRoleWithSAML`",
+      "`AssumeRoleWithWebIdentity`",
+      "`GetSessionToken`",
+      "`GetCallerIdentity`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AssumeRoleWithSAML` exchanges a corporate SAML 2.0 assertion for temporary AWS IAM credentials."
+  },
+  {
+    "q": "A GitHub Actions CI/CD workflow needs to deploy infrastructure to an AWS account without storing long-lived AWS Access Keys in GitHub repository secrets. Which AWS STS API action and identity pattern enables secure, keyless OIDC authentication?",
+    "o": [
+      "Configure an OIDC Identity Provider in IAM for GitHub Actions, and have the workflow call `AssumeRoleWithWebIdentity` to exchange the GitHub OIDC token for temporary AWS credentials",
+      "Store IAM root access keys in GitHub Secrets",
+      "Use `GetSessionToken` with hardcoded credentials",
+      "Create an S3 pre-signed URL for the repository"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Configuring an IAM OIDC Identity Provider allows GitHub Actions to assume roles via `AssumeRoleWithWebIdentity` without static keys."
+  },
+  {
+    "q": "A developer is configuring an IAM policy. The policy contains an `Allow` statement for `s3:GetObject`, but an attached Permissions Boundary contains a `Deny` statement for `s3:*`. What is the result when the user attempts to download an S3 object?",
+    "o": [
+      "Access is Denied, because an explicit Deny in any applicable policy (including permissions boundaries and SCPs) overrides any Allow statement",
+      "Access is Allowed because identity policies take precedence over boundaries",
+      "S3 prompts the user for MFA",
+      "The object is downloaded in encrypted format"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An explicit `Deny` in any policy (including Permissions Boundaries) overrides all `Allow` statements unconditionally."
+  },
+  {
+    "q": "What does an IAM Permissions Boundary define for an IAM entity (user or role)?",
+    "o": [
+      "The maximum permissions that an identity-based policy can grant to the entity",
+      "The password expiration policy",
+      "The maximum number of EC2 instances the user can launch",
+      "The encryption key used by the user"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Permissions Boundaries set the maximum permissible boundaries that identity-based policies can grant to an IAM entity."
+  },
+  {
+    "q": "A company uses AWS Organizations. The administrator attaches a Service Control Policy (SCP) to an Organizational Unit (OU) that denies `dynamodb:*`. A developer in a member account in that OU is assigned the `AdministratorAccess` IAM policy. Can the developer create a DynamoDB table?",
+    "o": [
+      "No, SCPs act as guardrails that set the maximum allowable permissions for all accounts in an OU; an explicit Deny in an SCP cannot be overridden by account administrators or IAM policies",
+      "Yes, because `AdministratorAccess` overrides SCPs",
+      "Yes, if the table is created using CloudFormation",
+      "Only if the developer uses the AWS CLI"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Service Control Policies (SCPs) define the maximum permission boundaries for all accounts in an AWS Organization OU."
+  },
+  {
+    "q": "An application running on an Amazon EC2 instance needs to read messages from an Amazon SQS queue. What is the AWS best practice for providing AWS credentials to the application?",
+    "o": [
+      "Assign an IAM Role with an attached least-privilege policy to the EC2 instance via an Instance Profile",
+      "Hardcode the AWS Access Key ID and Secret Access Key in the application configuration file",
+      "Store credentials in an unencrypted S3 bucket",
+      "Embed the root account password in EC2 User Data"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Attaching an IAM Role via an Instance Profile provides secure, automatic temporary credentials to applications on EC2."
+  },
+  {
+    "q": "What are two advantages of using IAM Roles with temporary credentials over long-lived IAM User Access Keys? (Select TWO.)",
+    "o": [
+      "Credentials rotate automatically without requiring manual credential updates or application redeployment",
+      "Eliminates the security risk of hardcoded or leaked static access keys in source control",
+      "Eliminates the need for IAM policies",
+      "Bypasses all AWS KMS encryption fees",
+      "Increases EC2 network bandwidth"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "IAM Roles provide automatically rotated temporary credentials and eliminate the security risk of static hardcoded access keys."
+  },
+  {
+    "q": "A developer needs to grant an AWS Lambda function in Account A (`111122223333`) permission to write objects to an Amazon S3 bucket located in Account B (`444455556666`). What two configurations are required? (Select TWO.)",
+    "o": [
+      "Attach an IAM policy to the Lambda execution role in Account A allowing `s3:PutObject` on the Account B bucket ARN",
+      "Configure the S3 Bucket Policy in Account B allowing `s3:PutObject` from the Lambda Execution Role ARN in Account A",
+      "Create an IAM User in Account B with administrator privileges",
+      "Enable S3 Transfer Acceleration on the bucket",
+      "Delete all security groups in Account A"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Cross-account S3 access requires an IAM policy on the caller in Account A AND an S3 Bucket Policy allowing the role in Account B."
+  },
+  {
+    "q": "Which AWS STS API call allows an IAM user with MFA enabled to generate temporary credentials that include MFA validation metadata for calling privileged APIs?",
+    "o": [
+      "`GetSessionToken`",
+      "`AssumeRoleWithWebIdentity`",
+      "`DecodeAuthorizationMessage`",
+      "`GetAccessKeyInfo`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`GetSessionToken` generates temporary credentials with MFA validation metadata for IAM users."
+  },
+  {
+    "q": "A developer receives an encoded authorization failure message when an API call is denied. Which AWS STS API action can decrypt the error message to inspect the exact policy evaluation details?",
+    "o": [
+      "`sts:DecodeAuthorizationMessage`",
+      "`sts:GetCallerIdentity`",
+      "`sts:AssumeRole`",
+      "`sts:GetSessionToken`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sts:DecodeAuthorizationMessage` decodes and displays authorization failure details for permission troubleshooting."
+  },
+  {
+    "q": "In Amazon Cognito User Pools, what feature allows developers to run custom business logic (such as auto-confirming users, migrating legacy passwords, or enriching JWT tokens with custom claims) during the authentication lifecycle?",
+    "o": [
+      "Cognito Lambda Triggers (e.g., Pre-Authentication, Pre-Token Generation, Post-Confirmation)",
+      "Amazon S3 Event Notifications",
+      "AWS Step Functions only",
+      "Amazon SNS SMS publishing"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cognito Lambda Triggers execute custom business logic at various stages of registration, authentication, and token generation."
+  },
+  {
+    "q": "A developer wants to inject a custom claim `tenant_id` into the Cognito ID Token during user login. Which Cognito Lambda Trigger should be configured?",
+    "o": [
+      "Pre Token Generation Lambda Trigger",
+      "Post Authentication Lambda Trigger",
+      "Pre Sign-up Lambda Trigger",
+      "Custom Message Lambda Trigger"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The Pre Token Generation Lambda Trigger customizes and enriches ID token claims before issuance."
+  },
+  {
+    "q": "What token issued by Amazon Cognito User Pools is used by a client application to silently obtain a new Access Token and ID Token without forcing the user to re-enter their username and password?",
+    "o": [
+      "Refresh Token",
+      "Session Token",
+      "Identity Token",
+      "Bearer Header"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The Refresh Token silently retrieves new ID and Access tokens without requiring the user to re-authenticate."
+  },
+  {
+    "q": "What is the default lifespan of an Amazon Cognito User Pool Access Token and ID Token?",
+    "o": [
+      "60 minutes (1 hour), configurable from 5 minutes up to 24 hours",
+      "24 hours fixed",
+      "30 days fixed",
+      "5 minutes fixed"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cognito User Pool ID and Access Tokens default to a 1-hour (60 min) lifespan, configurable between 5 min and 24 hours."
+  },
+  {
+    "q": "A backend REST API deployed on Amazon API Gateway needs to authorize incoming requests based on user roles embedded in Cognito User Pool JWTs. What API Gateway feature provides native, serverless validation of Cognito JWT tokens?",
+    "o": [
+      "Amazon Cognito User Pool Authorizer",
+      "API Gateway Usage Plans",
+      "API Gateway API Keys",
+      "Route 53 Geolocation"
+    ],
+    "a": [
+      0
+    ],
+    "e": "API Gateway Cognito User Pool Authorizers natively validate incoming JWT tokens without custom Lambda code."
+  },
+  {
+    "q": "If an API Gateway REST API requires custom authorization logic (such as checking an external database or caching authorization decisions), what type of authorizer should be implemented?",
+    "o": [
+      "Lambda Authorizer (Custom Authorizer, returning an IAM policy or simple response)",
+      "Cognito Authorizer only",
+      "API Gateway Client Certificate",
+      "AWS WAF Rate Rule"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Lambda Authorizer executes custom code to validate bearer tokens or request parameters and returns an IAM policy."
+  },
+  {
+    "q": "An application uses Amazon Cognito Identity Pools. The developer wants to allow unauthenticated (guest) users to view public catalog items in DynamoDB, while requiring registered users to log in to place orders. Does Cognito Identity Pools support this pattern?",
+    "o": [
+      "Yes, by enabling \"Enable access to unauthenticated identities\" and assigning distinct IAM roles for Authenticated and Unauthenticated users",
+      "No, Cognito requires all users to create an account",
+      "Only if users provide a valid credit card",
+      "Only via Amazon SQS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cognito Identity Pools support guest access by assigning separate IAM roles to Authenticated and Unauthenticated identities."
+  },
+  {
+    "q": "What condition element in an IAM policy statement can restrict API access based on the source IP address of the caller?",
+    "o": [
+      "`\"Condition\": { \"IpAddress\": { \"aws:SourceIp\": \"203.0.113.0/24\" } }`",
+      "`\"Condition\": { \"StringEquals\": { \"aws:CurrentTime\": \"2026-01-01\" } }`",
+      "`\"Condition\": { \"Bool\": { \"aws:SecureTransport\": \"true\" } }`",
+      "`\"Condition\": { \"ArnEquals\": { \"aws:PrincipalArn\": \"arn:aws:iam::...\" } }`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `aws:SourceIp` condition key restricts access based on caller IP address or CIDR range."
+  },
+  {
+    "q": "A developer wants to enforce that all API requests to an Amazon S3 bucket MUST use HTTPS (TLS encryption in transit). What condition block in the S3 bucket policy enforces this requirement?",
+    "o": [
+      "`\"Condition\": { \"Bool\": { \"aws:SecureTransport\": \"false\" } }` with `Effect: Deny`",
+      "`\"Condition\": { \"StringEquals\": { \"s3:x-amz-acl\": \"public-read\" } }`",
+      "`\"Condition\": { \"NumericLessThan\": { \"s3:TlsVersion\": 1.2 } }`",
+      "`\"Condition\": { \"Null\": { \"aws:PrincipalTag\": \"true\" } }`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An S3 bucket policy with `Effect: Deny` and `\"aws:SecureTransport\": \"false\"` strictly enforces HTTPS connections."
+  },
+  {
+    "q": "Which policy type is attached directly to resources like Amazon S3 buckets, AWS KMS keys, Amazon SQS queues, and AWS Lambda functions to control access permissions?",
+    "o": [
+      "Resource-Based Policy",
+      "Identity-Based Policy",
+      "Permissions Boundary",
+      "Session Policy"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Resource-Based Policies are attached directly to AWS resources (S3, KMS, SQS, Lambda) to govern access."
+  },
+  {
+    "q": "What is the key difference between an IAM Identity-Based Policy and an IAM Resource-Based Policy regarding the `Principal` element?",
+    "o": [
+      "Resource-Based policies MUST specify the `Principal` element to define who is allowed access; Identity-Based policies do NOT specify `Principal` because the principal is implicitly the entity the policy is attached to",
+      "Identity-Based policies must contain `Principal: \"*\"`",
+      "Resource-Based policies cannot use conditions",
+      "Both policies use identical syntax without `Principal`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Resource-Based policies require an explicit `Principal` element; Identity-Based policies do not because the principal is implicit."
+  },
+  {
+    "q": "A developer needs to determine the current AWS IAM user or role identity being used by the AWS CLI or SDK for debugging. Which STS API command should be executed?",
+    "o": [
+      "`aws sts get-caller-identity`",
+      "`aws sts whoami`",
+      "`aws iam list-users`",
+      "`aws sts check-login`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`aws sts get-caller-identity` returns the active IAM user, role, and account ARN for debugging."
+  },
+  {
+    "q": "An enterprise wants to delegate administrative access to third-party consultants to manage an RDS database in the company's AWS account. What is the most secure method to grant this access?",
+    "o": [
+      "Create an IAM Role with a trust policy allowing the third-party AWS Account ID (and an External ID condition for confused deputy protection), allowing the consultants to assume the role",
+      "Email the third party an IAM user access key",
+      "Share the root account login credentials",
+      "Create a public S3 bucket containing the database connection string"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An IAM Role with a Trust Policy requiring an `ExternalId` provides secure cross-account access and protects against confused deputies."
+  },
+  {
+    "q": "What is the purpose of the `sts:ExternalId` condition key in an IAM role trust policy when delegating cross-account access to a third-party SaaS vendor?",
+    "o": [
+      "It mitigates the \"Confused Deputy\" problem by requiring the third party to supply a secret shared identifier when assuming the role on behalf of the customer",
+      "It encrypts the network connection using TLS 1.3",
+      "It automatically rotates the IAM role ARN",
+      "It converts the role into an IAM group"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `sts:ExternalId` condition prevents the Confused Deputy vulnerability during third-party cross-account role assumption."
+  },
+  {
+    "q": "A developer is designing role-based access control (RBAC) in Cognito User Pools. The application has two groups: `Students` and `Teachers`. How can different IAM roles be assigned to users in these groups when they authenticate via Cognito Identity Pools?",
+    "o": [
+      "Configure \"Role resolution\" in the Cognito Identity Pool to use \"Choose role from token\" based on the user's Cognito group membership",
+      "Create two separate AWS accounts",
+      "Manually update IAM policies on each login",
+      "Store the IAM role secret key in local browser storage"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting Identity Pool role resolution to \"Choose role from token\" dynamically maps Cognito groups to distinct IAM roles."
+  },
+  {
+    "q": "What is the maximum session duration that can be configured for temporary credentials issued by `sts:AssumeRole`?",
+    "o": [
+      "12 hours (configurable from 15 minutes up to 12 hours)",
+      "1 hour fixed",
+      "30 days",
+      "24 hours fixed"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`sts:AssumeRole` sessions can be configured from 15 minutes up to a maximum duration of 12 hours."
+  },
+  {
+    "q": "When an IAM policy has multiple condition blocks, such as checking both `aws:SourceIp` and `aws:PrincipalTag/Department`, how does AWS evaluate multiple conditions within a single statement?",
+    "o": [
+      "All conditions must be satisfied simultaneously (logical AND) for the statement to apply",
+      "Only one condition needs to match (logical OR)",
+      "Conditions are evaluated in alphabetical order",
+      "AWS chooses one condition randomly"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Multiple conditions in an IAM statement must all evaluate to true (logical AND) for the policy to take effect."
+  },
+  {
+    "q": "An application uses ABAC (Attribute-Based Access Control) to allow developers to manage only EC2 instances that have a tag `Project` matching the developer's IAM user tag `Project`. What condition key enables this dynamic tag matching?",
+    "o": [
+      "`\"Condition\": { \"StringEquals\": { \"aws:ResourceTag/Project\": \"${aws:PrincipalTag/Project}\" } }`",
+      "`\"Condition\": { \"StringEquals\": { \"aws:Tag\": \"Project\" } }`",
+      "`\"Condition\": { \"ArnEquals\": { \"aws:PrincipalArn\": \"Project\" } }`",
+      "`\"Condition\": { \"Bool\": { \"aws:SecureTransport\": \"true\" } }`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ABAC matches resource tags (`aws:ResourceTag/Project`) with caller principal tags (`aws:PrincipalTag/Project`) dynamically."
+  },
+  {
+    "q": "What type of policy allows an IAM entity in Account A to assume an IAM Role in Account B?",
+    "o": [
+      "A Trust Policy (a specific type of resource-based policy attached to the IAM Role in Account B defining trusted principals)",
+      "An S3 Bucket Policy",
+      "An Amazon Route 53 Routing Policy",
+      "A CloudWatch Metric Filter"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Trust Policy attached to an IAM Role defines which external principals are trusted to assume the role."
+  },
+  {
+    "q": "A company wants to disable access to all AWS services outside of the `us-east-1` and `us-west-2` Regions across all member accounts in an organization. Which AWS Organizations feature implements this guardrail?",
+    "o": [
+      "Service Control Policy (SCP) with a condition `\"StringNotEquals\": { \"aws:RequestedRegion\": [\"us-east-1\", \"us-west-2\"] }` and `Effect: Deny`",
+      "IAM Role Permissions Boundary",
+      "AWS WAF Regional Rule",
+      "Amazon Route 53 Latency Policy"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An SCP denying actions when `aws:RequestedRegion` does not match permitted regions enforces regional restrictions across accounts."
+  },
+  {
+    "q": "What happens when a user requests an action on an AWS resource where NO matching policy exists (neither Allow nor Deny)?",
+    "o": [
+      "The request is denied by default (Implicit Deny)",
+      "The request is allowed automatically",
+      "AWS sends an MFA prompt",
+      "The resource is deleted"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS uses a default Implicit Deny model; requests lacking an explicit Allow are denied."
+  },
+  {
+    "q": "An application receives a JWT containing the header `{\"alg\": \"none\"}`. How should the backend token validation logic handle this token?",
+    "o": [
+      "Reject the token immediately because the `none` algorithm indicates an unsigned, insecure token that bypasses cryptographic integrity verification",
+      "Accept the token as an administrator token",
+      "Encrypt the token with SHA-1",
+      "Forward the token to Amazon S3"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `none` algorithm indicates an unsigned token and must be rejected immediately to prevent forged token attacks."
+  },
+  {
+    "q": "A developer wants to authenticate microservice-to-microservice API calls without human user interaction. Which OAuth 2.0 grant type is designed for machine-to-machine (M2M) server communication?",
+    "o": [
+      "Client Credentials Grant",
+      "Authorization Code Grant",
+      "Implicit Grant",
+      "Device Code Grant"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The OAuth 2.0 Client Credentials Grant is designed for machine-to-machine (M2M) server-to-server communication."
+  },
+  {
+    "q": "How does an application using the AWS SDK automatically locate and use temporary credentials provided by an EC2 Instance Profile or ECS Task Role?",
+    "o": [
+      "The AWS SDK's default credential provider chain automatically queries the Instance Metadata Service (IMDSv2 at `http://169.254.169.254/latest/meta-data/iam/security-credentials/`) or ECS container metadata endpoint",
+      "By reading credentials from `/root/.aws/credentials`",
+      "By opening an SSH tunnel to IAM",
+      "By inspecting the DNS server"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The AWS SDK default credential provider chain automatically fetches temporary credentials from IMDSv2 or ECS container metadata."
+  },
+  {
+    "q": "Why is IMDSv2 (Instance Metadata Service Version 2) recommended over IMDSv1 for securing EC2 instance credentials?",
+    "o": [
+      "IMDSv2 is session-oriented and requires a session token acquired via an HTTP PUT request, preventing Server-Side Request Forgery (SSRF) vulnerabilities from stealing IAM role credentials",
+      "IMDSv2 is free while IMDSv1 costs $1 per request",
+      "IMDSv2 eliminates the need for IAM roles",
+      "IMDSv2 only supports IPv6"
+    ],
+    "a": [
+      0
+    ],
+    "e": "IMDSv2 requires session tokens created via HTTP PUT, preventing SSRF attacks from stealing EC2 IAM credentials."
+  },
+  {
+    "q": "An application uses Amazon Cognito User Pools with Hosted UI. The developer wants to prevent unauthorized access if an authorization code is intercepted during redirect. What security mechanism accomplishes this?",
+    "o": [
+      "PKCE (Proof Key for Code Exchange) using `code_verifier` and `code_challenge`",
+      "Disabling HTTPS",
+      "Storing credentials in plain text in the query string",
+      "Using unencrypted cookies"
+    ],
+    "a": [
+      0
+    ],
+    "e": "PKCE (Proof Key for Code Exchange) protects authorization codes from interception during browser redirects."
+  },
+  {
+    "q": "A developer wants to revoke all active refresh tokens for a specific Cognito user immediately after detecting suspicious account activity. Which Cognito API action achieves this?",
+    "o": [
+      "`AdminUserGlobalSignOut` (or `GlobalSignOut`)",
+      "`DeleteUser`",
+      "`UpdateUserAttributes`",
+      "`ListUsers` --- ### Task Statement 2.2: Encryption at Rest and in Transit (46–90)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`AdminUserGlobalSignOut` invalidates all issued refresh tokens for a user across all devices immediately."
+  },
+  {
+    "q": "An e-commerce application stores sensitive credit card transaction logs in an Amazon S3 bucket. Compliance mandates that data must be encrypted at rest, and every encryption and decryption event must be audited with user identity and timestamp in AWS CloudTrail. Which S3 encryption method satisfies these compliance requirements?",
+    "o": [
+      "Server-Side Encryption with AWS KMS Keys (SSE-KMS)",
+      "Server-Side Encryption with Amazon S3-Managed Keys (SSE-S3)",
+      "Server-Side Encryption with Customer-Provided Keys (SSE-C)",
+      "Unencrypted storage with HTTPS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SSE-KMS encrypts data at rest while providing individual CloudTrail audit logs for every key use."
+  },
+  {
+    "q": "What is the maximum data payload size that can be directly encrypted or decrypted using an AWS KMS Customer Master Key (CMK) in a single API call (`kms:Encrypt` or `kms:Decrypt`)?",
+    "o": [
+      "4 KB",
+      "256 KB",
+      "5 MB",
+      "5 GB"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS KMS Customer Master Keys can directly encrypt or decrypt payloads up to 4 KB per API call."
+  },
+  {
+    "q": "A developer needs to encrypt 500 MB video files before uploading them to Amazon S3. Because the file size exceeds KMS's direct 4 KB limit, which cryptographic pattern must be used?",
+    "o": [
+      "Envelope Encryption (using KMS `GenerateDataKey` to generate a plaintext data key for local encryption and storing the encrypted data key alongside the ciphertext)",
+      "Splitting the file into 4 KB chunks and calling KMS `Encrypt` 125,000 times",
+      "Base64 encoding the video file",
+      "Using Route 53 encryption"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Envelope Encryption uses `GenerateDataKey` to encrypt large payloads locally with data keys protected by KMS master keys."
+  },
+  {
+    "q": "What two values are returned by the AWS KMS `GenerateDataKey` API call? (Select TWO.)",
+    "o": [
+      "`Plaintext` (the 256-bit plaintext data key used by the application to encrypt data locally)",
+      "`CiphertextBlob` (the data key encrypted under the specified KMS Customer Master Key)",
+      "The raw private key of the AWS KMS HSM",
+      "An S3 pre-signed URL",
+      "An IAM user access key"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "`GenerateDataKey` returns a plaintext data key (for immediate encryption) and a ciphertext blob (for storage)."
+  },
+  {
+    "q": "After an application uses the `Plaintext` data key returned by `GenerateDataKey` to encrypt a large file in memory, what is the critical security step the application must perform immediately?",
+    "o": [
+      "Erase/wipe the plaintext data key from memory to prevent memory-dump extraction",
+      "Print the plaintext data key to CloudWatch Logs for debugging",
+      "Store the plaintext key in a public S3 bucket",
+      "Email the plaintext key to the administrator"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The application must immediately wipe the plaintext data key from memory after encrypting the payload."
+  },
+  {
+    "q": "When an application needs to decrypt a file that was encrypted using Envelope Encryption, what API call is made to AWS KMS?",
+    "o": [
+      "`kms:Decrypt` passing the `CiphertextBlob` (encrypted data key), which returns the `Plaintext` data key",
+      "`kms:GenerateDataKey`",
+      "`kms:Encrypt`",
+      "`kms:CreateKey`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`kms:Decrypt` takes the encrypted data key (`CiphertextBlob`) and returns the plaintext key to decrypt the payload."
+  },
+  {
+    "q": "What is the difference between AWS KMS `GenerateDataKey` and `GenerateDataKeyWithoutPlaintext`?",
+    "o": [
+      "`GenerateDataKey` returns both the plaintext key and the encrypted key; `GenerateDataKeyWithoutPlaintext` returns ONLY the encrypted key (for scenarios where encryption will occur on a different component later)",
+      "`GenerateDataKeyWithoutPlaintext` is deprecated",
+      "`GenerateDataKeyWithoutPlaintext` does not use KMS master keys",
+      "`GenerateDataKey` is free while `GenerateDataKeyWithoutPlaintext` costs $10"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`GenerateDataKeyWithoutPlaintext` returns only the encrypted data key, deferring plaintext decryption until needed."
+  },
+  {
+    "q": "An application uses Server-Side Encryption with Customer-Provided Keys (SSE-C) on Amazon S3. How does SSE-C manage cryptographic keys?",
+    "o": [
+      "The client provides the raw 256-bit encryption key in the HTTP request headers (`x-amz-server-side-encryption-customer-key`); Amazon S3 performs the encryption/decryption in memory and immediately discards the key without storing it",
+      "AWS KMS manages and stores the key",
+      "Amazon S3 saves the customer key in a DynamoDB table",
+      "The customer key is stored in S3 object metadata in plaintext"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Under SSE-C, the customer sends the raw encryption key in HTTP headers; S3 encrypts the object and discards the key."
+  },
+  {
+    "q": "What is the default encryption behavior for all newly created Amazon S3 buckets in AWS?",
+    "o": [
+      "Default server-side encryption is automatically enabled using SSE-S3 (AES-256) at zero additional cost",
+      "Buckets are unencrypted by default",
+      "SSE-C is enforced automatically",
+      "All buckets require an SSL certificate from ACM"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon S3 automatically applies default server-side encryption with SSE-S3 (AES-256) to all new buckets at no extra cost."
+  },
+  {
+    "q": "A security team enables \"Automatic Key Rotation\" on a Customer Managed Key (CMK) in AWS KMS. How often does AWS KMS automatically rotate the backing cryptographic key material?",
+    "o": [
+      "Every 365 days (1 year)",
+      "Every 30 days",
+      "Every 90 days",
+      "Every 5 years"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Automatic Key Rotation for Customer Managed KMS Keys rotates the backing key material every 365 days (1 year)."
+  },
+  {
+    "q": "When a KMS Customer Managed Key undergoes automatic key rotation, what happens to the Key ID, Key ARN, and data previously encrypted with older key versions?",
+    "o": [
+      "The Key ID and ARN remain unchanged; KMS retains previous backing keys to decrypt older data transparently without requiring data re-encryption",
+      "All previously encrypted data is deleted",
+      "The Key ARN changes and the application must be redeployed with the new Key ID",
+      "The developer must manually download and re-encrypt all historical data"
+    ],
+    "a": [
+      0
+    ],
+    "e": "KMS key rotation keeps the Key ID and ARN unchanged and retains historical backing keys to decrypt older data transparently."
+  },
+  {
+    "q": "Can automatic key rotation be enabled on asymmetric KMS keys (e.g., RSA or ECC key pairs)?",
+    "o": [
+      "No, automatic key rotation is supported ONLY for symmetric encryption KMS keys",
+      "Yes, asymmetric keys rotate every 30 days",
+      "Yes, but only for ECC keys",
+      "Only in `us-east-1`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Automatic key rotation is supported ONLY for symmetric encryption KMS keys."
+  },
+  {
+    "q": "What is the difference between an AWS Managed Key (e.g., `aws/s3`, `aws/lambda`) and a Customer Managed Key (CMK) in AWS KMS?",
+    "o": [
+      "AWS Managed Keys are created and rotated automatically by AWS with fixed key policies; Customer Managed Keys are created by the user, support custom key policies, manual rotation schedules, and cross-account sharing",
+      "Customer Managed Keys are free; AWS Managed Keys cost $1/month",
+      "AWS Managed Keys can be exported to on-premises servers",
+      "Customer Managed Keys do not support CloudTrail logging"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Managed Keys are maintained by AWS; Customer Managed Keys support custom policies, rotation, and cross-account access."
+  },
+  {
+    "q": "A developer wants to provision a public SSL/TLS certificate for `api.example.com` to bind to an Application Load Balancer and Amazon CloudFront distribution. Which AWS service provides free public certificates with automated renewal?",
+    "o": [
+      "AWS Certificate Manager (ACM)",
+      "AWS KMS",
+      "AWS Secrets Manager",
+      "AWS CloudHSM"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Certificate Manager (ACM) provides free public SSL/TLS certificates with automated renewal for integrated AWS services."
+  },
+  {
+    "q": "Can a public SSL/TLS certificate generated by AWS Certificate Manager (ACM) be downloaded and installed directly on an EC2 instance or an Apache web server?",
+    "o": [
+      "No, ACM public certificates are integrated exclusively with AWS managed services (CloudFront, ALB, NLB, API Gateway) and cannot be exported or downloaded as raw private keys",
+      "Yes, certificates can be exported via the ACM CLI",
+      "Yes, by paying an export fee of $5",
+      "Only if the EC2 instance runs Amazon Linux"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ACM public certificates are private-key protected within AWS services and cannot be downloaded or installed on EC2 directly."
+  },
+  {
+    "q": "What two domain validation methods are supported by AWS Certificate Manager (ACM) to prove domain ownership when requesting a public certificate? (Select TWO.)",
+    "o": [
+      "DNS Validation (adding a CNAME record to the domain's DNS zone, which supports automated certificate renewal)",
+      "Email Validation (receiving a verification email sent to registered WHOIS contact addresses)",
+      "Phone Call Verification",
+      "Postal Mail Verification",
+      "In-Person Identity Verification"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "ACM supports DNS Validation (via Route 53 CNAME records) and Email Validation for proving domain ownership."
+  },
+  {
+    "q": "When should an organization choose ACM Private CA (AWS Private Certificate Authority) over standard AWS Certificate Manager public certificates?",
+    "o": [
+      "When the organization needs to issue private SSL/TLS certificates for internal VPC microservices, internal servers, mobile devices, or IoT devices, or needs exportable private keys",
+      "When the organization wants free public certificates for CloudFront",
+      "When the application is hosted in Route 53",
+      "When the organization has no domain name"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ACM Private CA issues internal certificates for VPC services, IoT, and mobile devices with exportable private keys."
+  },
+  {
+    "q": "What is the role of an AWS KMS Key Policy?",
+    "o": [
+      "It is a resource-based policy attached directly to the KMS key that defines the primary access controls and permissions for who can manage and use the key",
+      "It sets the price of the KMS key",
+      "It configures the VPC route table for KMS endpoints",
+      "It converts symmetric keys to asymmetric keys"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Every KMS key requires a Key Policy as the primary access control mechanism defining permissions on the key."
+  },
+  {
+    "q": "What happens if an AWS KMS Customer Managed Key has a Key Policy that does NOT grant permissions to the AWS account root user (`\"Principal\": { \"AWS\": \"arn:aws:iam::123456789012:root\" }`) and does not grant permissions to any other IAM entity?",
+    "o": [
+      "The key becomes unmanageable (orphaned), and only AWS Support can assist in recovering or deleting it",
+      "The key is automatically converted into an AWS Managed Key",
+      "IAM administrators can still access the key via `AdministratorAccess`",
+      "The key is deleted after 5 minutes"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A KMS key without permissions granted to the root account or IAM principals becomes permanently unmanageable."
+  },
+  {
+    "q": "An application in Account A needs to decrypt S3 objects encrypted with a KMS CMK located in Account B. What two policy configurations are required to enable this cross-account KMS access? (Select TWO.)",
+    "o": [
+      "The KMS Key Policy in Account B must grant `kms:Decrypt` and `kms:DescribeKey` permissions to Account A's IAM Role ARN (or Account A root)",
+      "The IAM Policy attached to the application's role in Account A must grant `kms:Decrypt` on the KMS Key ARN in Account B",
+      "Account A must pay Account B's AWS bill",
+      "Both accounts must merge into a single VPC",
+      "The KMS key must be moved to Account A"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Cross-account KMS access requires permissions in the KMS Key Policy (Account B) AND the caller's IAM Policy (Account A)."
+  },
+  {
+    "q": "What is the AWS Encryption SDK?",
+    "o": [
+      "A client-side encryption library provided by AWS that implements envelope encryption best practices, data key caching, and multi-KMS-key encryption across programming languages",
+      "A compiler plugin for C++",
+      "An operating system patch for Amazon Linux",
+      "A hardware appliance for data centers"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The AWS Encryption SDK is a client-side library implementing envelope encryption and data key caching best practices."
+  },
+  {
+    "q": "What is Data Key Caching in the AWS Encryption SDK, and why is it used?",
+    "o": [
+      "It caches plaintext and ciphertext data keys in local memory across multiple encryption operations to reduce the number of calls to AWS KMS, cutting KMS costs and latency",
+      "It saves passwords to a public S3 bucket",
+      "It permanently stores encryption keys on EC2 hard drives",
+      "It disables TLS encryption"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Data Key Caching caches plaintext/encrypted data keys in memory to reduce KMS API calls, latency, and costs."
+  },
+  {
+    "q": "What is an AWS KMS Grant?",
+    "o": [
+      "An advanced mechanism that provides temporary, programmatic, and fine-grained permissions to use a KMS key (commonly used by AWS services like Amazon EBS and Amazon RDS to use customer keys on their behalf)",
+      "A financial discount on KMS billing",
+      "An IAM user group",
+      "A certificate authority"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A KMS Grant is a programmatic delegation of key permissions, used extensively by AWS services (EBS, RDS)."
+  },
+  {
+    "q": "What is an Encryption Context in AWS KMS?",
+    "o": [
+      "A set of non-secret key-value pairs passed to `kms:Encrypt` and `kms:GenerateDataKey` that provides authenticated data (AAD) to cryptographically bind the context to the ciphertext and appears in CloudTrail logs for auditing",
+      "The password of the database",
+      "The private key of the SSL certificate",
+      "A JSON file stored in S3 Glacier"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An Encryption Context is authenticated data (AAD) that cryptographically binds context to ciphertext and is logged in CloudTrail."
+  },
+  {
+    "q": "If an application encrypts data using AWS KMS with an Encryption Context `{\"department\": \"finance\"}`, what must the application provide when calling `kms:Decrypt`?",
+    "o": [
+      "The exact same Encryption Context `{\"department\": \"finance\"}`; otherwise, KMS will reject the decryption request with an `InvalidCiphertextException`",
+      "Any random string",
+      "No context is needed for decryption",
+      "The root account password"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Decryption requires the exact matching Encryption Context provided during encryption, or KMS rejects the request."
+  },
+  {
+    "q": "A company needs to re-encrypt sensitive database records from an old KMS key (`Key-1`) to a new KMS key (`Key-2`) during a cryptographic migration. Which KMS API action performs this re-encryption atomically on the server side without exposing plaintext to the application?",
+    "o": [
+      "`kms:ReEncrypt`",
+      "`kms:GenerateDataKey`",
+      "`kms:Decrypt` followed by `kms:Encrypt`",
+      "`kms:RotateKey`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`kms:ReEncrypt` decrypts and re-encrypts data under a new KMS key server-side inside KMS without exposing plaintext."
+  },
+  {
+    "q": "What is the difference between AWS KMS and AWS CloudHSM?",
+    "o": [
+      "AWS KMS is a multi-tenant managed key service with FIPS 140-2 Level 3 validation; AWS CloudHSM provides dedicated, single-tenant hardware security module (HSM) appliances with FIPS 140-2 Level 3 compliance where the customer has exclusive control of the cryptographic hardware",
+      "CloudHSM is completely free",
+      "KMS requires on-premises hardware",
+      "Both services are identical"
+    ],
+    "a": [
+      0
+    ],
+    "e": "KMS is a managed multi-tenant key service; CloudHSM provides dedicated, single-tenant hardware security modules."
+  },
+  {
+    "q": "A developer wants to schedule the deletion of an unused KMS Customer Managed Key. What is the minimum waiting period enforced by AWS KMS before a key is permanently deleted?",
+    "o": [
+      "7 days (waiting period is configurable between 7 and 30 days)",
+      "24 hours",
+      "Immediate deletion is possible with one click",
+      "90 days fixed"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS KMS enforces a mandatory 7 to 30 day waiting period before permanently deleting a Customer Managed Key."
+  },
+  {
+    "q": "If a KMS Customer Managed Key is in the `PendingDeletion` state, can applications encrypt or decrypt data using that key?",
+    "o": [
+      "No, keys in `PendingDeletion` cannot be used for cryptographic operations; the deletion must be canceled (`kms:CancelKeyDeletion`) to restore functionality",
+      "Yes, decryption is allowed for 7 days",
+      "Yes, but only with root credentials",
+      "Only in `us-west-2`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Keys in the `PendingDeletion` state are disabled and cannot perform cryptographic operations unless deletion is canceled."
+  },
+  {
+    "q": "How can a developer enforce that all objects uploaded to an S3 bucket must be encrypted using `aws:kms` rather than default `AES256`?",
+    "o": [
+      "Add an S3 bucket policy with `Effect: Deny` on `s3:PutObject` with a condition `\"StringNotEquals\": { \"s3:x-amz-server-side-encryption\": \"aws:kms\" }`",
+      "Delete all IAM users",
+      "Enable S3 Versioning",
+      "Block port 80 on the VPC router"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Denying `s3:PutObject` unless `s3:x-amz-server-side-encryption` equals `aws:kms` enforces SSE-KMS across the bucket."
+  },
+  {
+    "q": "What is the purpose of S3 Bucket Keys when using SSE-KMS?",
+    "o": [
+      "S3 Bucket Keys reduce KMS request costs by up to 99% by using a bucket-level key to create intermediate data keys for objects, dramatically reducing calls to KMS",
+      "They replace KMS with passwords",
+      "They allow public downloads without authentication",
+      "They disable S3 encryption"
+    ],
+    "a": [
+      0
+    ],
+    "e": "S3 Bucket Keys reduce KMS request costs by up to 99% by using intermediate bucket-level encryption keys."
+  },
+  {
+    "q": "An application is processing millions of small transactions per minute. Calling AWS KMS `kms:Encrypt` for each transaction causes API throttling exceptions (`ThrottlingException`). What architectural change solves this issue?",
+    "o": [
+      "Use Envelope Encryption with Data Key Caching (via AWS Encryption SDK) to reuse a single data key across multiple transactions before requesting a new key from KMS",
+      "Increase EC2 CPU count",
+      "Disable CloudTrail logging",
+      "Switch to unencrypted HTTP"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Data Key Caching reuses data keys in memory across multiple transactions, preventing KMS throttling exceptions."
+  },
+  {
+    "q": "Which S3 header must be specified in the `PutObject` API call to request SSE-KMS encryption with a specific Customer Managed Key?",
+    "o": [
+      "`x-amz-server-side-encryption: aws:kms` and `x-amz-server-side-encryption-aws-kms-key-id: <key-arn>`",
+      "`x-amz-encryption-type: rsa`",
+      "`x-amz-kms: true`",
+      "`x-amz-customer-key: secret`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`x-amz-server-side-encryption: aws:kms` specifies KMS encryption; `x-amz-server-side-encryption-aws-kms-key-id` specifies the key ARN."
+  },
+  {
+    "q": "An application encrypts data client-side using the AWS Encryption SDK. When the encrypted message is sent to Amazon S3, what does S3 store?",
+    "o": [
+      "Standard ciphertext byte streams containing the encrypted data, encrypted data key, and algorithm metadata formatted as an AWS Encryption SDK message",
+      "Plaintext data",
+      "A pointer to the KMS console",
+      "An XML file"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Client-side encryption produces formatted ciphertext messages stored by S3 as standard binary objects."
+  },
+  {
+    "q": "A developer needs to import their own cryptographic key material (generated on an on-premises HSM) into an AWS KMS Customer Managed Key. What type of key origin is configured during creation?",
+    "o": [
+      "`EXTERNAL` (Import Key Material)",
+      "`AWS_KMS`",
+      "`AWS_CLOUDHSM`",
+      "`LOCAL`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Importing external key material from an on-premises HSM requires selecting the `EXTERNAL` key origin."
+  },
+  {
+    "q": "When key material is imported into an `EXTERNAL` KMS key, does AWS KMS support automatic annual key rotation?",
+    "o": [
+      "No, automatic key rotation is NOT supported for keys with imported key material (`EXTERNAL`); the customer must manually rotate the key material by creating a new key",
+      "Yes, rotated automatically every 365 days",
+      "Yes, rotated every 30 days",
+      "Only if imported using OpenSSL"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Automatic key rotation is not supported for `EXTERNAL` keys with imported key material; manual rotation is required."
+  },
+  {
+    "q": "What is an AWS KMS Key Alias?",
+    "o": [
+      "A friendly, displayable name for a KMS key (e.g., `alias/PaymentAppKey`) that can be mapped to different Key IDs over time to simplify application configuration",
+      "A secondary password for KMS",
+      "An IAM role name",
+      "An S3 bucket name"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Key Alias is a display name (e.g., `alias/AppKey`) pointing to a Key ID, allowing key remapping without code changes."
+  },
+  {
+    "q": "What is the difference between AWS KMS Symmetric Keys and Asymmetric Keys?",
+    "o": [
+      "Symmetric keys use the same 256-bit key (AES-256-GCM) for encryption and decryption; Asymmetric keys use a public/private key pair (RSA or ECC) for encryption/decryption or digital signing/verification",
+      "Symmetric keys are only for passwords",
+      "Asymmetric keys are free of charge",
+      "Symmetric keys do not support envelope encryption"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Symmetric keys use AES-256 for both encryption/decryption; Asymmetric keys use public/private key pairs (RSA/ECC)."
+  },
+  {
+    "q": "Can an application use an Asymmetric KMS key pair to verify digital signatures generated outside of AWS?",
+    "o": [
+      "Yes, by exporting the public key (`kms:GetPublicKey`) and using standard cryptographic libraries, or calling `kms:Verify` directly in KMS",
+      "No, KMS keys cannot interact with external systems",
+      "Only if using Python",
+      "Only via Amazon SNS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Asymmetric public keys can be exported via `kms:GetPublicKey` to verify digital signatures in external client applications."
+  },
+  {
+    "q": "A developer wants to restrict KMS key usage so that a key can ONLY be used when requests originate from a specific VPC via a VPC endpoint. What condition key should be added to the KMS Key Policy?",
+    "o": [
+      "`\"Condition\": { \"StringEquals\": { \"aws:sourceVpce\": \"vpce-1a2b3c4d\" } }`",
+      "`\"Condition\": { \"IpAddress\": { \"aws:SourceIp\": \"10.0.0.0/16\" } }`",
+      "`\"Condition\": { \"Bool\": { \"aws:SecureTransport\": \"true\" } }`",
+      "`\"Condition\": { \"StringEquals\": { \"aws:PrincipalType\": \"VPC\" } }`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `aws:sourceVpce` condition key restricts KMS key operations to requests originating from a specific VPC endpoint."
+  },
+  {
+    "q": "What is the effect of the `\"kms:ViaService\"` condition key in a KMS Key Policy?",
+    "o": [
+      "It restricts key usage to requests coming exclusively through a specified AWS service in a specific region (e.g., `s3.us-east-1.amazonaws.com` or `dynamodb.us-east-1.amazonaws.com`)",
+      "It routes KMS traffic over a VPN",
+      "It disables IAM user authentication",
+      "It converts the key to an AWS Managed Key"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `kms:ViaService` condition restricts KMS operations to requests arriving through a specific AWS service (e.g., S3)."
+  },
+  {
+    "q": "Which TLS protocol versions are supported and recommended by AWS for encryption in transit to meet modern security compliance standards (such as PCI-DSS and HIPAA)?",
+    "o": [
+      "TLS 1.2 and TLS 1.3",
+      "SSL 2.0 and SSL 3.0",
+      "TLS 1.0 and TLS 1.1",
+      "Plaintext HTTP"
+    ],
+    "a": [
+      0
+    ],
+    "e": "TLS 1.2 and TLS 1.3 are modern cryptographic protocols recommended for secure in-transit communication."
+  },
+  {
+    "q": "When an Application Load Balancer terminates HTTPS traffic, what component defines the allowed TLS versions, ciphers, and negotiation protocols?",
+    "o": [
+      "Security Policy (SSL/TLS Cipher Policy, e.g., `ELBSecurityPolicy-TLS13-1-2-2021-06`)",
+      "Security Group ingress rule",
+      "Network ACL rule",
+      "Route 53 Health Check"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An ALB Security Policy (SSL/TLS Cipher Policy) defines the allowed TLS versions and cipher suites on HTTPS listeners."
+  },
+  {
+    "q": "What is Server Name Indication (SNI) on an Application Load Balancer or CloudFront distribution?",
+    "o": [
+      "An extension to the TLS protocol that allows a client to specify the hostname it is attempting to connect to during the initial TLS handshake, enabling the load balancer to serve multiple different SSL certificates on a single IP address/port",
+      "A DNS record type",
+      "A mechanism to encrypt database passwords",
+      "An EC2 instance family"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Server Name Indication (SNI) enables serving multiple SSL certificates on a single load balancer listener by hostname."
+  },
+  {
+    "q": "An application encrypts sensitive customer data using an AWS KMS key. Where can the security audit team find an immutable log of every API call made to this key (including caller identity, timestamp, and encryption context)?",
+    "o": [
+      "AWS CloudTrail",
+      "Amazon CloudWatch Metrics",
+      "Amazon Route 53 Resolver logs",
+      "Amazon S3 Storage Lens --- ### Task Statement 2.3: Sensitive Data in Application Code & Protection (91–135)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS CloudTrail records an immutable audit log of every API call made to AWS KMS keys."
+  },
+  {
+    "q": "A developer is designing a serverless microservice that connects to an Amazon Aurora MySQL database. Corporate security requires database credentials to be rotated every 30 days automatically without manual intervention or application restarts. Which AWS service natively supports automated credential rotation for RDS databases?",
+    "o": [
+      "AWS Secrets Manager",
+      "AWS Systems Manager Parameter Store",
+      "AWS KMS",
+      "Amazon DynamoDB"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Secrets Manager provides native automated credential rotation for Amazon RDS, Aurora, and DocumentDB."
+  },
+  {
+    "q": "What AWS component does AWS Secrets Manager use under the hood to execute automated password rotation against target databases (such as Amazon RDS and Amazon DocumentDB)?",
+    "o": [
+      "An AWS Lambda rotation function (pre-configured from AWS Serverless Application Repository templates)",
+      "An Amazon EC2 instance running cron",
+      "AWS CodeBuild",
+      "Amazon SNS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Secrets Manager uses an AWS Lambda rotation function to execute password rotation workflows against target databases."
+  },
+  {
+    "q": "In AWS Secrets Manager automated rotation, what are the four sequential steps executed by the Lambda rotation function?",
+    "o": [
+      "`createSecret`, `setSecret`, `testSecret`, `finishSecret`",
+      "`init`, `build`, `deploy`, `cleanup`",
+      "`start`, `rotate`, `verify`, `stop`",
+      "`read`, `write`, `encrypt`, `decrypt`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Secrets Manager rotation executes four lifecycle steps: `createSecret`, `setSecret`, `testSecret`, and `finishSecret`."
+  },
+  {
+    "q": "During automated secret rotation in Secrets Manager, what secret version staging label is assigned to the newly generated credential while it is being tested, before it replaces the current active secret?",
+    "o": [
+      "`AWSPENDING`",
+      "`AWSCURRENT`",
+      "`AWSPREVIOUS`",
+      "`STAGING`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "During rotation testing, the newly generated secret version is assigned the `AWSPENDING` staging label."
+  },
+  {
+    "q": "Once the `finishSecret` step completes successfully during automated rotation in Secrets Manager, what staging label does the new secret receive, and what label is assigned to the old secret?",
+    "o": [
+      "The new secret is labeled `AWSCURRENT`; the previous secret is moved to `AWSPREVIOUS`",
+      "The new secret is deleted; the old secret is kept",
+      "Both secrets are labeled `AWSCURRENT`",
+      "The old secret is permanently erased from history"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Upon rotation completion, the new secret becomes `AWSCURRENT` and the previous secret becomes `AWSPREVIOUS`."
+  },
+  {
+    "q": "A developer needs to store application configuration flags (`max_connections = 50`, `feature_x_enabled = true`) and a third-party API key that rarely changes. The developer wants a simple, cost-effective solution with zero monthly storage fees for standard parameters. Which AWS service should be used?",
+    "o": [
+      "AWS Systems Manager Parameter Store (Standard Tier)",
+      "AWS Secrets Manager",
+      "Amazon RDS Multi-AZ",
+      "AWS CloudHSM"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SSM Parameter Store Standard Tier stores configuration parameters and static secrets with zero monthly storage fees."
+  },
+  {
+    "q": "What parameter types are supported by AWS Systems Manager Parameter Store?",
+    "o": [
+      "`String`, `StringList`, and `SecureString`",
+      "`Integer`, `Float`, and `Boolean`",
+      "`XML`, `JSON`, and `YAML` only",
+      "`Blob` and `Binary` only"
+    ],
+    "a": [
+      0
+    ],
+    "e": "SSM Parameter Store supports `String`, `StringList`, and `SecureString` parameter types."
+  },
+  {
+    "q": "When creating a `SecureString` parameter in AWS Systems Manager Parameter Store, what service is used to encrypt the parameter value at rest?",
+    "o": [
+      "AWS KMS (using default `aws/ssm` key or a Customer Managed Key)",
+      "Amazon S3 SSE-S3",
+      "AWS Certificate Manager",
+      "Route 53 DNSSEC"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`SecureString` parameters are encrypted at rest using AWS KMS Customer Managed Keys or the default `aws/ssm` key."
+  },
+  {
+    "q": "What are the key differences between the Standard Tier and Advanced Tier in AWS Systems Manager Parameter Store? (Select TWO.)",
+    "o": [
+      "Standard parameters support payloads up to 4 KB and are free; Advanced parameters support payloads up to 8 KB and incur a small monthly fee",
+      "Advanced parameters support Parameter Policies (such as expiration dates and notification alerts)",
+      "Standard parameters support up to 100,000 parameters per region; Advanced parameters support up to 10 parameters",
+      "Standard parameters only work on Windows; Advanced parameters work on Linux",
+      "Advanced parameters do not support encryption"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Standard parameters are free (up to 4 KB); Advanced parameters support up to 8 KB, parameter policies, and carry a fee."
+  },
+  {
+    "q": "A developer needs to retrieve a `SecureString` parameter from SSM Parameter Store using the AWS CLI or SDK. What parameter must be explicitly passed to return the decrypted plaintext value rather than the encrypted KMS ciphertext?",
+    "o": [
+      "`--with-decryption` (in CLI) or `WithDecryption=True` (in SDK `get_parameter`)",
+      "`--show-password`",
+      "`--plaintext`",
+      "`--decrypt-all`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`--with-decryption` (or `WithDecryption=True`) must be specified to return plaintext for `SecureString` parameters."
+  },
+  {
+    "q": "A multi-region application deployed in `us-east-1` and `eu-central-1` requires database credentials to be synchronized and available in both regions with automatic rotation. Which AWS service provides native Multi-Region Secret Replication?",
+    "o": [
+      "AWS Secrets Manager (supports built-in Multi-Region Secret Replication)",
+      "AWS Systems Manager Parameter Store Standard Tier",
+      "Amazon DynamoDB Global Tables only",
+      "AWS CloudTrail"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Secrets Manager natively supports Multi-Region Secret Replication with automatic synchronization across regions."
+  },
+  {
+    "q": "An AWS Lambda function needs to read a database connection password from an environment variable. However, junior developers with read-only access to the Lambda console should NOT be able to view the plaintext password in the Lambda configuration console or via `GetFunction` API calls. How should the developer secure this environment variable?",
+    "o": [
+      "Use Lambda Encryption Helpers with a Customer Managed Key (CMK) in KMS to encrypt the environment variable client-side before deployment, and decrypt it programmatically inside the Lambda handler using `kms:Decrypt`",
+      "Hardcode the password in the Lambda function zip file",
+      "Delete the environment variable",
+      "Rename the environment variable to `SECRET`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "KMS Encryption Helpers encrypt Lambda environment variables client-side, hiding them from console viewers."
+  },
+  {
+    "q": "In Python, how should an application running on AWS Lambda retrieve database credentials from AWS Secrets Manager efficiently across multiple invocations?",
+    "o": [
+      "Fetch and cache the secret outside the Lambda handler function during initialization (cold start), so warm invocations reuse the cached secret in memory without calling Secrets Manager on every invocation",
+      "Call `get_secret_value` 10 times inside the handler loop",
+      "Hardcode the credentials in the handler arguments",
+      "Read credentials from an unencrypted S3 bucket"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Fetching and caching secrets outside the Lambda handler during initialization reuses cached values across warm invocations."
+  },
+  {
+    "q": "What open-source extension provided by AWS can be added to an AWS Lambda function to automatically retrieve, cache, and refresh secrets from Secrets Manager and parameters from SSM Parameter Store via a local HTTP endpoint?",
+    "o": [
+      "AWS Parameters and Secrets Lambda Extension",
+      "AWS SAM CLI",
+      "AWS CodeDeploy Agent",
+      "Amazon Kinesis Producer Library"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The AWS Parameters and Secrets Lambda Extension caches secrets and parameters locally via an in-memory HTTP endpoint."
+  },
+  {
+    "q": "A company wants to prevent SQL Injection (SQLi) and Cross-Site Scripting (XSS) attacks from reaching an Application Load Balancer and Amazon API Gateway. Which AWS service should be placed in front of these endpoints?",
+    "o": [
+      "AWS WAF (Web Application Firewall)",
+      "AWS Shield Standard only",
+      "Amazon GuardDuty",
+      "Amazon Macie"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS WAF filters HTTP/HTTPS traffic on ALBs, CloudFront, and API Gateway to block SQLi, XSS, and exploit traffic."
+  },
+  {
+    "q": "What is the difference between AWS WAF and AWS Shield?",
+    "o": [
+      "AWS WAF is a Layer 7 application firewall that filters HTTP/HTTPS traffic based on rules (SQLi, XSS, rate limits); AWS Shield is a managed Distributed Denial of Service (DDoS) protection service for Layer 3 and Layer 4 attacks",
+      "AWS WAF is for databases; AWS Shield is for S3",
+      "AWS Shield only protects Windows servers",
+      "AWS WAF is hardware-based; AWS Shield is software-based"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS WAF protects Layer 7 (Application); AWS Shield protects Layer 3 and Layer 4 (Network/Transport DDoS)."
+  },
+  {
+    "q": "Which AWS services can be protected directly by associating an AWS WAF Web Access Control List (Web ACL)? (Select THREE.)",
+    "o": [
+      "Amazon CloudFront distributions",
+      "Application Load Balancers (ALB)",
+      "Amazon API Gateway REST APIs and HTTP APIs",
+      "Amazon EC2 instances directly without a load balancer",
+      "Amazon S3 buckets directly without CloudFront F) Amazon DynamoDB tables"
+    ],
+    "a": [
+      0,
+      1,
+      2
+    ],
+    "multi": true,
+    "e": "AWS WAF Web ACLs attach directly to CloudFront distributions, Application Load Balancers, and API Gateway APIs."
+  },
+  {
+    "q": "A developer wants to protect a login API endpoint (`POST /auth/login`) against brute-force password guessing attacks. Which AWS WAF rule type automatically monitors request volume from individual IP addresses over a 5-minute sliding window and temporarily blocks IPs exceeding 100 requests?",
+    "o": [
+      "AWS WAF Rate-Based Rule",
+      "AWS WAF String Match Rule",
+      "AWS Shield Advanced",
+      "Amazon Inspector"
+    ],
+    "a": [
+      0
+    ],
+    "e": "An AWS WAF Rate-Based Rule tracks IP request rates over a 5-minute sliding window and blocks IPs exceeding thresholds."
+  },
+  {
+    "q": "What is an AWS WAF Managed Rule Group?",
+    "o": [
+      "A pre-configured, AWS-maintained collection of rules (such as `AWSManagedRulesCommonRuleSet`, `AWSManagedRulesSQLiRuleSet`, and `AWSManagedRulesKnownBadInputsRuleSet`) that protect against common vulnerabilities and are updated automatically by AWS",
+      "A custom bash script written by developers",
+      "A rule group managed by third-party antivirus vendors",
+      "An IAM permission set"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Managed Rule Groups are pre-configured, AWS-maintained rule sets protecting against common web exploits."
+  },
+  {
+    "q": "A developer wants to test a new AWS WAF rule in production to observe how many requests would be affected WITHOUT actually blocking legitimate user traffic. What rule action should be configured?",
+    "o": [
+      "`Count`",
+      "`Allow`",
+      "`Block`",
+      "`CAPTCHA`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting rule action to `Count` logs and evaluates traffic without blocking legitimate requests during testing."
+  },
+  {
+    "q": "What action types are supported for individual rules inside an AWS WAF Web ACL?",
+    "o": [
+      "`Allow`, `Block`, `Count`, `CAPTCHA`, and `Challenge`",
+      "`Delete`, `Reboot`, `Archive`",
+      "`Encrypt`, `Decrypt`, `Sign`",
+      "`ScaleUp`, `ScaleDown`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS WAF rule actions include `Allow`, `Block`, `Count`, `CAPTCHA`, and `Challenge`."
+  },
+  {
+    "q": "An application logs incoming HTTP request payloads to Amazon CloudWatch Logs for debugging. A security audit discovers that user passwords and credit card numbers are being printed to logs in plain text. What two actions should the development team take? (Select TWO.)",
+    "o": [
+      "Implement application-level logging interceptors/filters to sanitize, mask, or redact sensitive fields before outputting log events",
+      "Configure CloudWatch Logs Data Protection Policies on the log group to automatically detect and mask PII/PCI data identifiers upon ingestion",
+      "Delete all CloudWatch log groups permanently and disable logging",
+      "Switch to unencrypted HTTP",
+      "Email the log files to developers"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Sanitizing logs via application interceptors and enabling CloudWatch Data Protection Policies prevents PII/PCI leakage."
+  },
+  {
+    "q": "What is the role of Amazon Macie in securing sensitive data in AWS?",
+    "o": [
+      "It uses machine learning and pattern matching to automatically discover, classify, and protect sensitive data (such as PII, credit cards, and API keys) stored in Amazon S3 buckets",
+      "It rotates RDS database passwords",
+      "It compiles Lambda code",
+      "It monitors EC2 CPU usage"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon Macie uses machine learning to discover, classify, and protect sensitive PII and data stored in S3 buckets."
+  },
+  {
+    "q": "How can an organization enforce that all Amazon S3 buckets in an AWS account have \"Block Public Access\" enabled and reject any policy that attempts to make a bucket public?",
+    "o": [
+      "Enable S3 Block Public Access at the AWS Account level (and enforce it via AWS Organizations SCP or AWS Config rule `s3-bucket-public-read-prohibited`)",
+      "Delete the Internet Gateway",
+      "Disable DNS in the VPC",
+      "Remove all IAM roles"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Enabling S3 Block Public Access at the account level prevents public bucket policies and ACLs account-wide."
+  },
+  {
+    "q": "A developer is designing a secure REST API with Amazon API Gateway. The developer wants to ensure that only an authorized backend microservice can invoke a specific API resource, using mutual TLS (mTLS) authentication. Does API Gateway support mTLS?",
+    "o": [
+      "Yes, API Gateway supports mutual TLS (mTLS) on Custom Domain Names by verifying client certificates against a truststore uploaded to Amazon S3",
+      "No, API Gateway only supports username/password",
+      "Only when running on EC2",
+      "Only via Route 53"
+    ],
+    "a": [
+      0
+    ],
+    "e": "API Gateway supports Mutual TLS (mTLS) on custom domains by verifying client certificates against an S3 truststore."
+  },
+  {
+    "q": "When an API client calls an API Gateway endpoint using Mutual TLS (mTLS), what cryptographic handshake occurs?",
+    "o": [
+      "Both the API Gateway server and the API client present and validate each other's X.509 digital certificates to establish two-way identity authentication before exchanging data",
+      "API Gateway emails a password to the client",
+      "The client authenticates via SMS",
+      "The database generates a temporary IAM access key"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Mutual TLS performs two-way X.509 certificate validation between the client and server during the TLS handshake."
+  },
+  {
+    "q": "An application receives sensitive customer Social Security Numbers (SSNs). Compliance mandates that SSNs must be tokenized (replaced with non-sensitive surrogate tokens) before being stored in the database. What is the primary security advantage of tokenization over encryption?",
+    "o": [
+      "Tokenized surrogate values have no mathematical relationship to the original sensitive data, meaning compromised tokens cannot be decrypted without access to the isolated token vault",
+      "Tokenization eliminates the need for databases",
+      "Tokenization is completely free",
+      "Tokens can be reversed using standard AES algorithms"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Tokenized surrogate tokens carry no mathematical link to original sensitive data and cannot be mathematically decrypted."
+  },
+  {
+    "q": "A developer wants to restrict access to an Amazon API Gateway REST API so that it can ONLY be invoked from within a specific Amazon VPC via a VPC endpoint. Which API Gateway endpoint type must be selected?",
+    "o": [
+      "Private API Endpoint (using `execute-api` Interface VPC Endpoint and an API Gateway Resource Policy)",
+      "Edge-Optimized API Endpoint",
+      "Regional API Endpoint",
+      "Public Custom Domain"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Private API Gateway endpoints are accessible exclusively from within a VPC via an `execute-api` Interface VPC Endpoint."
+  },
+  {
+    "q": "What policy must be configured on a Private API Gateway REST API to allow traffic from a specific VPC Endpoint (`vpce-1a2b3c4d`)?",
+    "o": [
+      "An API Gateway Resource Policy with `Effect: Allow` on `execute-api:Invoke` and a condition `\"StringEquals\": { \"aws:sourceVpce\": \"vpce-1a2b3c4d\" }`",
+      "An S3 Bucket Policy",
+      "A Route 53 CNAME record",
+      "A Security Group on the IAM user"
+    ],
+    "a": [
+      0
+    ],
+    "e": "API Gateway Resource Policies with `aws:sourceVpce` conditions restrict invocation to specified VPC endpoints."
+  },
+  {
+    "q": "A developer wants to ensure that API requests passing through an Application Load Balancer contain a custom HTTP header (`X-Custom-Secret: MySecret123`) before forwarding them to an internal microservice, dropping all requests lacking the header. Where can this rule be configured?",
+    "o": [
+      "On the Application Load Balancer Listener Rules (HTTP Header condition)",
+      "On the EC2 BIOS",
+      "In Route 53 DNS settings",
+      "In the VPC route table"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Application Load Balancer HTTP Header Listener Rules verify custom headers before forwarding requests to target groups."
+  },
+  {
+    "q": "An e-commerce platform wants to prevent automated bots from scraping product prices and submitting fraudulent account signups. Which AWS WAF feature provides advanced bot detection, CAPTCHA challenges, and machine learning-driven bot classification?",
+    "o": [
+      "AWS WAF Bot Control managed rule group",
+      "AWS CodeDeploy",
+      "Amazon CloudWatch Alarms",
+      "Amazon S3 Storage Lens"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS WAF Bot Control uses managed rule sets and machine learning to detect, classify, and challenge automated bot traffic."
+  },
+  {
+    "q": "When an AWS WAF rule evaluates an incoming HTTP request, what are the primary request components that can be inspected?",
+    "o": [
+      "IP address, URI path, HTTP method, query strings, headers, cookies, and request body payload",
+      "EC2 hypervisor memory",
+      "IAM user passwords",
+      "S3 bucket replication status"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS WAF inspects IP addresses, URIs, HTTP methods, headers, cookies, query parameters, and request body payloads."
+  },
+  {
+    "q": "A company wants to enforce that all developer laptop connections to the AWS Management Console require Multi-Factor Authentication (MFA). What condition key in an IAM policy enforces MFA validation?",
+    "o": [
+      "`\"Condition\": { \"Bool\": { \"aws:MultiFactorAuthPresent\": \"true\" } }`",
+      "`\"Condition\": { \"StringEquals\": { \"aws:MFA\": \"active\" } }`",
+      "`\"Condition\": { \"NumericEquals\": { \"aws:AuthLevel\": 2 } }`",
+      "`\"Condition\": { \"Bool\": { \"aws:SecureTransport\": \"true\" } }`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`\"aws:MultiFactorAuthPresent\": \"true\"` enforces Multi-Factor Authentication validation in IAM policies."
+  },
+  {
+    "q": "What is the purpose of AWS Secrets Manager Secret Replication across regions?",
+    "o": [
+      "It automatically replicates secrets (and their rotating versions) to secondary AWS Regions to support multi-region disaster recovery and localized low-latency secret retrieval",
+      "It creates duplicate AWS accounts",
+      "It converts SQL databases to DynamoDB",
+      "It compresses files into zip archives"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Secrets Manager Secret Replication copies secrets and rotation metadata to secondary regions for DR and low latency."
+  },
+  {
+    "q": "An application needs to securely pass sensitive API keys into a Docker container running on Amazon ECS on AWS Fargate without hardcoding them in the Dockerfile. How should the developer configure the ECS Task Definition?",
+    "o": [
+      "Reference the secret stored in AWS Secrets Manager or SSM Parameter Store in the `secrets` section of the ECS Container Definition, referencing the parameter ARN and container environment variable name",
+      "Hardcode the API key in the container `CMD` command",
+      "Commit the secret to a public GitHub repository",
+      "Store the key in `/etc/hosts` in the container image"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ECS Task Definitions inject secrets into container environment variables by referencing parameter ARNs in `secrets`."
+  },
+  {
+    "q": "What IAM permission is required in the Amazon ECS Task Execution Role to allow ECS to retrieve secrets from Secrets Manager on behalf of a Fargate container at startup?",
+    "o": [
+      "`secretsmanager:GetSecretValue` and `kms:Decrypt` (on the KMS key used to encrypt the secret)",
+      "`AdministratorAccess`",
+      "`s3:GetObject`",
+      "`ec2:DescribeInstances`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The ECS Task Execution Role requires `secretsmanager:GetSecretValue` and `kms:Decrypt` to fetch container secrets."
+  },
+  {
+    "q": "What is the difference between an ECS Task Execution Role and an ECS Task Role?",
+    "o": [
+      "The Task Execution Role is used by the ECS container agent to pull images from ECR and fetch secrets from Secrets Manager/SSM; the Task Role is assumed by the application code running inside the container to make AWS API calls (e.g., DynamoDB, S3)",
+      "Task Execution Role is for Linux; Task Role is for Windows",
+      "Both roles are identical",
+      "Task Roles cannot access S3"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Task Execution Role is used by the ECS agent (pulling images/secrets); Task Role is used by container application code."
+  },
+  {
+    "q": "A developer suspects that a compromised IAM user access key is being used to make unauthorized API calls. What is the FIRST emergency action the developer should take?",
+    "o": [
+      "In the IAM console or CLI, set the Access Key status to `Inactive` or delete the access key immediately to revoke all further access",
+      "Send an email to the user",
+      "Reboot the EC2 instances",
+      "Increase CloudWatch metric retention"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Inactivating or deleting a compromised IAM access key immediately terminates its ability to authenticate API calls."
+  },
+  {
+    "q": "How does AWS Config help developers maintain security compliance in AWS accounts?",
+    "o": [
+      "It continuously monitors, records, and evaluates AWS resource configurations against desired security baselines and rules (e.g., ensuring S3 buckets are encrypted and IAM policies do not allow `*`)",
+      "It compiles application code",
+      "It replaces AWS KMS",
+      "It acts as a DNS server"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS Config continuously evaluates resource configurations against security baselines and compliance rules."
+  },
+  {
+    "q": "A developer wants to run automated vulnerability scans on container images stored in Amazon Elastic Container Registry (ECR) to detect known CVE software vulnerabilities before deployment. Which ECR feature provides this capability?",
+    "o": [
+      "Amazon ECR Image Scanning (Basic Scanning via Clair or Enhanced Scanning via Amazon Inspector)",
+      "AWS WAF Rate Rules",
+      "Route 53 Health Checks",
+      "CloudWatch Logs Insights"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon ECR Image Scanning detects known software vulnerabilities (CVEs) in pushed container images."
+  },
+  {
+    "q": "What is the principle of Least Privilege in AWS security architecture?",
+    "o": [
+      "Granting an identity (user, role, service) only the absolute minimum permissions required to perform its specific task, on specific resources, and under specific conditions, and no more",
+      "Giving all developers `AdministratorAccess` to speed up deployment",
+      "Allowing public read access on all S3 buckets",
+      "Disabling all IAM policies"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Least Privilege restricts identities to only the specific permissions and resources necessary to perform their role."
+  },
+  {
+    "q": "When configuring an Amazon Cognito User Pool App Client for a mobile application, why should the \"Generate client secret\" option be UNCHECKED?",
+    "o": [
+      "Mobile applications and Single Page Applications are public clients that cannot securely hide or protect a client secret from decompilation or inspection; generating a secret is reserved for confidential server-side backends",
+      "Client secrets are deprecated in Cognito",
+      "It makes the app slower",
+      "Mobile apps do not support OAuth 2.0"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Public clients (mobile apps, SPAs) cannot securely store client secrets; unchecking this option prevents secret exposure."
+  },
+  {
+    "q": "An application uses AWS Secrets Manager. The developer wants to be alerted immediately whenever a database secret is deleted or modified. Which AWS architecture pattern implements this security alert?",
+    "o": [
+      "AWS CloudTrail captures the Secrets Manager API call (`DeleteSecret`, `PutSecretValue`) -> Amazon EventBridge matches the event pattern -> triggers an Amazon SNS topic notifying the security team",
+      "CloudWatch Logs polling every 24 hours",
+      "S3 Lifecycle Rules",
+      "Route 53 DNS failover"
+    ],
+    "a": [
+      0
+    ],
+    "e": "CloudTrail capturing secret events combined with EventBridge and SNS delivers real-time alerts on secret modifications."
+  },
+  {
+    "q": "An application uses Amazon Cognito User Pools. The company wants to enforce that users must enter a one-time SMS or TOTP code in addition to their password when logging in from an unrecognized device. Which Cognito feature provides this adaptive risk-based authentication?",
+    "o": [
+      "Amazon Cognito Advanced Security Features (Adaptive Authentication and compromised credentials check)",
+      "Amazon Route 53 Geolocation",
+      "AWS WAF CAPTCHA only",
+      "Amazon S3 Object Lock"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cognito Advanced Security Features provides adaptive authentication, assessing risk signals to prompt for step-up MFA."
+  }
+];
+const STORAGE_KEY = "aws-dva-quiz-14";
+
+document.querySelectorAll(".tabbtn").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    document.querySelectorAll(".tabbtn").forEach(function(b){ b.classList.remove("active"); });
+    document.querySelectorAll(".tabpanel").forEach(function(p){ p.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+renderNotes(NOTES_MD);
+initQuiz(QUESTIONS, STORAGE_KEY);
+
+if(location.hash === "#quiz"){ document.querySelector('[data-tab="quiz"]').click(); }
+</script>
+</body>
+</html>

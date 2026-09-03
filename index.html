@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AWS DVA-C02 Study Hub</title>
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+.hero{max-width:1040px; margin:0 auto; padding:44px 20px 8px;}
+.hero .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600;}
+.hero h1{font-size:30px; font-weight:800; letter-spacing:-.01em; margin:6px 0 10px; text-wrap:balance;}
+.hero p.lede{font-size:15px; color:var(--muted); max-width:62ch; line-height:1.6; margin:0 0 26px;}
+.factstrip{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:10px;}
+.factstrip .fact{background:var(--surface); padding:14px 16px;}
+.factstrip .fact .v{font-family:"IBM Plex Mono",monospace; font-size:19px; font-weight:600;}
+.factstrip .fact .k{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:2px;}
+.note{font-size:12.5px; color:var(--muted); max-width:70ch; margin:14px 0 0; line-height:1.6;}
+main.hub{max-width:1040px; margin:0 auto; padding:20px 20px 90px;}
+.daygroup{margin-bottom:30px;}
+.daygroup h2{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 12px; display:flex; align-items:center; gap:10px;}
+.daygroup h2 .heavy{background:var(--accent-soft); color:var(--accent); font-family:"IBM Plex Mono",monospace; font-size:10.5px; padding:2px 8px; border-radius:999px; text-transform:none; letter-spacing:0;}
+.cardgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px;}
+.modcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; display:flex; flex-direction:column; gap:10px;}
+.modcard .mtop{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+.modcard .mnum{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted); font-weight:600;}
+.modcard h3{font-size:14.5px; font-weight:700; margin:2px 0 0; line-height:1.35;}
+.modcard .mmeta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.modcard .qcount{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted);}
+.modcard .mactions{display:flex; gap:8px; margin-top:2px;}
+.mockrow{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px;}
+.mockcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column; gap:10px;}
+.mockcard h3{font-size:15px; font-weight:700; margin:0;}
+.mockcard p{font-size:13px; color:var(--muted); margin:0; line-height:1.5;}
+footer.hubfoot{max-width:1040px; margin:0 auto; padding:0 20px 50px; font-size:12px; color:var(--muted); text-align:center;}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="eyebrow">AWS Certified Developer &ndash; Associate &middot; DVA-C02</div>
+  <h1>Study Hub</h1>
+  <p class="lede">18 modules, ~2,300 practice questions, and 2 full timed mock exams &mdash; grounded in AWS's official exam guide. Click any module to read its notes and take its quiz in one place.</p>
+  <div class="factstrip">
+    <div class="fact"><div class="v">65</div><div class="k">Questions</div></div>
+    <div class="fact"><div class="v">130</div><div class="k">Minutes</div></div>
+    <div class="fact"><div class="v">720</div><div class="k">Pass score /1000</div></div>
+    <div class="fact"><div class="v">32/26/24/18</div><div class="k">Domain weight %</div></div>
+  </div>
+  <p class="note">Progress (score, current question) is saved per-page in your browser's local storage. If you open these files directly (double-click), each file is a separate local origin, so progress doesn't sync between pages &mdash; that's a browser limitation, not a bug. Tick off modules in <code>README.md</code> as you finish them.</p>
+</div>
+
+<main class="hub">
+  <div class="daygroup">
+    <h2>Day 1 &middot; Mon Aug 31 </h2>
+    <div class="cardgrid">
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 00</span></div>
+        <h3>Exam Overview & Fundamentals</h3>
+        <div class="mmeta"><span class="qcount">120 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="00-Exam-Overview-and-AWS-Fundamentals/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="00-Exam-Overview-and-AWS-Fundamentals/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 01</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>EC2 & Compute Basics</h3>
+        <div class="mmeta"><span class="qcount">116 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="01-EC2-and-Compute-Basics/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="01-EC2-and-Compute-Basics/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="daygroup">
+    <h2>Day 2 &middot; Tue Sep 01 </h2>
+    <div class="cardgrid">
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 02</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>S3 & Storage</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="02-S3-and-Storage/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="02-S3-and-Storage/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 03</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>DynamoDB</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="03-DynamoDB/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="03-DynamoDB/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="daygroup">
+    <h2>Day 3 &middot; Wed Sep 02 </h2>
+    <div class="cardgrid">
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 04</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>App Design Patterns & AWS Lambda</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="04-App-Design-Patterns-and-Lambda/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="04-App-Design-Patterns-and-Lambda/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 05</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>API Gateway & AppSync</h3>
+        <div class="mmeta"><span class="qcount">142 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="05-API-Gateway-and-AppSync/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="05-API-Gateway-and-AppSync/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="daygroup">
+    <h2>Day 4 &middot; Thu Sep 03 </h2>
+    <div class="cardgrid">
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 06</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>Messaging, Streaming & Analytics</h3>
+        <div class="mmeta"><span class="qcount">134 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="06-Messaging-Streaming-and-Analytics/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="06-Messaging-Streaming-and-Analytics/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 07</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>Step Functions & Orchestration</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="07-Step-Functions-and-Orchestration/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="07-Step-Functions-and-Orchestration/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="daygroup">
+    <h2>Day 5 &middot; Fri Sep 04 </h2>
+    <div class="cardgrid">
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 08</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>Relational & In-Memory Databases</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="08-Relational-and-InMemory-Databases/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="08-Relational-and-InMemory-Databases/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 09</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>Caching Strategies & Performance</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="09-Caching-Strategies-and-Performance/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="09-Caching-Strategies-and-Performance/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="daygroup">
+    <h2>Day 6 &middot; Sat Sep 05 &mdash; heavy <span class="heavy">heavy day</span></h2>
+    <div class="cardgrid">
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 10</span><span class="domain-chip" style="background:var(--d3-bg);color:var(--d3);font-size:10px;padding:2px 7px;">D3</span></div>
+        <h3>CI/CD & Developer Tooling</h3>
+        <div class="mmeta"><span class="qcount">135 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="10-CICD-and-Developer-Tooling/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="10-CICD-and-Developer-Tooling/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 11</span><span class="domain-chip" style="background:var(--d3-bg);color:var(--d3);font-size:10px;padding:2px 7px;">D3</span></div>
+        <h3>Elastic Beanstalk, Amplify & Copilot</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="11-Elastic-Beanstalk-Amplify-Copilot/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="11-Elastic-Beanstalk-Amplify-Copilot/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 12</span><span class="domain-chip" style="background:var(--d3-bg);color:var(--d3);font-size:10px;padding:2px 7px;">D3</span></div>
+        <h3>Containers (ECS, ECR, Fargate, EKS)</h3>
+        <div class="mmeta"><span class="qcount">123 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="12-Containers-ECS-ECR-Fargate-EKS/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="12-Containers-ECS-ECR-Fargate-EKS/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="daygroup">
+    <h2>Day 7 &middot; Sun Sep 06 &mdash; heavy <span class="heavy">heavy day</span></h2>
+    <div class="cardgrid">
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 13</span><span class="domain-chip" style="background:var(--d3-bg);color:var(--d3);font-size:10px;padding:2px 7px;">D3</span></div>
+        <h3>IaC (CloudFormation, SAM, CDK)</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="13-IaC-CloudFormation-SAM-CDK/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="13-IaC-CloudFormation-SAM-CDK/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 14</span><span class="domain-chip" style="background:var(--d2-bg);color:var(--d2);font-size:10px;padding:2px 7px;">D2</span></div>
+        <h3>Security Deep Dive</h3>
+        <div class="mmeta"><span class="qcount">135 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="14-Security-Deep-Dive/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="14-Security-Deep-Dive/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 15</span><span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);font-size:10px;padding:2px 7px;">D1</span></div>
+        <h3>Networking for Developers</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="15-Networking-for-Developers/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="15-Networking-for-Developers/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="daygroup">
+    <h2>Day 8 &middot; Mon Sep 07 </h2>
+    <div class="cardgrid">
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 16</span><span class="domain-chip" style="background:var(--d4-bg);color:var(--d4);font-size:10px;padding:2px 7px;">D4</span></div>
+        <h3>Monitoring, Logging & Observability</h3>
+        <div class="mmeta"><span class="qcount">125 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="16-Monitoring-Logging-and-Observability/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="16-Monitoring-Logging-and-Observability/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+      <div class="modcard">
+        <div class="mtop"><span class="mnum">MODULE 17</span></div>
+        <h3>Well-Architected & Exam Strategy</h3>
+        <div class="mmeta"><span class="qcount">115 questions</span></div>
+        <div class="mactions">
+          <a class="btn btn-primary btn-sm" href="17-Well-Architected-and-Exam-Strategy/study.html">Notes &amp; Quiz</a>
+          <a class="btn btn-ghost btn-sm" href="17-Well-Architected-and-Exam-Strategy/study.html#quiz">Quiz only</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="daygroup">
+    <h2>Day 9&ndash;10 &middot; Review &amp; Mock Exams</h2>
+    <div class="mockrow">
+      <div class="mockcard">
+        <h3>Mock Exam 1</h3>
+        <p>65 questions, 130-minute countdown timer, domain-by-domain score breakdown.</p>
+        <div class="mactions"><a class="btn btn-primary btn-sm" href="18-Mock-Exams/mock-exam-1.html">Start exam &rarr;</a></div>
+      </div>
+      <div class="mockcard">
+        <h3>Mock Exam 2</h3>
+        <p>A second full-length simulation with different questions, same weighting.</p>
+        <div class="mactions"><a class="btn btn-primary btn-sm" href="18-Mock-Exams/mock-exam-2.html">Start exam &rarr;</a></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="hubfoot">Built from AWS's official DVA-C02 exam guide and sample questions. See <code>HANDOVER.md</code> for the full research/build brief.</footer>
+</body>
+</html>

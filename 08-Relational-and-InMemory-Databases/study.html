@@ -1,0 +1,1995 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 08 — Relational & In-Memory Databases</title>
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="crumb" href="../index.html">&#8962; Hub</a>
+  <span class="divider">/</span>
+  <span class="page-title">Module 08 &mdash; Relational & In-Memory Databases</span>
+  <span class="domain-chip" style="background:var(--d1-bg);color:var(--d1);">Domain 1 · Development (32%)</span>
+  <span class="spacer"></span>
+  <div class="tabbar">
+    <button class="tabbtn active" data-tab="notes">Notes</button>
+    <button class="tabbtn" data-tab="quiz">Practice Questions (125)</button>
+  </div>
+</header>
+
+<main>
+  <section id="tab-notes" class="tabpanel active">
+    <div class="notes-wrap">
+      <nav id="notesToc" class="notes-toc"></nav>
+      <article id="notesBody" class="notes-body"></article>
+    </div>
+  </section>
+
+  <section id="tab-quiz" class="tabpanel">
+    <div class="quiz-wrap">
+      <div class="quiz-topline">
+        <div class="stat"><span class="num" id="posNum">1 / 125</span><span class="lbl">Question</span></div>
+        <div class="stat"><span class="num" id="scoreNum">0</span><span class="lbl">Correct</span></div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div id="quizArea"></div>
+      <div class="footer-note">Progress is saved automatically in this browser. Use 1&ndash;5 or A&ndash;E on your keyboard to answer.</div>
+    </div>
+  </section>
+</main>
+
+<script src="../assets/quiz-engine.js"></script>
+<script src="../assets/notes-render.js"></script>
+<script>
+const NOTES_MD = `# Module 08 — Relational & In-Memory Databases
+
+Domain focus: primarily **Development with AWS Services (32%)** — knowing how an application actually talks to a relational database or a cache — with a substantial slice of **Security (26%)**, since "how do you securely hand a Lambda function or an EC2 app a database password" is one of the most heavily tested patterns on DVA-C02 (it's the subject of an official AWS sample question). This module assumes modules 00–07, especially module 03's DynamoDB coverage — you'll need it for the relational-vs-NoSQL decision table near the end.
+
+## 1. Amazon RDS: the managed relational database
+
+RDS (Relational Database Service) is AWS's managed offering for running a standard relational (SQL) engine without you patching the OS, installing the database software, or building your own backup tooling. You still design your schema, write your queries, and tune your application — AWS manages the underlying host, storage layer, patching cadence (during a maintenance window you configure), and automated backups.
+
+### Supported engines
+RDS supports five traditional engines, each launched as a \`DBInstance\`:
+
+| Engine | Notes |
+|---|---|
+| MySQL | Open-source, widely used, free to run (you pay AWS infra costs only) |
+| PostgreSQL | Open-source, feature-rich, popular default choice for new relational workloads |
+| MariaDB | MySQL-compatible fork, open-source |
+| Oracle | Commercial, License Included or Bring-Your-Own-License (BYOL) pricing models |
+| SQL Server | Commercial (Microsoft), also License Included or BYOL |
+
+(Amazon Aurora is technically launched through the RDS API too, but it's architecturally different enough that AWS — and this module — treat it separately in section 2.)
+
+**Exam trap:** if a scenario mentions per-core/per-socket licensing audits or "bring your own license," that's a purchasing/compliance detail — it doesn't change which *purchasing option* you'd reach for on EC2 (Dedicated Hosts, module 01); on RDS, License Included vs BYOL is simply a billing model choice for Oracle/SQL Server, not a security or architecture decision.
+
+### What you configure vs. what AWS manages
+You choose: engine + version, instance class (\`db.t3.medium\`, \`db.r6g.large\`, etc. — same family logic as EC2), storage type and size, VPC/subnet group, security groups, backup retention, and maintenance windows. AWS manages: underlying host provisioning, OS-level patching, automated backup execution, and (if you enable Multi-AZ) synchronous replication and failover orchestration.
+
+### Storage
+RDS storage behaves similarly to EBS conceptually: **gp3** (general purpose SSD, the modern default — IOPS/throughput provisionable independently of size) for most workloads, and **io1/io2** (Provisioned IOPS SSD) for demanding, latency-sensitive database workloads that need consistent high IOPS regardless of burst behavior. RDS also supports **Storage Auto Scaling**, which automatically increases allocated storage when free space drops below a threshold, without you manually resizing the volume or taking downtime.
+
+### Parameter groups and option groups
+Two distinct configuration mechanisms, and the exam likes to test the difference:
+- **DB parameter groups**: control engine configuration parameters (e.g., \`max_connections\`, \`slow_query_log\`, character set defaults). Apply to any engine.
+- **DB option groups**: enable specific *engine features* that require additional configuration, most relevant to Oracle and SQL Server (e.g., Oracle Enterprise Manager, SQL Server Transparent Data Encryption via an option). Not every engine uses option groups the same way — MySQL/PostgreSQL rarely need them; Oracle/SQL Server frequently do.
+
+**Exam trap:** "I need to change a database engine setting like \`max_connections\`" → parameter group. "I need to enable a bundled engine feature like TDE" → option group. Mixing these up is a common wrong-answer bait.
+
+### Encryption at rest
+Enabled at creation time using AWS KMS. **You cannot directly enable encryption on an already-running, unencrypted RDS instance** — the standard path is: take a snapshot → copy the snapshot with encryption enabled → restore a new instance from the encrypted copy. This "snapshot, copy encrypted, restore" sequence is a frequently tested workaround pattern.
+
+## 2. Multi-AZ vs. Read Replicas — the single most important RDS distinction on this exam
+
+These solve **completely different problems**, and confusing them is the exam's favorite RDS trap.
+
+| | Multi-AZ (DB instance) | Read Replicas |
+|---|---|---|
+| Purpose | High availability / disaster recovery | Read scaling (offload read traffic) |
+| Replication | **Synchronous** to a standby in a different AZ | **Asynchronous** |
+| Standby/replica readable? | No — the standby is not directly readable in a standard Multi-AZ DB instance | Yes — replicas serve read-only queries |
+| Failover | Automatic; RDS flips the DNS endpoint to the standby on primary failure | Not automatic; a replica can be manually *promoted* to a standalone writable instance |
+| Region scope | Same Region (different AZ) | Can be same-Region **or cross-Region** |
+| Consistency | Strong (synchronous) | Eventual — replica lag exists, monitor \`ReplicaLag\` in CloudWatch |
+
+**The core exam trap the scope explicitly calls out:** Multi-AZ is for *availability*, not for scaling reads. If a question says "reduce read load on the primary" or "offload reporting queries," the answer is a **Read Replica**, never "enable Multi-AZ." If a question says "survive an AZ outage with automatic failover and zero data loss," the answer is **Multi-AZ**, never "add a read replica" (a replica's asynchronous lag means it *can* lose the last few transactions, and promotion isn't automatic).
+
+You can combine both: a Multi-AZ primary with one or more Read Replicas (replicas can themselves optionally be Multi-AZ) is a common production pattern — HA for the primary, horizontal read scaling via replicas.
+
+## 3. Backups and snapshots
+
+| | Automated Backups | Manual Snapshots |
+|---|---|---|
+| Trigger | Daily backup + continuous transaction log capture | User-initiated |
+| Retention | 1–35 days (you configure); enables **point-in-time recovery (PITR)** to any second within that window | Persist until you explicitly delete them |
+| Lifecycle | Deleted when the DB instance is deleted, unless you opt to retain final snapshot | Independent of instance lifecycle |
+| Storage | S3 (incremental, like EBS snapshots) | S3 |
+
+**Exam trap:** PITR restores create a **new** DB instance with a new endpoint — you don't restore "in place." This mirrors EBS snapshot restore behavior from module 01 and trips people expecting the original endpoint to just start working again.
+
+## 4. Secure database connections: the pattern this exam tests hardest
+
+This is directly the subject of an official AWS sample question, and it's worth internalizing the *exact* mechanism, not just the vocabulary.
+
+### The wrong pattern (what the exam wants you to reject)
+Storing a plaintext username/password in source code, in an AMI, or in unencrypted EC2 user data. All of these are static, long-lived, hard to rotate, and easy to leak (e.g., via \`git log\`, via the EC2 \`DescribeInstanceAttribute\` API for user data, or via a compromised host).
+
+### Pattern A: IAM database authentication (token-based)
+Available for RDS MySQL and PostgreSQL (and Aurora MySQL/PostgreSQL). Instead of a static password, the application authenticates using a **short-lived authentication token** generated from IAM credentials:
+
+\`\`\`
+# Conceptual flow, e.g. via AWS CLI or SDK
+1. The app's IAM role/user must have an IAM policy allowing rds-db:connect
+   for the specific DB resource ARN and DB user.
+2. The app (or a helper) calls the token-generation API:
+     aws rds generate-db-auth-token \\
+       --hostname mydb.xxxxxxx.us-east-1.rds.amazonaws.com \\
+       --port 3306 \\
+       --username app_iam_user \\
+       --region us-east-1
+   -> returns a signed token string, valid for 15 minutes
+3. The app connects to the DB over SSL/TLS, using that token
+   in place of a password.
+4. Before the token expires, the app requests a new one — no
+   permanent secret is ever stored anywhere.
+\`\`\`
+
+Key properties: tokens are valid for **15 minutes**, connections must use SSL/TLS, and the DB user must be mapped to allow \`AWSAuthenticationPlugin\` (MySQL) or the \`rds_iam\` role (PostgreSQL). This eliminates a stored, static password entirely — auth is derived from IAM, which you already control with policies, roles, and (module 01) instance profiles.
+
+**Exam trap:** IAM database authentication is not supported by every engine (notably not by default for SQL Server or Oracle) — know it as a MySQL/PostgreSQL/Aurora-MySQL/Aurora-PostgreSQL capability.
+
+### Pattern B: Secrets Manager with automatic rotation
+This is the pattern from the official sample question you should be able to answer cold: *"A company needs to securely store and automatically rotate database credentials for an RDS for MySQL instance."* Answer: **Secrets Manager, with rotation configured.**
+
+\`\`\`
+# Conceptual application-side pattern
+1. App has an IAM role permitting secretsmanager:GetSecretValue
+   for the specific secret ARN (least privilege).
+2. At runtime (on connect, or cached with a short TTL), the app calls:
+     secret = secretsmanager.get_secret_value(SecretId="prod/orders-db")
+     conn = connect(host=secret["host"], user=secret["username"],
+                     password=secret["password"], dbname=secret["dbname"])
+3. Secrets Manager rotates the credential on a schedule (e.g., every 30 days)
+   using an AWS-provided Lambda rotation function template for RDS —
+   it updates the password in the database AND the secret value,
+   in a coordinated two-step process, with zero application code changes.
+4. The app simply fetches the current secret value on its next connection;
+   no manual credential distribution, no restart required.
+\`\`\`
+
+Secrets Manager (unlike Parameter Store, module 01) has this rotation built in natively for RDS, Aurora, Redshift, and DocumentDB via ready-made Lambda rotation templates. This is *the* reason the exam prefers Secrets Manager over Parameter Store whenever automatic credential rotation is a stated requirement.
+
+**Exam trap:** Parameter Store SecureString can *store* a secret encrypted with KMS, but it has **no native automatic rotation** — you'd have to build your own Lambda + EventBridge schedule to rotate it yourself. If the requirement explicitly says "automatically rotate," Secrets Manager is the answer unless the question is artificially constraining you away from it.
+
+## 5. RDS Proxy — solving the "too many connections" problem
+
+This is a frequently tested, specific scenario: **a Lambda function connecting to RDS/Aurora, invoked at high concurrency.** Each concurrent Lambda invocation can open its own new database connection. Relational databases have a hard cap on \`max_connections\` (often in the low thousands or less) — at high concurrency, Lambda can exhaust that limit, causing connection errors for every client, including non-Lambda ones.
+
+**RDS Proxy** is a fully managed, highly available connection pooler that sits between your application (typically Lambda, but also usable from EC2/ECS) and your RDS or Aurora database:
+- **Pools and multiplexes connections**: many application-side connections share a much smaller pool of actual database connections, absorbing bursts of concurrent Lambda invocations without overwhelming the DB.
+- **Reduces failover time**: RDS Proxy can cut failover time for Aurora/RDS Multi-AZ events significantly (AWS cites up to ~66% faster) because the proxy maintains the connection pool and reroutes without every client needing to re-resolve DNS and reconnect from scratch.
+- **Credential handling**: RDS Proxy integrates with Secrets Manager (or IAM authentication) for the actual DB credentials — your application authenticates to the proxy, and the proxy manages the real backend credentials, so app code doesn't need direct access to the DB password at all.
+- **Requires**: the proxy and the Lambda function (or other client) need network reachability — typically the same VPC (or VPC peering/reachable networking) as the RDS/Aurora instance. Enforces TLS.
+- **Supported engines**: MySQL, PostgreSQL, MariaDB, and Aurora (MySQL- and PostgreSQL-compatible).
+
+**Exam trap:** whenever a scenario says "a Lambda function intermittently fails to connect to RDS with 'too many connections' errors under high concurrency," the answer is **RDS Proxy** — not "increase \`max_connections\`" (a band-aid with a hard ceiling) and not "switch to Provisioned Concurrency" (that controls Lambda cold starts, not DB connection exhaustion — a classic decoy).
+
+## 6. Amazon Aurora
+
+Aurora is AWS's cloud-native, MySQL-compatible and PostgreSQL-compatible relational database, built on a distributed, self-healing storage architecture that's decoupled from compute.
+
+### Storage architecture
+Aurora's storage layer automatically replicates data **six ways across three Availability Zones** and grows in increments as needed, up to very large sizes (many terabytes) — you never manually provision or resize Aurora storage the way you do for standard RDS gp3/io1 volumes. This underlying shared storage volume is also what makes Aurora Replicas fundamentally different from RDS Read Replicas (see below).
+
+### Aurora Replicas
+Because Aurora Replicas share the *same underlying storage volume* as the writer instance (rather than receiving an asynchronously-shipped copy of the data like RDS Read Replicas), replica lag is typically very low — commonly single-digit milliseconds. Aurora supports up to 15 replicas, and — critically — **Aurora Replicas can serve as automatic failover targets**: if the writer fails, Aurora promotes a replica to writer in seconds, with no data loss, because the storage was already shared. This is faster and safer than standard RDS Multi-AZ failover for equivalent engines, and it's a major reason Aurora is generally the preferred choice over "plain" RDS for the same engine when performance, scaling, or fast failover matter.
+
+### Aurora Serverless v2
+Auto-scales database capacity (measured in **Aurora Capacity Units, ACUs**) up and down **automatically and near-instantly** in response to load, without you managing fixed instance sizes. Ideal for variable, intermittent, or hard-to-predict workloads — e.g., a dev/test database that's idle most of the day, a new product with unknown traffic patterns, or a multi-tenant SaaS database per customer where usage varies wildly. Serverless v2 instances can coexist with regular provisioned Aurora instances in the same cluster (e.g., a provisioned writer plus serverless readers, or vice versa).
+
+### Aurora Global Database
+For **cross-Region** requirements — disaster recovery across Regions or serving read traffic with low latency close to a global user base. One primary Region handles writes; up to several (commonly cited: up to 5, though AWS has raised limits over time) secondary Regions receive data via dedicated storage-based replication infrastructure (not standard database engine replication), typically with **under 1 second** of replication lag. In a regional outage, a secondary Region can be promoted to take over write traffic in about a minute — far faster than rebuilding a database in a new Region from backups.
+
+### RDS vs. Aurora
+| | RDS (MySQL/PostgreSQL/etc.) | Aurora |
+|---|---|---|
+| Storage | You provision/manage EBS-backed storage (gp3/io1) | Auto-scaling, distributed storage (6-way replication, 3 AZs) — no manual provisioning |
+| Read scaling | Read Replicas (async, higher lag, up to 5 for most engines) | Aurora Replicas (near-sync via shared storage, up to 15, low lag) |
+| Failover | Multi-AZ standby, typically ~60–120 seconds | Replica promotion, typically well under 30 seconds, no data loss |
+| Cross-Region | Cross-Region Read Replicas | Aurora Global Database (purpose-built, faster, sub-second lag) |
+| Serverless option | No native serverless mode | Aurora Serverless v2 |
+| Cost model | Generally lower baseline cost for small/simple workloads | Typically higher baseline cost, but better price-performance at scale |
+| Engine compatibility | Native engine (MySQL, PostgreSQL, MariaDB, Oracle, SQL Server) | MySQL-compatible or PostgreSQL-compatible only |
+
+**Rule of thumb the exam rewards:** if a scenario needs Oracle or SQL Server, or the simplest/cheapest option for a small, low-traffic relational workload, RDS is fine. If the scenario emphasizes performance at scale, minimal storage management, fast failover, many read replicas, or cross-Region reads with low replication lag — and the engine is MySQL or PostgreSQL — **Aurora is the preferred answer.**
+
+### Aurora Standard (provisioned) vs. Aurora Serverless v2
+| | Aurora Provisioned | Aurora Serverless v2 |
+|---|---|---|
+| Capacity | Fixed instance classes you choose and resize manually | Auto-scales in fine-grained ACU increments based on load |
+| Best for | Steady, predictable, well-understood workloads | Variable, intermittent, unpredictable, or spiky workloads |
+| Scaling speed | Manual instance class change (brief interruption) | Seconds, automatic, no manual intervention |
+| Mixing | Can run alongside Serverless v2 instances in the same cluster | Can run alongside provisioned instances in the same cluster |
+
+## 7. Amazon ElastiCache
+
+ElastiCache is a fully managed **in-memory data store used as a cache** (or, for Redis specifically, sometimes as a lightweight primary store for ephemeral data) sitting in front of a slower backing database to absorb read load and cut latency from milliseconds down to sub-millisecond/microsecond territory.
+
+### Redis vs. Memcached
+| | Redis | Memcached |
+|---|---|---|
+| Data structures | Rich: strings, lists, sets, sorted sets, hashes, streams | Simple key-value strings only |
+| Persistence | Yes — RDB snapshots and/or AOF (append-only file) | No — purely in-memory, data lost on node failure/restart |
+| Replication / HA | Yes — Multi-AZ with automatic failover (primary/replica) | No native replication or HA |
+| Pub/Sub messaging | Yes | No |
+| Transactions | Yes (MULTI/EXEC) | No |
+| Threading model | Historically single-threaded per node for command execution (newer versions add I/O multithreading); scale via sharding (cluster mode) | Multi-threaded — can use multiple cores on a single node natively |
+| Typical use cases | Session store, leaderboards (sorted sets), pub/sub, rate limiting, real-time analytics | Simple, high-throughput object cache with no durability/HA requirement, needing to fully use multi-core nodes |
+
+**Exam trap:** "Needs a leaderboard with ranked scores" or "needs pub/sub messaging" or "needs replication/automatic failover for the cache tier" → **Redis**, every time — Memcached simply doesn't have these features. "Wants the simplest possible cache, doesn't care about persistence or HA, wants to fully utilize multiple cores per node" → Memcached is a legitimate, if narrower, answer.
+
+### Cache-aside (lazy-loading) pattern
+The most common caching strategy tested on this exam — the application, not the database, owns the caching logic:
+
+\`\`\`
+function get_user_profile(user_id):
+    cached = redis.get("user:" + user_id)
+    if cached is not None:
+        return cached                     # cache hit — fast path
+
+    data = rds.query("SELECT * FROM users WHERE id = ?", user_id)  # cache miss
+    redis.set("user:" + user_id, data, ttl_seconds=300)            # populate cache
+    return data
+\`\`\`
+
+Reads check the cache first; on a miss, fall through to the database and populate the cache for next time, typically with a TTL so stale data eventually expires. Writes usually go directly to the database, and the corresponding cache entry is either invalidated (deleted) or updated at write time so subsequent reads don't serve stale data — a design detail worth getting right if a scenario stresses data-freshness requirements.
+
+### Cluster mode
+- **Cluster mode disabled**: a single shard with one primary and up to 5 read replicas — simpler, but writes are capped by a single node's capacity.
+- **Cluster mode enabled**: data is partitioned (sharded) across multiple shards, each with its own primary and optional replicas — enables horizontal scaling of both reads *and writes* beyond a single node's limits. This is the Redis-only answer to "we need to scale write throughput beyond one node."
+
+## 8. Amazon MemoryDB for Redis — a durable primary database, not "just a cache"
+
+This is the distinction the exam wants crystal clear: **ElastiCache (including ElastiCache for Redis) is a cache** — even Redis's optional persistence (AOF) is best-effort and not designed to make ElastiCache your system of record. **MemoryDB for Redis is different: it is Redis-API-compatible but architected as a durable, Multi-AZ primary database**, not a cache sitting in front of one.
+
+MemoryDB achieves durability via a distributed transactional log that persists data across multiple Availability Zones, so data survives node failures without needing a separate backing database at all. It still delivers in-memory-class performance — microsecond reads, single-digit-millisecond writes — but it's positioned for use cases where you need Redis's speed and data structures **and** you need that data to be durable and authoritative, not just a disposable performance layer in front of RDS/Aurora.
+
+| | ElastiCache (Redis/Memcached) | MemoryDB for Redis |
+|---|---|---|
+| Role | Cache in front of another data store | Durable primary data store in its own right |
+| Durability | Best-effort at most (Redis AOF/snapshots); not a source of truth | Durable via distributed transactional log across multiple AZs |
+| Typical pattern | Cache-aside in front of RDS/Aurora/DynamoDB | Used directly as the application's database for latency-critical data |
+| Data loss risk on failure | Possible (cache is disposable/rebuildable) | Designed to avoid data loss — it's meant to *be* the durable copy |
+
+**Exam trap:** if a scenario says "needs Redis-compatible performance **and** the data must not be lost, and this store **is** the application's database" (not a cache in front of something else) → **MemoryDB for Redis**. If the scenario says "cache in front of our relational/NoSQL database to reduce read load," even if it emphasizes needing Redis features like sorted sets or pub/sub → **ElastiCache for Redis**.
+
+## 9. Relational database vs. DynamoDB — the recurring decision (ties back to module 03)
+
+This decision recurs constantly on DVA-C02: given a scenario, is the right data store RDS/Aurora or DynamoDB?
+
+| Signal in the scenario | Favors |
+|---|---|
+| Complex multi-table JOINs, ad-hoc reporting queries, existing SQL-based application/tooling | Relational (RDS/Aurora) |
+| Multi-statement ACID transactions across several related tables | Relational (RDS/Aurora) — though DynamoDB does support transactions across up to 100 items/25 items per call depending on API, they're not a substitute for arbitrary relational JOIN-heavy transactional logic |
+| Fixed, well-understood schema that changes rarely | Either fits, but relational tooling (migrations, ORMs) is more mature here |
+| Access pattern is simple and known in advance (e.g., "get all orders for this customer ID"), extremely high scale, need for single-digit-millisecond latency at massive throughput | DynamoDB (module 03) |
+| Need for a fully serverless, zero-capacity-planning data store that scales automatically with unpredictable, bursty traffic | DynamoDB |
+| Flexible/evolving schema, wide variation in item attributes | DynamoDB |
+| Team explicitly wants to avoid managing connections, instance sizing, or Multi-AZ/replica topology | DynamoDB |
+
+**Rule of thumb:** if the scenario's pain point is *relationships between data* (joins, foreign keys, complex queries) — reach for RDS/Aurora. If the pain point is *scale and access-pattern simplicity* (huge throughput, known lookups by key, serverless-first architecture) — reach for DynamoDB. A scenario combining Lambda + "unpredictable, bursty traffic" + "simple key-based lookups" is DynamoDB bait even if it never says the word "NoSQL."
+
+## 10. Worked real-world scenarios
+
+**Scenario A — the Lambda function that "ran out of connections."** A serverless order-processing API uses Lambda functions that each open a new connection to an Aurora MySQL database on every invocation. During a flash sale, traffic spikes to thousands of concurrent invocations, and the application starts throwing \`Too many connections\` errors — even though the database itself isn't CPU- or memory-constrained. The team's first instinct is to raise \`max_connections\` in the parameter group, which buys a little headroom but doesn't scale with demand and risks destabilizing the database at extreme concurrency. The actual fix: put **RDS Proxy** in front of the Aurora cluster. Lambda connects to the proxy instead of directly to the database; the proxy pools and multiplexes a large number of application-side connections onto a much smaller, stable set of real database connections, absorbing the burst without the database ever seeing thousands of simultaneous raw connections. **Lesson:** "many concurrent Lambda invocations, one relational database, connection exhaustion errors" is the RDS Proxy scenario, not a \`max_connections\` tuning problem.
+
+**Scenario B — the credential that never needed to be looked at again.** A legacy application migrating to EC2 currently has its MySQL username and password hardcoded in source code, targeting a database the company is moving to RDS for MySQL. Security review flags this immediately: the credential is static, checked into version control history, and manually rotated (rarely, and painfully) by an engineer editing a config file and redeploying. The fix mirrors the official AWS sample question almost exactly: store the credential in **Secrets Manager**, configure **automatic rotation** using the AWS-provided Lambda rotation template for RDS, and update the application to call \`GetSecretValue\` at connection time via an IAM role — never a hardcoded string. Now rotation happens on a schedule with zero application code changes and zero manual password handoffs, and the IAM role's permissions (scoped to that one secret ARN) are the only thing standing between the app and the credential. **Lesson:** "automatically rotate database credentials," especially phrased close to a migration scenario, is Secrets Manager, not Parameter Store (no native rotation) and not any form of static storage.
+
+**Scenario C — the read replica that couldn't save the day.** A company runs a single-AZ RDS PostgreSQL instance and, worried about an AZ outage, adds a same-Region Read Replica for "disaster recovery." During an actual AZ-level outage that takes down the primary, the team discovers two problems: promoting the replica is a *manual* action (not automatic), and because replication is asynchronous, a handful of the most recent transactions never made it to the replica before the primary went down — a small but real amount of data loss. The correct HA design would have been **Multi-AZ**, whose standby is kept in **synchronous** lockstep with the primary and fails over **automatically** with no data loss for committed transactions. The team ultimately adopts both: Multi-AZ for automatic, zero-data-loss failover, plus a separate Read Replica (which can itself be Multi-AZ) purely for offloading reporting queries — using each feature for the job it's actually built for. **Lesson:** Read Replicas are not a substitute for Multi-AZ, and this exact confusion (replica-as-HA-strategy) is one of the most common wrong answers on RDS questions.
+
+## Key exam traps
+
+- Multi-AZ = **synchronous**, automatic failover, standby **not** readable, for **availability**. Read Replicas = **asynchronous**, manual promotion, readable, for **read scaling**, and can be cross-Region. Never confuse the two.
+- "Automatically rotate database credentials" → **Secrets Manager** (native rotation via Lambda templates). Parameter Store SecureString can store a secret but has **no native rotation**.
+- IAM database authentication issues **15-minute tokens** derived from IAM policy (\`rds-db:connect\`) instead of a static password — supported on MySQL/PostgreSQL (and Aurora MySQL/PostgreSQL), not every engine.
+- "Lambda + RDS/Aurora + many concurrent invocations + connection errors" → **RDS Proxy**, not a \`max_connections\` bump and not Lambda Provisioned Concurrency (that solves cold starts, a different problem).
+- Aurora Replicas share the writer's storage volume (low lag, valid failover targets); RDS Read Replicas are asynchronous copies (higher lag, not automatic failover targets).
+- Aurora Serverless v2 is for **variable/intermittent** workloads; provisioned Aurora/RDS is for **steady, predictable** workloads.
+- Aurora Global Database is the cross-Region answer for Aurora specifically (sub-second lag, fast regional promotion) — don't reach for a plain cross-Region read replica when the scenario is Aurora and cross-Region DR/low-latency reads are the goal.
+- Redis has replication, persistence, pub/sub, and rich data structures (sorted sets for leaderboards); Memcached has none of that but is multi-threaded and simpler — match the feature the scenario actually needs.
+- **ElastiCache is a cache; MemoryDB for Redis is a durable primary database.** A scenario needing Redis-compatible speed *and* durability as the system of record points to MemoryDB, not ElastiCache.
+- Relational (RDS/Aurora) wins on joins, multi-table transactions, and existing SQL tooling; DynamoDB (module 03) wins on massive scale, simple known access patterns, and serverless-first, schema-flexible design.
+- Encryption at rest can't be toggled on an existing unencrypted RDS instance — it's snapshot → copy encrypted → restore.
+`;
+const QUESTIONS = [
+  {
+    "q": "A financial application is migrating an on-premises PostgreSQL database to Amazon RDS. The database administrator needs to modify database engine settings such as `max_connections`, `shared_buffers`, and `log_statement`. Which mechanism in Amazon RDS is used to manage these engine parameters?",
+    "o": [
+      "DB Option Groups",
+      "DB Parameter Groups",
+      "IAM Policies",
+      "Amazon CloudWatch Metric Filters"
+    ],
+    "a": [
+      1
+    ],
+    "e": "DB Parameter Groups manage database engine configuration settings (e.g., `max_connections`, memory buffers, timeouts)."
+  },
+  {
+    "q": "A company is running an Amazon RDS for Oracle database. The security team mandates that Transparent Data Encryption (TDE) and Oracle Native Network Encryption (NNE) must be enabled on the database instance. Which RDS mechanism enables these specific engine features?",
+    "o": [
+      "DB Parameter Groups",
+      "DB Option Groups",
+      "AWS Secrets Manager",
+      "S3 Bucket Policies"
+    ],
+    "a": [
+      1
+    ],
+    "e": "DB Option Groups enable engine-specific features and extensions such as Oracle Transparent Data Encryption (TDE) and Native Network Encryption."
+  },
+  {
+    "q": "A developer wants to enable encryption at rest for an existing Amazon RDS for MySQL database that was initially created without encryption. What is the standard AWS-recommended procedure to encrypt the database?",
+    "o": [
+      "Modify the RDS DB instance settings and select \"Enable Encryption\" directly with no downtime",
+      "Take a DB snapshot of the unencrypted instance, copy the snapshot while enabling encryption with an AWS KMS key, and restore a new DB instance from the encrypted snapshot",
+      "Export the database using `mysqldump` to an unencrypted S3 bucket, then import it",
+      "Attach an encrypted EBS volume directly to the running RDS instance"
+    ],
+    "a": [
+      1
+    ],
+    "e": "You cannot encrypt an existing unencrypted RDS instance directly; the procedure is: snapshot the instance, copy the snapshot with KMS encryption enabled, and restore a new instance from the encrypted snapshot."
+  },
+  {
+    "q": "An analytics database running on Amazon RDS experiences sudden spikes in disk usage during monthly report generation. The operations team wants to ensure the database storage expands automatically when free disk space falls below 10%, without taking the instance offline or manually resizing volumes. Which RDS feature solves this?",
+    "o": [
+      "Multi-AZ standby scaling",
+      "Storage Auto Scaling",
+      "Read Replica storage bursting",
+      "Parameter Group disk expansion"
+    ],
+    "a": [
+      1
+    ],
+    "e": "RDS Storage Auto Scaling automatically increases allocated storage capacity when free space falls below a threshold without downtime."
+  },
+  {
+    "q": "An application uses an Amazon RDS for PostgreSQL instance. The development team needs consistent, high-throughput I/O performance with guaranteed low latency for a critical transaction-processing database. Which Amazon RDS storage type should they select?",
+    "o": [
+      "General Purpose SSD (gp2)",
+      "Provisioned IOPS SSD (io1 or io2)",
+      "Magnetic Storage (standard)",
+      "Ephemeral Instance Store"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Provisioned IOPS SSD (io1/io2) delivers dedicated, consistent high IOPS and low-latency performance for critical I/O-intensive workloads."
+  },
+  {
+    "q": "Which statement accurately describes the difference between DB Parameter Groups and DB Option Groups in Amazon RDS?",
+    "o": [
+      "Parameter Groups manage engine runtime configuration (e.g., timeouts, connection limits); Option Groups enable engine-specific features and extensions (e.g., Oracle TDE, SQL Server Native Backup)",
+      "Parameter Groups are for Aurora only; Option Groups are for standard RDS engines",
+      "Parameter Groups manage AWS KMS encryption keys; Option Groups manage IAM database authentication",
+      "Parameter Groups apply to VPC networking; Option Groups apply to storage sizing"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Parameter Groups control engine parameters and configuration; Option Groups enable engine-specific features and bundled software options."
+  },
+  {
+    "q": "An application developer needs to run a temporary development database on Amazon RDS for 3 months. The database uses MySQL. Which of the following responsibilities is managed by AWS rather than the developer?",
+    "o": [
+      "Writing SQL queries and designing relational schema",
+      "Operating system patching, underlying host hardware maintenance, and automated backup execution",
+      "Configuring database user table permissions",
+      "Optimizing application-level query indexes"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS manages infrastructure provisioning, OS patching, hardware maintenance, and automated backups; the customer manages schema, queries, and optimization."
+  },
+  {
+    "q": "A company is evaluating Amazon RDS licensing options for Oracle and Microsoft SQL Server. What are the two primary licensing models available on RDS for these commercial engines? (Select TWO.)",
+    "o": [
+      "License Included (cost of software license bundled into AWS hourly rate)",
+      "Bring Your Own License (BYOL) using existing on-premises software licenses",
+      "Open-Source Community License",
+      "GNU General Public License (GPL)",
+      "Unlimited Free Enterprise Tier"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Commercial engines on RDS (Oracle and SQL Server) support License Included and Bring Your Own License (BYOL) models."
+  },
+  {
+    "q": "When restoring an Amazon RDS DB instance to a specific point in time (PITR) using automated backups, what is created as a result of the restore operation?",
+    "o": [
+      "The existing DB instance is rolled back in place, keeping the exact same endpoint",
+      "A brand-new DB instance with a new endpoint is created from the snapshot and transaction logs",
+      "An Amazon DynamoDB table is generated",
+      "An S3 bucket containing raw CSV exports is created"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Point-in-Time Recovery (PITR) restores automated backup snapshots and transaction logs to create a brand-new DB instance with a new endpoint."
+  },
+  {
+    "q": "What is the maximum retention period configurable for automated daily backups and continuous transaction log capture on Amazon RDS?",
+    "o": [
+      "7 days",
+      "14 days",
+      "35 days",
+      "365 days"
+    ],
+    "a": [
+      2
+    ],
+    "e": "The maximum configurable retention period for Amazon RDS automated backups is 35 days."
+  },
+  {
+    "q": "A developer creates a manual DB snapshot of an Amazon RDS for PostgreSQL instance before performing a schema migration. What happens to this manual snapshot if the developer later deletes the DB instance?",
+    "o": [
+      "The manual snapshot is automatically deleted along with the instance",
+      "The manual snapshot persists in Amazon S3 until the developer explicitly deletes it",
+      "The manual snapshot is converted into an automated backup expiring in 35 days",
+      "The manual snapshot is transferred to AWS Glacier Deep Archive automatically"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Manual DB snapshots persist in Amazon S3 independently of the instance lifecycle until explicitly deleted by the user."
+  },
+  {
+    "q": "An Amazon RDS DB instance is deployed with General Purpose SSD (gp3) storage. Which two performance characteristics can be provisioned and scaled independently of storage capacity? (Select TWO.)",
+    "o": [
+      "IOPS",
+      "Storage Throughput (MB/s)",
+      "Number of CPU cores",
+      "Maximum connection count",
+      "Number of Availability Zones"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "General Purpose SSD (gp3) allows provisioning storage capacity, IOPS, and throughput (MB/s) independently of each other."
+  },
+  {
+    "q": "A company requires database backups to be retained for 7 years to meet regulatory compliance requirements. Automated backups on RDS have a maximum retention of 35 days. How should the team satisfy the 7-year retention policy?",
+    "o": [
+      "Increase automated backup retention in the parameter group to 2,555 days",
+      "Create periodic manual DB snapshots (or use AWS Backup to automate snapshot creation and lifecycle policies) and retain them for 7 years",
+      "Run a daily `SELECT *` query and log the output to CloudWatch Logs",
+      "Enable Multi-AZ replication to hold data for 7 years"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Automated backups have a 35-day limit; retaining backups for 7 years requires periodic manual snapshots or AWS Backup lifecycle policies."
+  },
+  {
+    "q": "During an scheduled maintenance window, Amazon RDS needs to apply an operating system security patch. The database is a single-AZ instance. What impact will this maintenance have on the application?",
+    "o": [
+      "Zero downtime; single-AZ instances patch with no interruption",
+      "The database will experience a brief period of unavailability while the instance reboots during the maintenance window",
+      "The instance will be permanently deleted and recreated with a new endpoint",
+      "The instance will automatically convert into an Aurora cluster"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Operating system patching during a maintenance window on a single-AZ instance requires an instance reboot, causing a brief period of unavailability."
+  },
+  {
+    "q": "An organization wants to test a major database engine version upgrade on Amazon RDS PostgreSQL from version 13 to version 15. What is the safest way to validate the upgrade before modifying production?",
+    "o": [
+      "Perform the in-place engine upgrade directly on the live production database during peak hours",
+      "Restore a production DB snapshot to a new test DB instance, perform the upgrade on the test instance, and run application regression tests",
+      "Modify the production parameter group to version 15 without changing the instance engine",
+      "Downgrade the production instance to MySQL first"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Restoring a snapshot to a separate test instance allows safe validation of engine major version upgrades and regression testing without risking production."
+  },
+  {
+    "q": "A developer needs to access slow query logs for an Amazon RDS for MySQL database. How can these logs be accessed and monitored continuously?",
+    "o": [
+      "SSH into the underlying RDS EC2 operating system host",
+      "Configure the DB parameter group to enable `slow_query_log` and publish the logs directly to Amazon CloudWatch Logs",
+      "Slow query logs are not supported on Amazon RDS",
+      "Inspect the AWS CloudTrail event history for SQL queries"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Setting `slow_query_log = 1` in the DB parameter group and enabling CloudWatch Logs export allows continuous publishing and monitoring of slow queries."
+  },
+  {
+    "q": "Which two relational database engines supported by Amazon RDS are open-source and free of commercial licensing fees? (Select TWO.)",
+    "o": [
+      "Amazon RDS for PostgreSQL",
+      "Amazon RDS for MySQL",
+      "Amazon RDS for Oracle",
+      "Amazon RDS for Microsoft SQL Server",
+      "Amazon RDS for IBM DB2"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "PostgreSQL and MySQL are open-source engines supported on Amazon RDS without software licensing fees."
+  },
+  {
+    "q": "A database administrator wants to restrict inbound network traffic to an Amazon RDS DB instance so that only application servers residing in a specific security group can connect on port 3306. Which AWS networking mechanism controls this?",
+    "o": [
+      "DB Parameter Group",
+      "VPC Security Group inbound rules",
+      "S3 Bucket Policy",
+      "IAM User Policy"
+    ],
+    "a": [
+      1
+    ],
+    "e": "VPC Security Groups control inbound and outbound network access to the RDS DB instance at the virtual firewall layer."
+  },
+  {
+    "q": "What is the minimum number of Availability Zones required when configuring a DB Subnet Group for Amazon RDS in a VPC?",
+    "o": [
+      "1 Availability Zone",
+      "At least 2 Availability Zones",
+      "At least 3 Availability Zones",
+      "5 Availability Zones"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A DB Subnet Group must contain subnets from at least 2 Availability Zones in the chosen Region."
+  },
+  {
+    "q": "A developer needs to modify an Amazon RDS parameter that is marked as `dynamic` in the DB Parameter Group. When will the change take effect?",
+    "o": [
+      "Immediately after saving the parameter group, without requiring an instance reboot",
+      "Only after the DB instance is manually stopped and restarted",
+      "During the next weekly maintenance window",
+      "Dynamic parameters cannot be modified ### Multi-AZ vs. Read Replicas (21–38)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Dynamic parameters take effect immediately upon saving the parameter group without requiring an instance reboot."
+  },
+  {
+    "q": "A critical e-commerce database running on Amazon RDS requires high availability and disaster recovery. If the primary Availability Zone experiences a hardware failure, the system must automatically fail over to a standby instance in a different AZ with zero data loss. Which RDS configuration fulfills this requirement?",
+    "o": [
+      "Create an asynchronous Read Replica in the same AZ",
+      "Deploy the database as an Amazon RDS Multi-AZ DB Instance deployment",
+      "Create a cross-Region Read Replica",
+      "Schedule automated snapshots every 5 minutes"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon RDS Multi-AZ deployments provide synchronous replication to a standby instance in a different AZ with automatic DNS failover for high availability."
+  },
+  {
+    "q": "A reporting dashboard executes complex, long-running analytical SQL queries against an Amazon RDS MySQL database. During peak business hours, these queries slow down the transactional operations on the primary database. What is the most cost-effective and architecturally sound solution?",
+    "o": [
+      "Convert the database to a single-AZ deployment",
+      "Create an Amazon RDS Read Replica and point the reporting application to the Read Replica endpoint",
+      "Enable Multi-AZ standby deployment and run reporting queries against the standby instance",
+      "Increase the primary instance CPU size to the maximum available type"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Read Replicas offload read-only and analytical traffic from the primary writer instance using asynchronous replication."
+  },
+  {
+    "q": "Which statement correctly distinguishes replication behavior between an RDS Multi-AZ standby and an RDS Read Replica?",
+    "o": [
+      "Multi-AZ uses synchronous replication to guarantee zero data loss on failover; Read Replicas use asynchronous replication to offload read traffic",
+      "Multi-AZ uses asynchronous replication; Read Replicas use synchronous replication",
+      "Both Multi-AZ and Read Replicas use synchronous replication",
+      "Both Multi-AZ and Read Replicas use snapshot copies updated once per day"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Multi-AZ uses synchronous replication to a passive standby for HA/failover; Read Replicas use asynchronous replication for read scaling."
+  },
+  {
+    "q": "An application experiences an Availability Zone outage affecting its primary Amazon RDS Multi-AZ DB instance. What happens during the automatic failover process?",
+    "o": [
+      "The primary database remains offline until an administrator manually promotes the standby via the AWS CLI",
+      "RDS automatically flips the canonical DNS endpoint of the DB instance to point to the synchronized standby in the second AZ, typically completing in under 2 minutes",
+      "The database IP address remains identical, but all data must be restored from the latest manual snapshot",
+      "RDS provisions a brand-new EC2 instance in a different AWS Region"
+    ],
+    "a": [
+      1
+    ],
+    "e": "During Multi-AZ failover, RDS automatically flips the canonical CNAME DNS record to point to the standby instance in the second AZ (typically <2 minutes)."
+  },
+  {
+    "q": "Can an application execute `SELECT` read queries directly against the standby instance in a standard Amazon RDS Multi-AZ DB instance deployment?",
+    "o": [
+      "Yes, the standby instance is always open for read-only traffic",
+      "No, in a standard Multi-AZ deployment, the standby instance is passive, not directly accessible for reads or writes, and exists strictly for high-availability failover",
+      "Yes, but only if the application connects over SSL on a separate port",
+      "Yes, if configured with a read-only parameter group"
+    ],
+    "a": [
+      1
+    ],
+    "e": "In a standard Multi-AZ DB instance deployment, the standby instance is purely passive, does not accept connections, and exists strictly for failover."
+  },
+  {
+    "q": "An engineering team wants to expand an application to a secondary AWS Region in Europe to serve low-latency read requests to European users, while keeping primary writes in us-east-1. Which Amazon RDS feature supports this cross-Region read scaling?",
+    "o": [
+      "RDS Multi-AZ deployment across Regions",
+      "RDS Cross-Region Read Replicas",
+      "DB Option Groups",
+      "Amazon S3 Cross-Region Replication"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon RDS Cross-Region Read Replicas allow read scaling in secondary AWS Regions with asynchronous replication."
+  },
+  {
+    "q": "A developer observes that an Amazon RDS Read Replica is returning data that is slightly out of date compared to the primary writer instance. Which CloudWatch metric should the developer inspect to measure this replication delay?",
+    "o": [
+      "`CPUUtilization`",
+      "`ReplicaLag`",
+      "`DatabaseConnections`",
+      "`FreeStorageSpace`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `ReplicaLag` CloudWatch metric measures the time lag (in seconds) between the primary instance and the Read Replica."
+  },
+  {
+    "q": "If the primary instance of an Amazon RDS database fails, can a standard RDS Read Replica automatically take over write traffic with automatic DNS failover?",
+    "o": [
+      "Yes, Read Replicas automatically fail over just like Multi-AZ standbys",
+      "No, Read Replicas do not support automatic failover; a Read Replica must be manually promoted to a standalone database by an administrator or custom automation script",
+      "Yes, if the replica is in the same Availability Zone",
+      "Yes, if the replica is configured with Multi-AZ"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Read Replicas do not support automatic failover; promoting a replica to an independent standalone database requires manual or scripted intervention."
+  },
+  {
+    "q": "What is the maximum number of Read Replicas that can typically be created for a single Amazon RDS for MySQL or PostgreSQL database instance?",
+    "o": [
+      "2",
+      "5",
+      "15",
+      "50"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon RDS for MySQL and PostgreSQL support up to 5 Read Replicas per DB instance."
+  },
+  {
+    "q": "A company deploys an Amazon RDS Multi-AZ DB cluster with two readable standby instances (Multi-AZ DB Cluster). How does this differ from a traditional Multi-AZ DB Instance deployment?",
+    "o": [
+      "It uses asynchronous replication for failover",
+      "In addition to high availability, both standby instances can serve read traffic, providing both automatic failover and read scaling in one deployment",
+      "It runs exclusively on premises",
+      "It does not support transaction logging"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A Multi-AZ DB Cluster includes two readable standby instances that serve read traffic in addition to providing automated failover."
+  },
+  {
+    "q": "An administrator promotes an Amazon RDS Read Replica to a standalone database instance. What is the permanent effect of this promotion on the replica?",
+    "o": [
+      "The replica continues replicating from the original primary",
+      "The replica stops replicating from the primary, becomes an independent read-write database with its own backup and lifecycle management, and cannot be reverted back to a replica",
+      "The original primary database is automatically deleted",
+      "The promoted replica is automatically converted to Aurora Serverless"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Promoting a Read Replica permanently severs replication from the primary, turning it into a standalone read-write database."
+  },
+  {
+    "q": "Which two statements regarding Amazon RDS Multi-AZ deployments are true? (Select TWO.)",
+    "o": [
+      "Multi-AZ failover is handled automatically by updating DNS records",
+      "Multi-AZ standby instances are located in a different Availability Zone within the same Region",
+      "Multi-AZ standby instances serve read-only reporting traffic by default in standard DB instance deployments",
+      "Multi-AZ replication is asynchronous, resulting in potential data loss on failover",
+      "Multi-AZ deployments span across two different AWS Regions"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Multi-AZ failover updates DNS records automatically, and the standby instance resides in a different AZ in the same Region."
+  },
+  {
+    "q": "A mobile app backend generates 10,000 read queries and 500 write queries per second on an Amazon RDS MySQL database. The primary instance is hitting 95% CPU utilization. What is the recommended strategy to scale the database tier?",
+    "o": [
+      "Enable Multi-AZ to offload 50% of the read traffic",
+      "Add one or more Read Replicas and modify the application code to route read queries (`SELECT`) to the replica endpoints and write queries (`INSERT`/`UPDATE`) to the primary endpoint",
+      "Switch the database engine to Microsoft Access",
+      "Increase the SQS visibility timeout"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Offloading read queries (`SELECT`) to Read Replica endpoints while directing writes to the primary scales database throughput horizontally."
+  },
+  {
+    "q": "What happens to replication when an Amazon RDS Read Replica runs out of storage space?",
+    "o": [
+      "The replica automatically switches to write-only mode",
+      "Replication stops, and the replica status changes to `storage-full` or `error` until storage is expanded",
+      "The primary instance shuts down to prevent data drift",
+      "Data is discarded from the primary database"
+    ],
+    "a": [
+      1
+    ],
+    "e": "When a Read Replica runs out of storage, replication stops and the replica enters an error/storage-full state until storage is expanded."
+  },
+  {
+    "q": "Which of the following RDS engines support Cross-Region Read Replicas?",
+    "o": [
+      "MySQL, MariaDB, and PostgreSQL",
+      "Oracle (all editions with no restrictions)",
+      "SQL Server Express Edition",
+      "Microsoft Access"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Cross-Region Read Replicas are natively supported for MySQL, MariaDB, and PostgreSQL engines on RDS."
+  },
+  {
+    "q": "A company needs to perform maintenance on an Amazon RDS Multi-AZ primary database. How does RDS minimize downtime during an operating system update on a Multi-AZ deployment?",
+    "o": [
+      "RDS patches the standby instance first, promotes the standby to primary (brief failover), and then patches the old primary",
+      "RDS shuts down both instances simultaneously for 2 hours",
+      "RDS migrates the entire database to DynamoDB temporarily",
+      "Multi-AZ instances cannot be patched"
+    ],
+    "a": [
+      0
+    ],
+    "e": "On Multi-AZ deployments, RDS minimizes downtime by patching the standby first, performing a brief failover, and then patching the original primary."
+  },
+  {
+    "q": "What is a primary trade-off when enabling an RDS Read Replica for an active write-heavy workload?",
+    "o": [
+      "Read Replicas consume significant write capacity on the primary to ship binary/WAL logs, and asynchronous replication may introduce replica lag",
+      "Read Replicas permanently lock the primary database tables during creation",
+      "Read Replicas require disabling automated backups",
+      "Read Replicas only work over unencrypted connections"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Read Replicas incur binary log / WAL shipping overhead on the primary and are subject to asynchronous replication lag under heavy writes."
+  },
+  {
+    "q": "A developer wants to create a Read Replica of an Amazon RDS for MySQL database, but the option in the AWS Console is disabled. What prerequisite configuration is missing?",
+    "o": [
+      "The primary database must have automated backups enabled (backup retention period > 0) to allow binary logging",
+      "The primary database must be deployed in us-east-1",
+      "The primary database must have at least 1 TB of storage",
+      "The primary database must be running on a dedicated EC2 host ### Secure Database Connections & Authentication (39–54)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Automated backups (backup retention period > 0) must be enabled on the primary database to enable binary logging required for Read Replicas."
+  },
+  {
+    "q": "A company needs to securely store, manage, and automatically rotate database credentials for an Amazon RDS for MySQL instance every 30 days. The credentials must not be stored in application code or configuration files. Which AWS service natively fulfills this requirement?",
+    "o": [
+      "AWS Systems Manager Parameter Store (Standard tier)",
+      "AWS Secrets Manager with automatic rotation configured using an AWS-provided Lambda rotation template",
+      "Amazon S3 bucket with versioning",
+      "AWS IAM Access Keys"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS Secrets Manager natively integrates with RDS to store, manage, and automatically rotate database credentials via Lambda rotation templates."
+  },
+  {
+    "q": "What is the main difference between AWS Secrets Manager and AWS Systems Manager Parameter Store regarding database credential management?",
+    "o": [
+      "Secrets Manager provides native, out-of-the-box automatic credential rotation for Amazon RDS, Aurora, and Redshift using Lambda templates; Parameter Store does not provide built-in automatic rotation",
+      "Parameter Store supports automatic rotation; Secrets Manager only supports static text",
+      "Secrets Manager is free; Parameter Store charges $100 per secret",
+      "Parameter Store encrypts data with KMS; Secrets Manager stores plaintext"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Secrets Manager provides built-in automated credential rotation for RDS, Aurora, and Redshift; Parameter Store requires custom rotation logic."
+  },
+  {
+    "q": "A developer writes a Python Lambda function that connects to Amazon RDS PostgreSQL using AWS Secrets Manager. What is the most efficient and secure way for the Lambda function to retrieve the password?",
+    "o": [
+      "Hardcode the secret in the Lambda environment variables",
+      "Grant the Lambda execution role `secretsmanager:GetSecretValue` permission for the specific secret ARN, and call the Secrets Manager API at connection time (caching the credentials in global scope)",
+      "Store the database password in a public GitHub repository",
+      "Email the password to the Lambda handler on every request"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Granting `secretsmanager:GetSecretValue` on the secret ARN and calling the API at connection time (caching in memory) is the secure, best-practice approach."
+  },
+  {
+    "q": "How does IAM Database Authentication work for Amazon RDS for MySQL and PostgreSQL?",
+    "o": [
+      "Users log in using their AWS root account password",
+      "The application requests a temporary, short-lived authentication token (valid for 15 minutes) generated from IAM credentials via the AWS SDK, and connects over SSL/TLS using the token instead of a password",
+      "An IAM role creates a permanent password stored in a local `.txt` file",
+      "The database allows all IAM users to connect without any password or token"
+    ],
+    "a": [
+      1
+    ],
+    "e": "IAM DB Authentication uses temporary, 15-minute signed authentication tokens generated from IAM credentials and transmitted over SSL/TLS."
+  },
+  {
+    "q": "What is the validity duration of an authentication token generated for Amazon RDS IAM Database Authentication?",
+    "o": [
+      "5 minutes",
+      "15 minutes",
+      "1 hour",
+      "24 hours"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Authentication tokens generated for RDS IAM Database Authentication are valid for 15 minutes."
+  },
+  {
+    "q": "Which AWS CLI command generates an authentication token for IAM database authentication against an Amazon RDS MySQL instance?",
+    "o": [
+      "`aws rds generate-db-auth-token --hostname <endpoint> --port 3306 --username <db_user>`",
+      "`aws iam create-login-profile --user-name <db_user>`",
+      "`aws secretsmanager get-secret-value --secret-id <id>`",
+      "`aws sts assume-role --role-arn <arn>`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`aws rds generate-db-auth-token` generates an IAM database authentication token."
+  },
+  {
+    "q": "An application connecting to Amazon RDS PostgreSQL using IAM Database Authentication receives an `Access Denied` error when attempting to connect. Which two configurations must be in place for IAM DB authentication to succeed? (Select TWO.)",
+    "o": [
+      "The IAM identity's policy must explicitly allow the `rds-db:connect` action on the target database resource ARN",
+      "The PostgreSQL database user must be granted the `rds_iam` role (or `AWSAuthenticationPlugin` in MySQL)",
+      "The database connection must be made over unencrypted HTTP",
+      "The database must be deployed in a public subnet with an Internet Gateway",
+      "Automated backups must be disabled"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "The IAM policy must allow `rds-db:connect` on the database resource ARN, and the DB user must be configured with `rds_iam` (PostgreSQL) or `AWSAuthenticationPlugin` (MySQL)."
+  },
+  {
+    "q": "When an application connects to Amazon RDS using IAM Database Authentication, why must the connection use SSL/TLS encryption?",
+    "o": [
+      "Unencrypted connections will expose the plaintext database tables to the internet",
+      "SSL/TLS is strictly required by RDS when transmitting the signed IAM authentication token to prevent token interception",
+      "SSL/TLS reduces CPU utilization on the database host",
+      "IAM DB authentication does not use network connections"
+    ],
+    "a": [
+      1
+    ],
+    "e": "SSL/TLS encryption is mandatory when using IAM DB Authentication to protect the authentication token in transit."
+  },
+  {
+    "q": "A developer configures Secrets Manager automatic rotation for an Amazon RDS database. During rotation, Secrets Manager invokes a Lambda function that updates the secret in Secrets Manager and executes SQL statements on the database to change the password. Which credential does the rotation Lambda function use to alter the user's password?",
+    "o": [
+      "The AWS root account credentials",
+      "A superuser / administrative credential stored in a separate master secret in Secrets Manager",
+      "A temporary EC2 key pair",
+      "An IAM user with administrator access"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The rotation Lambda function uses administrative master credentials stored in a separate secret to execute `ALTER USER` commands on the database."
+  },
+  {
+    "q": "An application running on Amazon EC2 instances connects to an Amazon RDS MySQL database. What is the best practice for granting the EC2 instances access to read the database credentials from Secrets Manager?",
+    "o": [
+      "Hardcode IAM access keys and secret keys inside the application configuration file on the EC2 instance",
+      "Attach an IAM Instance Profile (Role) to the EC2 instances granting least-privilege `secretsmanager:GetSecretValue` permission on the specific database secret ARN",
+      "Store credentials in an unencrypted S3 bucket",
+      "Disable IAM and make Secrets Manager public"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Attaching an IAM Instance Profile (Role) granting least-privilege `secretsmanager:GetSecretValue` permission avoids embedding static credentials on the host."
+  },
+  {
+    "q": "An auditor mandates that all connections between application EC2 instances and an Amazon RDS PostgreSQL database must be encrypted in transit. How can this be enforced at the database configuration level?",
+    "o": [
+      "Set `rds.force_ssl = 1` in the DB parameter group associated with the PostgreSQL instance",
+      "Enable S3 Block Public Access",
+      "Configure an AWS WAF rule on port 5432",
+      "Set `max_connections = 0` in the parameter group"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Setting `rds.force_ssl = 1` in the PostgreSQL parameter group enforces SSL/TLS encryption for all client connections."
+  },
+  {
+    "q": "Which relational database engines natively support Amazon RDS IAM Database Authentication? (Select TWO.)",
+    "o": [
+      "Amazon RDS for MySQL / Aurora MySQL",
+      "Amazon RDS for PostgreSQL / Aurora PostgreSQL",
+      "Amazon RDS for Microsoft SQL Server Express",
+      "Amazon RDS for Oracle Enterprise Edition",
+      "Amazon RDS for IBM DB2"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "IAM Database Authentication is natively supported on Amazon RDS for MySQL, PostgreSQL, Aurora MySQL, and Aurora PostgreSQL."
+  },
+  {
+    "q": "A security team requires that database passwords stored in AWS Secrets Manager be encrypted at rest. What encryption mechanism does Secrets Manager use?",
+    "o": [
+      "Plaintext base64 encoding",
+      "AWS Key Management Service (AWS KMS) using either an AWS-managed key (`aws/secretsmanager`) or a customer-managed KMS key (CMK)",
+      "Client-side RSA-1024 encryption only",
+      "MD5 hashing"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Secrets Manager encrypts secrets at rest using AWS KMS (either the default service key or a customer-managed CMK)."
+  },
+  {
+    "q": "An application caches database credentials retrieved from AWS Secrets Manager in memory to reduce API calls and latency. The secret is configured to rotate automatically every 30 days. When rotation occurs, what should the application do if a database connection attempt fails with an authentication error?",
+    "o": [
+      "Crash the application and trigger an EC2 reboot",
+      "Invalidate the cached secret, fetch the latest secret value from Secrets Manager, and retry the database connection with the newly rotated credentials",
+      "Send an alert to the CEO",
+      "Fall back to hardcoded default passwords"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The application should catch authentication errors, invalidate its cached secret, retrieve the fresh rotated secret from Secrets Manager, and retry connecting."
+  },
+  {
+    "q": "A developer wants to restrict an IAM policy so that a Lambda function can only generate IAM authentication tokens for a specific database user `app_user` on an RDS instance with resource ID `db-ABC123XYZ`. Which action and resource format should be used?",
+    "o": [
+      "Action: `rds-db:connect`, Resource: `arn:aws:rds-db:region:account:dbuser:db-ABC123XYZ/app_user`",
+      "Action: `rds:DescribeDBInstances`, Resource: `*`",
+      "Action: `secretsmanager:GetSecretValue`, Resource: `*`",
+      "Action: `iam:PassRole`, Resource: `arn:aws:iam::account:role/DBRole`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`rds-db:connect` with resource format `arn:aws:rds-db:<region>:<account>:dbuser:<dbi-resource-id>/<db_user>` grants granular database connection permissions."
+  },
+  {
+    "q": "Why does AWS recommend storing database connection strings as a JSON object in AWS Secrets Manager rather than plain strings?",
+    "o": [
+      "JSON is required for KMS encryption",
+      "Storing structured key-value pairs (e.g., `engine`, `host`, `port`, `username`, `password`, `dbname`) enables automated rotation Lambda templates to update and parse individual fields seamlessly",
+      "JSON strings load 10x faster over the network",
+      "Plain strings are not supported in AWS Secrets Manager ### RDS Proxy & Connection Management (55–68)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Storing JSON structured key-value pairs enables automated rotation functions and SDKs to parse and update connection details seamlessly."
+  },
+  {
+    "q": "A serverless application consists of hundreds of concurrent AWS Lambda functions executing queries against an Amazon RDS PostgreSQL database. Under high traffic surges, Lambda invocations exhaust the database's `max_connections` limit, causing `Too many connections` errors. Which solution best resolves this issue without scaling up the database instance class?",
+    "o": [
+      "Increase Lambda's `ReservedConcurrentExecutions` to 10,000",
+      "Deploy Amazon RDS Proxy between the Lambda functions and the PostgreSQL database to pool and multiplex connections",
+      "Increase the `max_connections` parameter in the DB Parameter Group to 1,000,000",
+      "Switch the database to single-AZ mode"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon RDS Proxy pools and multiplexes database connections, preventing connection exhaustion from highly concurrent Lambda executions."
+  },
+  {
+    "q": "How does Amazon RDS Proxy handle database failover events for Multi-AZ RDS and Aurora clusters?",
+    "o": [
+      "RDS Proxy requires all client applications to disconnect and re-resolve DNS endpoints manually",
+      "RDS Proxy maintains established client connections, connects to the newly promoted primary instance in the background, and preserves client state, reducing failover time by up to 66%",
+      "RDS Proxy shuts down the database cluster during failover",
+      "RDS Proxy converts SQL queries into DynamoDB API calls during failover"
+    ],
+    "a": [
+      1
+    ],
+    "e": "RDS Proxy maintains client connections during Multi-AZ failovers and connects to the new primary in the background, reducing failover time by up to 66%."
+  },
+  {
+    "q": "Where does Amazon RDS Proxy retrieve the database credentials needed to authenticate with the underlying RDS or Aurora DB instance?",
+    "o": [
+      "Hardcoded in the RDS Proxy configuration console",
+      "From secrets stored in AWS Secrets Manager, accessed via an IAM role assumed by the proxy",
+      "From the caller's local `/tmp` folder",
+      "From Amazon S3 Glacier"
+    ],
+    "a": [
+      1
+    ],
+    "e": "RDS Proxy retrieves database credentials from AWS Secrets Manager using an IAM execution role assumed by the proxy."
+  },
+  {
+    "q": "An application connects to Amazon RDS Proxy using IAM authentication. Which component authenticates to what?",
+    "o": [
+      "The client application authenticates to RDS Proxy using IAM credentials/tokens; RDS Proxy authenticates to the native RDS database using credentials retrieved from AWS Secrets Manager",
+      "The RDS database authenticates to the client using SSH keys",
+      "RDS Proxy disables all authentication",
+      "The client application connects directly to RDS, bypassing the proxy"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The client authenticates to RDS Proxy via IAM; RDS Proxy authenticates to the native database using credentials retrieved from Secrets Manager."
+  },
+  {
+    "q": "Which two relational database engines are supported by Amazon RDS Proxy? (Select TWO.)",
+    "o": [
+      "MySQL (and Aurora MySQL)",
+      "PostgreSQL (and Aurora PostgreSQL)",
+      "Microsoft SQL Server 2008",
+      "Oracle 11g",
+      "SQLite"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Amazon RDS Proxy supports MySQL, PostgreSQL, MariaDB, Aurora MySQL, and Aurora PostgreSQL."
+  },
+  {
+    "q": "An architect is designing a high-concurrency serverless microservice on AWS Lambda connecting to an Amazon Aurora MySQL database. Why is traditional client-side connection pooling inside Lambda functions ineffective?",
+    "o": [
+      "Lambda functions run inside ephemeral, isolated execution environments; each concurrent execution environment initializes its own independent connection pool, causing connection proliferation under scale",
+      "Lambda does not allow network calls to databases",
+      "Connection pooling is only supported on Windows operating systems",
+      "Client-side connection pooling corrupts Aurora shared storage"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Lambda execution environments are isolated; each concurrent instance creates its own connection pool, causing connection proliferation without a central proxy."
+  },
+  {
+    "q": "What network configuration is required for Amazon RDS Proxy to communicate with an Amazon RDS DB instance?",
+    "o": [
+      "The RDS Proxy and the RDS DB instance must reside in the same VPC (or in peered/connected VPCs with routable private networking)",
+      "The RDS Proxy must have a public IP address on the public internet",
+      "The RDS DB instance must have an Internet Gateway attached",
+      "RDS Proxy must run outside of any VPC"
+    ],
+    "a": [
+      0
+    ],
+    "e": "RDS Proxy must have routable private network connectivity (same VPC or peered VPC) with the target RDS database."
+  },
+  {
+    "q": "Does Amazon RDS Proxy cache SQL query results in memory like Amazon ElastiCache?",
+    "o": [
+      "Yes, RDS Proxy is an in-memory SQL query cache",
+      "No, RDS Proxy is a database connection pooler and multiplexer that manages connection lifecycles; it does not cache SQL query results",
+      "Yes, but only for `SELECT *` queries",
+      "Yes, RDS Proxy replaces Redis and Memcached"
+    ],
+    "a": [
+      1
+    ],
+    "e": "RDS Proxy is purely a connection pooler and multiplexer; it does not cache SQL query results (caching is ElastiCache's job)."
+  },
+  {
+    "q": "What is \"connection pinning\" in Amazon RDS Proxy, and what causes it?",
+    "o": [
+      "Pinning occurs when a client session executes operations (such as setting session-level variables, temporary tables, or prepared statements) that tie the client connection to a specific underlying DB connection, temporarily preventing multiplexing",
+      "Pinning is an error that permanently corrupts the database",
+      "Pinning is a feature that increases network throughput by 10x",
+      "Pinning occurs when a database instance runs out of storage"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Connection pinning occurs when session-specific state (e.g., temporary tables, prepared statements, user variables) locks a client to an underlying DB connection."
+  },
+  {
+    "q": "How does Amazon RDS Proxy improve application security?",
+    "o": [
+      "It enforces TLS/SSL between the client and the proxy, and allows centralizing database credential access in Secrets Manager and IAM rather than embedding credentials across client applications",
+      "It encrypts hard drives on client laptops",
+      "It automatically sanitizes all SQL injection attempts",
+      "It disables all database user accounts"
+    ],
+    "a": [
+      0
+    ],
+    "e": "RDS Proxy enforces TLS/SSL and centralizes database credential management using Secrets Manager and IAM."
+  },
+  {
+    "q": "A developer modifies an application to connect to an Amazon RDS database through RDS Proxy. What changes are required in the application code?",
+    "o": [
+      "The entire database access layer must be rewritten in DynamoDB syntax",
+      "Only the database connection endpoint hostname needs to be updated to the RDS Proxy endpoint; standard SQL statements, drivers, and ORMs remain unchanged",
+      "The application must switch to using UDP sockets",
+      "All `JOIN` queries must be removed from the application"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Applications only need to change their connection string endpoint to the RDS Proxy endpoint; SQL syntax and ORMs remain identical."
+  },
+  {
+    "q": "Which CloudWatch metric tracks the number of database connections currently opened by Amazon RDS Proxy to the target database?",
+    "o": [
+      "`DatabaseConnections`",
+      "`DatabaseConnectionsCurrentlyBorrowed`",
+      "`QueryResponseTime`",
+      "`CacheHitRate`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`DatabaseConnections` tracks the number of connections opened between RDS Proxy and the target database."
+  },
+  {
+    "q": "A developer configures an RDS Proxy for an Aurora PostgreSQL database. The application needs to enforce that all client connections to the proxy use TLS 1.2. Where is this setting configured?",
+    "o": [
+      "In the RDS Proxy settings under `Require Transport Layer Security (TLS)`",
+      "In the S3 bucket properties",
+      "In the IAM user policy",
+      "In the route table"
+    ],
+    "a": [
+      0
+    ],
+    "e": "TLS requirements are configured directly in RDS Proxy under `Require Transport Layer Security (TLS)`."
+  },
+  {
+    "q": "Can Amazon RDS Proxy be used with Amazon EC2 instances and Amazon ECS container tasks, or is it exclusive to AWS Lambda?",
+    "o": [
+      "RDS Proxy is strictly exclusive to AWS Lambda",
+      "RDS Proxy can be used by Lambda, EC2 instances, ECS tasks, and any application running in a VPC that benefits from connection pooling and fast failover",
+      "RDS Proxy only works with on-premises servers",
+      "RDS Proxy only works with AWS Step Functions ### Amazon Aurora Architecture, Scaling & Global Database (69–86)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "RDS Proxy can be used by Lambda, EC2 instances, ECS container tasks, and any VPC-based application needing connection pooling."
+  },
+  {
+    "q": "How does the underlying storage architecture of Amazon Aurora differ fundamentally from standard Amazon RDS EBS-backed storage?",
+    "o": [
+      "Aurora uses standard single-AZ gp3 EBS volumes",
+      "Aurora uses a distributed, log-structured, self-healing storage volume that automatically replicates data 6 ways across 3 Availability Zones within a Region and scales storage automatically up to 128 TiB",
+      "Aurora stores all data in a single local NVMe instance store on the primary host",
+      "Aurora requires manual volume provisioning and striping across RAID arrays"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Aurora features a distributed, log-structured storage volume that automatically replicates data 6 ways across 3 AZs and auto-scales up to 128 TiB."
+  },
+  {
+    "q": "What is the maximum number of Aurora Replicas that can be added to an Amazon Aurora DB cluster?",
+    "o": [
+      "5",
+      "15",
+      "50",
+      "100"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon Aurora DB clusters support up to 15 Aurora Replicas."
+  },
+  {
+    "q": "Why is replica lag on Amazon Aurora Replicas significantly lower (typically single-digit milliseconds) compared to standard Amazon RDS Read Replicas?",
+    "o": [
+      "Aurora Replicas share the exact same underlying distributed storage volume as the primary writer, rather than receiving and replaying an asynchronous copy of the data stream",
+      "Aurora disables transaction logging",
+      "Aurora Replicas run on faster CPU chips",
+      "Aurora Replicas only store data in memory without disk persistence"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Aurora Replicas share the same distributed storage volume as the primary writer, eliminating the need to replay copied data streams."
+  },
+  {
+    "q": "What happens when the primary writer instance in an Amazon Aurora Multi-AZ DB cluster experiences an unexpected hardware failure?",
+    "o": [
+      "Aurora requires an administrator to manually restore from the latest automated backup",
+      "Aurora automatically promotes one of the existing Aurora Replicas to become the new primary writer with zero data loss, typically in under 30 seconds",
+      "Aurora shuts down the entire cluster permanently",
+      "All Aurora Replicas are deleted and recreated"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Aurora automatically promotes an existing warm Aurora Replica to writer with zero data loss in under 30 seconds."
+  },
+  {
+    "q": "An e-commerce startup is launching a new application with unpredictable, highly variable traffic. The database experiences long periods of inactivity with sudden, brief traffic surges. Which database configuration provides automatic, fine-grained compute scaling without managing instance sizes?",
+    "o": [
+      "Amazon RDS for MySQL with Multi-AZ",
+      "Amazon Aurora Serverless v2",
+      "Amazon RDS for Oracle Enterprise Edition",
+      "Amazon EC2 with self-hosted MySQL"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Aurora Serverless v2 auto-scales compute capacity near-instantly in fine-grained increments to handle variable and unpredictable workloads."
+  },
+  {
+    "q": "How is compute capacity measured and scaled in Amazon Aurora Serverless v2?",
+    "o": [
+      "vCPUs and Gigabytes of RAM",
+      "Aurora Capacity Units (ACUs), where 1 ACU provides approximately 2 GiB of memory along with corresponding CPU and networking, scaling dynamically in fine-grained increments",
+      "Read Capacity Units (RCUs) and Write Capacity Units (WCUs)",
+      "Number of EC2 instances in an Auto Scaling group"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Aurora Serverless v2 capacity scales in Aurora Capacity Units (ACUs), where 1 ACU provides ~2 GiB RAM plus proportional CPU and networking."
+  },
+  {
+    "q": "Can an Amazon Aurora DB cluster contain a mix of provisioned DB instances and Aurora Serverless v2 instances in the same cluster?",
+    "o": [
+      "No, an Aurora cluster must be 100% provisioned or 100% serverless",
+      "Yes, Aurora allows combining provisioned instances (e.g., a provisioned writer) and Serverless v2 instances (e.g., auto-scaling readers) within the same cluster",
+      "Only if deployed in a single Availability Zone",
+      "Only with Aurora PostgreSQL, not Aurora MySQL"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Aurora clusters support mixed configurations, combining provisioned instances and Serverless v2 instances in the same cluster."
+  },
+  {
+    "q": "A global enterprise requires an Amazon Aurora PostgreSQL database that supports disaster recovery with an RPO under 1 second and low-latency read operations across multiple AWS Regions worldwide. Which feature should they deploy?",
+    "o": [
+      "Amazon Aurora Global Database",
+      "Amazon RDS Cross-Region Automated Backups",
+      "AWS DataSync running hourly syncs",
+      "Amazon S3 Cross-Region Replication"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon Aurora Global Database provides dedicated storage-level replication across multiple Regions with sub-second replication lag."
+  },
+  {
+    "q": "How does Amazon Aurora Global Database replicate data from the primary AWS Region to secondary AWS Regions?",
+    "o": [
+      "It uses standard MySQL statement-based replication over public internet endpoints",
+      "It uses dedicated, storage-level physical replication infrastructure built into the Aurora storage layer, achieving typical replication lag of less than 1 second without impacting compute performance",
+      "It exports database snapshots to S3 every 15 minutes",
+      "It routes SQL queries through AWS Lambda"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Aurora Global Database uses dedicated storage-level replication built into the storage tier, avoiding compute overhead and keeping lag <1 second."
+  },
+  {
+    "q": "In the event of a total regional outage affecting the primary Region of an Amazon Aurora Global Database, how is disaster recovery executed?",
+    "o": [
+      "The secondary Region is automatically deleted",
+      "A secondary Region can be promoted to take over full read-write operations in typically under 1 minute with no data loss",
+      "The database must be re-architected from scratch",
+      "Data must be manually re-indexed over several days"
+    ],
+    "a": [
+      1
+    ],
+    "e": "In a regional disaster, a secondary Region in an Aurora Global Database can be promoted to primary read-write in under 1 minute."
+  },
+  {
+    "q": "What are the two built-in database cluster endpoints provided by an Amazon Aurora DB cluster? (Select TWO.)",
+    "o": [
+      "**Cluster Endpoint (Writer Endpoint)**: points to the current primary DB instance for read-write operations",
+      "**Reader Endpoint**: load-balances read-only traffic across all available Aurora Replicas in the cluster",
+      "**Root Endpoint**: provides SSH root shell access to the storage nodes",
+      "**Internet Endpoint**: exposes the database directly to public search engines",
+      "**Backup Endpoint**: used exclusively for downloading tape archives"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Aurora provides a Cluster (Writer) Endpoint for read-write traffic and a Reader Endpoint that load-balances reads across replicas."
+  },
+  {
+    "q": "A developer needs to route analytical reporting queries to a specific group of high-memory Aurora Replicas while directing standard web application reads to smaller general-purpose replicas. Which Aurora feature creates custom endpoints for designated subsets of DB instances?",
+    "o": [
+      "DB Parameter Groups",
+      "Custom Endpoints",
+      "AWS Secrets Manager",
+      "Route 53 Geolocation routing"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Custom Endpoints allow grouping specific subsets of Aurora Replicas for dedicated workloads (such as heavy analytical queries)."
+  },
+  {
+    "q": "Which two relational database engines are fully compatible with Amazon Aurora? (Select TWO.)",
+    "o": [
+      "MySQL (5.7 and 8.0 compatible)",
+      "PostgreSQL (11 through 16+ compatible)",
+      "Microsoft SQL Server Enterprise",
+      "IBM DB2",
+      "MongoDB"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Amazon Aurora is fully compatible with MySQL and PostgreSQL engines."
+  },
+  {
+    "q": "What is the maximum storage capacity supported by an Amazon Aurora database cluster?",
+    "o": [
+      "16 TiB",
+      "64 TiB",
+      "128 TiB",
+      "1 PiB"
+    ],
+    "a": [
+      2
+    ],
+    "e": "Amazon Aurora storage automatically scales up to 128 TiB per database cluster."
+  },
+  {
+    "q": "A developer wants to execute an SQL query directly from an AWS Lambda function against an Amazon Aurora Serverless database over an HTTP REST endpoint using IAM credentials, without managing persistent database connections or VPC networking. Which Aurora capability enables this?",
+    "o": [
+      "Amazon Aurora Data API",
+      "Amazon RDS Proxy",
+      "SSH Tunneling",
+      "DB Option Groups"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The Amazon Aurora Data API allows executing SQL over a secure HTTPS REST endpoint using IAM credentials, ideal for serverless Lambda workflows."
+  },
+  {
+    "q": "How does Amazon Aurora handle storage self-healing and data integrity?",
+    "o": [
+      "If an individual storage block or disk fails, Aurora automatically repairs the corrupted block in the background using data from the other 5 copies across the 3 Availability Zones without affecting availability",
+      "Aurora requires restoring from the daily backup snapshot",
+      "Aurora halts write traffic until an administrator replaces the failed disk",
+      "Aurora delegates data integrity to the client application"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Aurora's storage layer continuously self-heals by repairing corrupted blocks using the remaining copies across the 3 AZs."
+  },
+  {
+    "q": "Which statement accurately compares failover speed between Amazon Aurora and standard Amazon RDS Multi-AZ?",
+    "o": [
+      "Standard RDS Multi-AZ fails over in under 5 seconds; Aurora takes 5 minutes",
+      "Amazon Aurora typically fails over in under 30 seconds (or under 10 seconds with RDS Proxy) because storage is shared and replicas are already warm; standard RDS Multi-AZ takes 60 to 120 seconds due to DNS failover and standby synchronization",
+      "Both Aurora and RDS have identical 1-hour failover times",
+      "Neither service supports automated failover"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Aurora fails over in <30 seconds (or <10 seconds with RDS Proxy) due to shared storage; standard RDS takes 60–120 seconds."
+  },
+  {
+    "q": "An application uses Amazon Aurora MySQL. The development team needs to spin up an isolated, temporary copy of the 10 TB production database for integration testing. The copy must be created in minutes without duplicating storage costs until data is modified. Which Aurora feature accomplishes this?",
+    "o": [
+      "Database Cloning (Copy-on-Write)",
+      "Manual DB Snapshot Restore",
+      "Point-in-Time Recovery to a new cluster",
+      "Exporting data to Amazon S3 via `SELECT INTO OUTFILE` ### Amazon ElastiCache (Redis & Memcached) & Caching Patterns (87–104)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Aurora Database Cloning uses copy-on-write technology to create isolated, point-in-time database clones in minutes with no initial storage duplication."
+  },
+  {
+    "q": "A high-traffic social media application needs to cache user profile records in front of Amazon RDS to reduce read latency from 15ms down to sub-millisecond response times. Which AWS service is a managed, in-memory caching service designed for this purpose?",
+    "o": [
+      "Amazon ElastiCache",
+      "Amazon EBS",
+      "Amazon S3 Standard-IA",
+      "Amazon Athena"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amazon ElastiCache provides managed in-memory caching (Redis or Memcached) delivering sub-millisecond response times."
+  },
+  {
+    "q": "A gaming company requires an in-memory data store to manage a real-time leaderboard of player high scores ranked in descending order. Which ElastiCache engine and data structure natively supports sorted ranking operations?",
+    "o": [
+      "ElastiCache for Memcached with plain strings",
+      "ElastiCache for Redis with Sorted Sets (ZSET)",
+      "ElastiCache for Memcached with multithreaded key-value pairs",
+      "Amazon RDS PostgreSQL with JSONB"
+    ],
+    "a": [
+      1
+    ],
+    "e": "ElastiCache for Redis natively supports Sorted Sets (ZSET) with commands like `ZADD` and `ZRANGEBYSCORE` for real-time ranked leaderboards."
+  },
+  {
+    "q": "Which two architectural capabilities are supported by Amazon ElastiCache for Redis but are NOT supported by Amazon ElastiCache for Memcached? (Select TWO.)",
+    "o": [
+      "Multi-AZ replication with automatic failover",
+      "Rich data structures (lists, sets, sorted sets, hashes, bitmaps)",
+      "Multithreaded execution across multiple CPU cores on a single node",
+      "Purely ephemeral, non-persistent in-memory caching",
+      "Simple key-value string storage"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Redis supports Multi-AZ replication with automatic failover and rich data structures (sets, sorted sets, hashes); Memcached supports neither."
+  },
+  {
+    "q": "An application implements the **Cache-Aside (Lazy-Loading)** pattern with Amazon ElastiCache. What is the correct sequence of operations when a client requests data?",
+    "o": [
+      "The application writes data to the database first, then writes to the cache",
+      "The application checks the cache first; on a cache hit, it returns the cached data; on a cache miss, it queries the database, writes the result to the cache with a TTL, and returns the data to the client",
+      "The database automatically intercepts the request and checks ElastiCache",
+      "The application deletes all cached keys before querying the database"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Cache-Aside checks cache first; on a miss, it queries the DB, writes to the cache with a TTL, and returns the result to the caller."
+  },
+  {
+    "q": "What is the primary risk associated with the Cache-Aside caching pattern if cached keys do not have a Time-To-Live (TTL) configured, and how is it mitigated?",
+    "o": [
+      "Cache memory will never be used",
+      "Data in the cache can become stale if the underlying database is updated without invalidating the corresponding cache keys; mitigated by setting an appropriate TTL on cached entries and invalidating keys on write operations",
+      "The database will automatically shut down",
+      "Memcached will convert into Redis"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Without a TTL or invalidation strategy, cached data becomes stale; setting a TTL and invalidating on write keeps data fresh."
+  },
+  {
+    "q": "An architect is designing a high-throughput caching tier using Amazon ElastiCache for Memcached. What is a key architectural advantage of Memcached's multithreaded architecture?",
+    "o": [
+      "It supports multi-region automatic failover",
+      "A single Memcached node can utilize multiple CPU cores and handle massive concurrent operations without sharding",
+      "It natively persists all data to Amazon S3",
+      "It supports complex geospatial queries"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Memcached is multithreaded and can fully utilize multiple CPU cores and memory channels on a single large node."
+  },
+  {
+    "q": "A company uses Amazon ElastiCache for Redis in Cluster Mode Disabled. The cache tier experiences extreme write volume that exceeds the throughput limits of the single primary node. How can write capacity be scaled horizontally across multiple nodes?",
+    "o": [
+      "Add 5 read replicas to the existing shard",
+      "Enable ElastiCache for Redis Cluster Mode Enabled to partition (shard) keys across multiple shards, each with its own primary writer",
+      "Switch from Redis to Memcached",
+      "Increase the SQS visibility timeout"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Enabling Cluster Mode Enabled partitions data across multiple shards, enabling horizontal scaling of both read and write capacity."
+  },
+  {
+    "q": "What feature of Amazon ElastiCache for Redis provides point-in-time snapshots and data durability to recover from node failures or create new clusters?",
+    "o": [
+      "Redis Backup and Restore using RDB snapshots stored in Amazon S3",
+      "AWS CloudTrail event history",
+      "Amazon Route 53 health checks",
+      "EC2 instance store swapping"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ElastiCache for Redis supports automated and manual RDB snapshots stored in Amazon S3 for backup and recovery."
+  },
+  {
+    "q": "An application uses Amazon ElastiCache for Redis as a publish/subscribe (Pub/Sub) messaging broker for live chat rooms. Why is Redis suitable for this use case compared to Memcached?",
+    "o": [
+      "Memcached only supports video streaming",
+      "Redis natively supports Pub/Sub commands (`PUBLISH`, `SUBSCRIBE`, `PSUBSCRIBE`), allowing clients to push and receive messages on named channels in real time",
+      "Redis requires zero network connectivity",
+      "Redis automatically writes every chat message to tape backup"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Redis natively supports Pub/Sub messaging commands (`PUBLISH`/`SUBSCRIBE`) for real-time message distribution."
+  },
+  {
+    "q": "A developer needs to secure network access to an Amazon ElastiCache for Redis cluster deployed in a VPC. Which two security mechanisms should be implemented? (Select TWO.)",
+    "o": [
+      "Enable in-transit encryption (TLS) and configure Redis `AUTH` token (password protection) or IAM authentication",
+      "Restrict inbound access using VPC Security Groups so that only authorized application EC2/Lambda security groups can connect on port 6379",
+      "Place the ElastiCache cluster in a public subnet with an Internet Gateway",
+      "Disable all encryption to improve latency",
+      "Allow `0.0.0.0/0` inbound access on port 6379"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Redis security combines in-transit TLS encryption with AUTH tokens/IAM auth, and VPC Security Groups restricting access to port 6379."
+  },
+  {
+    "q": "An e-commerce web application running on multiple EC2 instances behind an Application Load Balancer needs a centralized, shared session store so that users stay logged in even if an EC2 instance terminates. Which AWS service is the most common choice for managing session state?",
+    "o": [
+      "Amazon EBS gp3 volume attached to one instance",
+      "Amazon ElastiCache for Redis",
+      "Amazon S3 Glacier Flexible Retrieval",
+      "AWS CodeCommit"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon ElastiCache for Redis is widely used as a fast, centralized, distributed session store for web application fleets."
+  },
+  {
+    "q": "In Amazon ElastiCache for Redis, what happens during an automatic failover in a Multi-AZ cluster when the primary node fails?",
+    "o": [
+      "The cluster enters read-only mode permanently",
+      "ElastiCache detects the primary node failure, promotes an existing read replica to become the new primary writer, and updates internal DNS records, typically completing in under a minute",
+      "All cached data is permanently erased and the cluster is deleted",
+      "The application must deploy a new Redis cluster from scratch"
+    ],
+    "a": [
+      1
+    ],
+    "e": "During Multi-AZ failover, ElastiCache for Redis promotes a read replica to primary and updates DNS endpoints in under a minute."
+  },
+  {
+    "q": "An engineer is tuning the memory management of an Amazon ElastiCache for Redis cluster. When the cache reaches its memory limit (`maxmemory`), what parameter controls which keys are evicted to make room for new writes?",
+    "o": [
+      "`maxmemory-policy` (e.g., `volatile-lru`, `allkeys-lru`, `volatile-ttl`, `noeviction`)",
+      "`max_connections`",
+      "`rds.force_ssl`",
+      "`shared_buffers`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `maxmemory-policy` parameter controls eviction behavior (e.g., `allkeys-lru`, `volatile-ttl`, `noeviction`) when memory is full."
+  },
+  {
+    "q": "What is the difference between Write-Through and Lazy-Loading (Cache-Aside) caching strategies?",
+    "o": [
+      "Write-Through updates the cache synchronously whenever data is written to the database (ensuring cache freshness at the cost of write latency); Lazy-Loading populates the cache only on a cache miss during a read operation",
+      "Write-Through only caches data for 1 second; Lazy-Loading caches data forever",
+      "Write-Through is for Memcached only; Lazy-Loading is for Redis only",
+      "There is no functional difference between the two strategies"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Write-Through writes to DB and cache synchronously; Lazy-Loading loads data into cache only upon read cache misses."
+  },
+  {
+    "q": "Which Amazon ElastiCache engine supports User Group Management and Role-Based Access Control (RBAC) to enforce fine-grained permissions per user and command?",
+    "o": [
+      "ElastiCache for Redis (version 6.0 and later)",
+      "ElastiCache for Memcached",
+      "Amazon S3 Standard",
+      "Amazon Athena"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ElastiCache for Redis (v6.0+) supports Role-Based Access Control (RBAC) and User Groups for granular command permissions."
+  },
+  {
+    "q": "An application experiences a \"cache stampede\" (thundering herd) when a popular cached key expires, causing thousands of concurrent requests to hit the backend RDS database simultaneously. Which two techniques prevent or mitigate cache stampedes? (Select TWO.)",
+    "o": [
+      "Use early key expiration / probabilistic early re-computation (refreshing the cache before it hard-expires)",
+      "Implement mutex locking (locking the cache key so only one worker queries the database to repopulate the cache while others wait or return stale data)",
+      "Delete all cached keys on the primary node every minute",
+      "Disable caching completely",
+      "Reduce database memory to force fast query aborts"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Probabilistic early expiration and mutex locking on cache misses prevent thundering-herd cache stampedes from overwhelming the database."
+  },
+  {
+    "q": "A developer configures ElastiCache for Redis with Auto Scaling. Which metrics can trigger automatic scaling of read replicas or shards?",
+    "o": [
+      "`CPUUtilization` and `FreeableMemory` (or `EngineCPUUtilization` and `DatabaseMemoryUsagePercentage`)",
+      "`S3BucketSizeBytes`",
+      "`BillingAmountUSD`",
+      "`LambdaColdStarts`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ElastiCache for Redis Auto Scaling uses CPU utilization and memory usage metrics to scale replicas or shards."
+  },
+  {
+    "q": "Which port is the standard default port for Redis, and which is for Memcached?",
+    "o": [
+      "Redis: 3306; Memcached: 5432",
+      "Redis: 6379; Memcached: 11211",
+      "Redis: 80; Memcached: 443",
+      "Redis: 1521; Memcached: 1433 ### Amazon MemoryDB for Redis (105–112)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The default network port for Redis is 6379; the default port for Memcached is 11211."
+  },
+  {
+    "q": "An application requires an in-memory, microsecond-read, low-latency database compatible with the Redis API. The data store must serve as the primary, authoritative database (system of record) with guaranteed multi-AZ durability and zero data loss on node failure. Which AWS service fulfills this requirement?",
+    "o": [
+      "Amazon ElastiCache for Redis",
+      "Amazon MemoryDB for Redis",
+      "Amazon ElastiCache for Memcached",
+      "Amazon S3 Standard"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon MemoryDB for Redis is a Redis-compatible, durable, primary in-memory database with multi-AZ transactional log persistence."
+  },
+  {
+    "q": "How does Amazon MemoryDB for Redis achieve full transactional durability across multiple Availability Zones, unlike Amazon ElastiCache for Redis?",
+    "o": [
+      "By writing data directly to tape archives",
+      "By using a distributed, multi-AZ transactional log that persists every write to storage across multiple AZs before acknowledging the write to the client",
+      "By taking automated manual snapshots once a week",
+      "By disabling all memory caching and using hard drives only"
+    ],
+    "a": [
+      1
+    ],
+    "e": "MemoryDB persists writes across multiple AZs using a distributed transactional log before confirming success, guaranteeing durability."
+  },
+  {
+    "q": "Which statement accurately describes the architectural role difference between Amazon ElastiCache for Redis and Amazon MemoryDB for Redis?",
+    "o": [
+      "ElastiCache is a high-speed cache placed in front of an authoritative persistent database; MemoryDB is a durable, primary in-memory database designed to be the system of record",
+      "ElastiCache is durable; MemoryDB is purely ephemeral",
+      "ElastiCache is for relational SQL data; MemoryDB is for unstructured video files",
+      "MemoryDB does not support the Redis API"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ElastiCache is a cache tier in front of a primary database; MemoryDB is a durable primary database in its own right."
+  },
+  {
+    "q": "An e-commerce platform uses Redis data structures for real-time inventory reservation during checkout. If an in-memory node restarts, the reserved inventory counts must not be lost under any circumstances. Which AWS service is designed for this authoritative in-memory workload?",
+    "o": [
+      "Amazon ElastiCache for Memcached",
+      "Amazon MemoryDB for Redis",
+      "Amazon CloudFront",
+      "Amazon RDS for SQL Server"
+    ],
+    "a": [
+      1
+    ],
+    "e": "MemoryDB for Redis combines Redis microsecond performance with guaranteed multi-AZ persistence for authoritative data like inventory."
+  },
+  {
+    "q": "What are the performance characteristics of Amazon MemoryDB for Redis?",
+    "o": [
+      "Single-digit millisecond reads and 1-minute writes",
+      "Microsecond read latency (from memory) and single-digit millisecond write latency (due to multi-AZ transactional log persistence)",
+      "10-second read latency and 5-minute write latency",
+      "Sub-millisecond reads with zero write support"
+    ],
+    "a": [
+      1
+    ],
+    "e": "MemoryDB provides microsecond read latency from memory and single-digit millisecond write latency due to multi-AZ logging."
+  },
+  {
+    "q": "Which Redis-compatible features are supported by Amazon MemoryDB for Redis?",
+    "o": [
+      "Redis data types (hashes, lists, sets, sorted sets, streams), transactions, Pub/Sub, and Redis Cluster sharding",
+      "Only plain string key-value pairs",
+      "Only MySQL relational queries",
+      "GraphQL schema validation"
+    ],
+    "a": [
+      0
+    ],
+    "e": "MemoryDB supports standard Redis data types, transactions, Pub/Sub, streams, and cluster sharding."
+  },
+  {
+    "q": "Can an application migrate an existing Redis RDB snapshot file into Amazon MemoryDB for Redis when seeding a new cluster?",
+    "o": [
+      "No, MemoryDB cannot import data",
+      "Yes, MemoryDB supports restoring from an existing Redis RDB snapshot stored in Amazon S3 during cluster creation",
+      "Only by manually typing the data into the AWS console",
+      "Only through an AWS Direct Connect cable"
+    ],
+    "a": [
+      1
+    ],
+    "e": "MemoryDB allows restoring from standard Redis RDB snapshot files stored in Amazon S3 during cluster provisioning."
+  },
+  {
+    "q": "A financial technology firm is deciding between ElastiCache for Redis and MemoryDB for Redis. They have a relational database (Amazon Aurora) as their source of truth, and need an ephemeral cache strictly to offload read queries. Which service should they choose?",
+    "o": [
+      "Amazon MemoryDB for Redis",
+      "Amazon ElastiCache for Redis (simpler, cost-effective caching tier in front of an existing source of truth)",
+      "Amazon RDS for Oracle",
+      "AWS Glacier ### Relational (RDS/Aurora) vs. NoSQL (DynamoDB) Decision Framework (113–120)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "For a cache placed in front of an existing Aurora database, ElastiCache for Redis is the standard, cost-effective caching solution."
+  },
+  {
+    "q": "A company is designing a new customer analytics portal that requires running ad-hoc SQL queries with complex multi-table `JOIN` operations, aggregations, and strict relational integrity across 20 normalized tables. Which AWS database service is the best fit?",
+    "o": [
+      "Amazon DynamoDB",
+      "Amazon RDS (or Amazon Aurora)",
+      "Amazon ElastiCache for Memcached",
+      "Amazon SimpleDB"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Workloads requiring complex multi-table SQL `JOIN` operations, ad-hoc queries, and relational schemas are best served by Amazon RDS or Aurora."
+  },
+  {
+    "q": "A mobile gaming backend requires storing millions of player state records with high-frequency reads and writes. The access pattern is strictly key-value lookups by `player_id`. Traffic fluctuates unpredictably from 100 to 500,000 requests per second. The team wants a fully serverless, zero-maintenance database with single-digit millisecond latency at any scale. Which service is the best fit?",
+    "o": [
+      "Amazon RDS for PostgreSQL (Single-AZ)",
+      "Amazon DynamoDB",
+      "Amazon RDS for Oracle",
+      "Amazon ElastiCache for Memcached"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon DynamoDB provides serverless, single-digit millisecond latency at massive scale for simple key-value lookups by partition key."
+  },
+  {
+    "q": "An enterprise order management system requires strict ACID transactions across multiple parent and child tables with foreign key constraints, using an existing Hibernate ORM framework. Which database should be selected?",
+    "o": [
+      "Amazon DynamoDB",
+      "Amazon Aurora (or Amazon RDS)",
+      "Amazon MemoryDB for Redis",
+      "Amazon S3"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Strict multi-table ACID transactions, foreign keys, and relational ORM frameworks require a relational database like Amazon Aurora or RDS."
+  },
+  {
+    "q": "Which two requirements would strongly favor selecting Amazon DynamoDB over Amazon RDS? (Select TWO.)",
+    "o": [
+      "Extreme, unpredictable horizontal scale with simple, predefined partition-key-based access patterns",
+      "Need for a fully managed, serverless database with zero instance sizing, storage provisioning, or OS patching overhead",
+      "Need for complex relational `JOIN` queries across dozens of normalized tables",
+      "Need for database-enforced foreign key cascading deletes",
+      "Legacy application designed specifically for Microsoft SQL Server stored procedures"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "DynamoDB is favored for massive horizontal scale with key-based access patterns and fully serverless, zero-maintenance operations."
+  },
+  {
+    "q": "An application stores unstructured product catalog data where items have widely varying attributes (e.g., electronics have `screen_size` and `battery_life`, books have `author` and `isbn`, apparel has `size` and `fabric`). The schema evolves weekly. Which database accommodates this flexible schema with minimal friction?",
+    "o": [
+      "Amazon RDS for MySQL with rigid SQL table definitions",
+      "Amazon DynamoDB (schema-less document store where items can have varying attributes)",
+      "Amazon RDS for Oracle",
+      "Amazon Redshift"
+    ],
+    "a": [
+      1
+    ],
+    "e": "DynamoDB is a schema-less document store where items in the same table can carry different attributes, accommodating evolving schemas."
+  },
+  {
+    "q": "A developer is designing a microservice architecture. Service A handles user authentication and session management (key-value lookups, TTL session expiration, high concurrency). Service B handles financial accounting and ledger balances (complex relational joins, strict foreign keys, audit reporting). Which database strategy aligns with microservices best practices?",
+    "o": [
+      "Force both services to share a single monolithic Amazon RDS MySQL database",
+      "Polyglot persistence: use Amazon DynamoDB (or ElastiCache) for Service A, and Amazon Aurora PostgreSQL for Service B",
+      "Force both services to use Amazon S3 flat files",
+      "Use Amazon MemoryDB for accounting and Oracle for sessions"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Microservices best practices encourage polyglot persistence: DynamoDB/ElastiCache for session state, and Aurora PostgreSQL for transactional ledgers."
+  },
+  {
+    "q": "Which AWS service is the optimal choice for a relational database workload that requires MySQL compatibility, automatic storage scaling up to 128 TiB, fast sub-second cross-Region replication, and automatic failover in under 30 seconds?",
+    "o": [
+      "Amazon RDS for MySQL Single-AZ",
+      "Amazon Aurora Global Database (MySQL-compatible)",
+      "Amazon DynamoDB Global Tables",
+      "Amazon ElastiCache for Memcached"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amazon Aurora Global Database provides MySQL compatibility, auto-scaling storage up to 128 TiB, sub-second cross-Region replication, and fast failover."
+  },
+  {
+    "q": "Which of the following statements correctly compares DynamoDB and Amazon RDS?",
+    "o": [
+      "RDS scales compute and storage automatically without capacity planning; DynamoDB requires manual instance provisioning",
+      "DynamoDB is designed for horizontal scaling with single-digit millisecond latency on known access patterns; RDS is designed for complex relational SQL queries, joins, and multi-table integrity",
+      "DynamoDB does not support any form of encryption at rest",
+      "RDS does not support automated backups ### Integrative Scenarios & Troubleshooting (121–125)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "DynamoDB is optimized for horizontal scaling and key-based lookups; RDS is built for complex SQL, joins, and relational integrity."
+  },
+  {
+    "q": "An online banking platform experiences intermittent connection timeouts on an Amazon RDS for PostgreSQL instance when Lambda-based microservices scale up during morning hours. Furthermore, security compliance mandates that database passwords must be rotated every 60 days without application downtime, and all database traffic must be encrypted in transit. Which combination of architectural changes resolves all issues?",
+    "o": [
+      "Deploy Amazon RDS Proxy to pool Lambda connections, store credentials in AWS Secrets Manager with automatic 60-day rotation enabled, and enforce TLS/SSL connection requirements",
+      "Increase the PostgreSQL `max_connections` parameter, hardcode the new password in the Lambda zip file, and disable TLS",
+      "Switch the database to single-AZ mode and use Memcached for password storage",
+      "Replace the database with Amazon S3 Glacier"
+    ],
+    "a": [
+      0
+    ],
+    "e": "RDS Proxy resolves Lambda connection exhaustion; Secrets Manager with rotation handles 60-day password rotation; TLS enforces encryption in transit."
+  },
+  {
+    "q": "A global media company runs an Amazon Aurora MySQL database. The company is opening a new office in Tokyo and needs Japanese employees to run read-only reporting dashboards against the database with sub-second latency. If a disaster affects the primary US Region, the Tokyo database must be capable of becoming the primary read-write database in under 1 minute. Which architecture meets these requirements?",
+    "o": [
+      "Amazon Aurora Global Database with the primary cluster in the US and a secondary replica cluster in the Tokyo Region",
+      "Amazon RDS for MySQL with daily manual snapshots copied to Tokyo",
+      "Single-AZ RDS PostgreSQL with S3 Cross-Region Replication",
+      "Amazon ElastiCache for Memcached deployed in Tokyo"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Aurora Global Database allows low-latency local reads in Tokyo with sub-second replication and cross-Region disaster recovery failover in <1 minute."
+  },
+  {
+    "q": "A financial analytics application queries an Amazon RDS for MySQL database. Heavy reporting queries run during business hours cause high CPU utilization (98%) on the primary instance, slowing down customer transactions. The database is already configured in a Multi-AZ deployment. What should the developer do to relieve primary database load?",
+    "o": [
+      "Route reporting queries to the Multi-AZ standby instance",
+      "Create an Amazon RDS Read Replica, configure the reporting application to query the Read Replica endpoint, and implement Amazon ElastiCache (Redis) to cache frequent query results",
+      "Delete the database and recreate it without Multi-AZ",
+      "Increase the database backup retention period to 35 days"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Adding a Read Replica offloads analytical queries, and ElastiCache caches frequent queries to relieve primary CPU load."
+  },
+  {
+    "q": "A team deploys an AWS Lambda function inside a VPC to query an Amazon Aurora database. The Lambda function works properly, but when the database administrator enables IAM Database Authentication, the Lambda function fails to connect with an `Access Denied` error. What two troubleshooting steps should the developer verify? (Select TWO.)",
+    "o": [
+      "Ensure the Lambda execution role has an IAM policy granting `rds-db:connect` on the target database resource ARN",
+      "Ensure the Lambda function generates a temporary authentication token using `generate_db_auth_token` and connects over SSL/TLS using the token as the password",
+      "Ensure the Lambda function is removed from the VPC",
+      "Ensure the Lambda memory is set to 10,240 MB",
+      "Ensure the database password is saved in a local file on `/tmp`"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "The Lambda execution role must allow `rds-db:connect`, and the function must generate an auth token and connect over SSL/TLS."
+  },
+  {
+    "q": "An architect is reviewing an application architecture with the following requirements: (1) low-latency sub-millisecond leaderboard queries with ranked scores, (2) automatic session state caching across web servers, and (3) transactional SQL relational storage with automatic failover and connection pooling for Lambda. Which set of AWS services correctly fulfills these needs?",
+    "o": [
+      "Amazon ElastiCache for Redis (for leaderboard & sessions) + Amazon Aurora with Amazon RDS Proxy (for relational data & connection pooling)",
+      "Amazon DynamoDB only",
+      "Amazon RDS for SQL Server Single-AZ + Memcached",
+      "Amazon S3 + Amazon Athena + AWS Glue"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ElastiCache for Redis handles ranked leaderboards and session caching; Aurora with RDS Proxy handles relational data and connection pooling."
+  }
+];
+const STORAGE_KEY = "aws-dva-quiz-08";
+
+document.querySelectorAll(".tabbtn").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    document.querySelectorAll(".tabbtn").forEach(function(b){ b.classList.remove("active"); });
+    document.querySelectorAll(".tabpanel").forEach(function(p){ p.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+renderNotes(NOTES_MD);
+initQuiz(QUESTIONS, STORAGE_KEY);
+
+if(location.hash === "#quiz"){ document.querySelector('[data-tab="quiz"]').click(); }
+</script>
+</body>
+</html>

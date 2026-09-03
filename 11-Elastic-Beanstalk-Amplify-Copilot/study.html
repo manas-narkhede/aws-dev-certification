@@ -1,0 +1,1906 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 11 — Elastic Beanstalk, Amplify & Copilot</title>
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="crumb" href="../index.html">&#8962; Hub</a>
+  <span class="divider">/</span>
+  <span class="page-title">Module 11 &mdash; Elastic Beanstalk, Amplify & Copilot</span>
+  <span class="domain-chip" style="background:var(--d3-bg);color:var(--d3);">Domain 3 · Deployment (24%)</span>
+  <span class="spacer"></span>
+  <div class="tabbar">
+    <button class="tabbtn active" data-tab="notes">Notes</button>
+    <button class="tabbtn" data-tab="quiz">Practice Questions (125)</button>
+  </div>
+</header>
+
+<main>
+  <section id="tab-notes" class="tabpanel active">
+    <div class="notes-wrap">
+      <nav id="notesToc" class="notes-toc"></nav>
+      <article id="notesBody" class="notes-body"></article>
+    </div>
+  </section>
+
+  <section id="tab-quiz" class="tabpanel">
+    <div class="quiz-wrap">
+      <div class="quiz-topline">
+        <div class="stat"><span class="num" id="posNum">1 / 125</span><span class="lbl">Question</span></div>
+        <div class="stat"><span class="num" id="scoreNum">0</span><span class="lbl">Correct</span></div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div id="quizArea"></div>
+      <div class="footer-note">Progress is saved automatically in this browser. Use 1&ndash;5 or A&ndash;E on your keyboard to answer.</div>
+    </div>
+  </section>
+</main>
+
+<script src="../assets/quiz-engine.js"></script>
+<script src="../assets/notes-render.js"></script>
+<script>
+const NOTES_MD = `# Module 11 — Elastic Beanstalk, Amplify & Copilot
+
+Domain focus: primarily **Deployment (24%)**, with a direct hit on **Domain 3 Task Statement 3** ("Deploy code using AWS CI/CD services," which explicitly names **approved-version environments** — Lambda aliases, container image tags, **Amplify branches**, and **Copilot environments** — as exam-testable concepts) and a supporting hit on **Domain 1 Task Statement 1** (choosing the right architectural abstraction for a given team and application). This module is about three different "don't hand-write the infrastructure yourself" tools that sit at different points on the abstraction spectrum, each aimed at a different kind of application and team. The exam's real test here is rarely "define Elastic Beanstalk" — it's "given this team profile and this app shape, which of these tools (or none of them) is the right reach."
+
+## 1. Why these three tools exist together
+
+All three are **developer-facing deployment abstractions** that generate and manage lower-level AWS resources (EC2, ASGs, ELBs, ECS services, CloudFormation stacks) on your behalf, so you interact with an application concept instead of individual resources:
+
+- **Elastic Beanstalk (EB)** — upload application code, EB provisions and wires together EC2/Auto Scaling/ELB (and optionally RDS) underneath it, while leaving those resources fully inspectable and tunable in the console or CLI. It is *not* pure serverless — you can still SSH into the underlying instances if you need to.
+- **Amplify** — a full-stack toolchain (CLI, Console/Studio, Hosting, and client libraries) aimed at frontend-heavy applications that need a backend of Cognito (auth), AppSync/API Gateway (API), S3 (storage), and Lambda (functions), plus fully managed Git-based hosting for the frontend itself.
+- **Copilot** — a CLI that deploys containerized applications to ECS on Fargate (or to App Runner for simpler request-driven services) by generating and managing CloudFormation for you, so you describe a service in a small \`manifest.yml\` instead of writing ECS task definitions and service definitions by hand.
+
+All three ultimately produce standard AWS resources and, under the hood, all three lean on CloudFormation (Amplify and Copilot explicitly; EB uses its own orchestration but exposes environments that map cleanly to CFN-describable resources). None of them is "more real" AWS than the others — they're convenience layers, and the exam wants you to know when each layer's convenience is worth the loss of raw control, and when you should skip the layer entirely and write CloudFormation/SAM/CDK yourself.
+
+## 2. AWS Elastic Beanstalk
+
+### 2.1 What it is
+Elastic Beanstalk is AWS's PaaS-style (Platform as a Service) deployment tool: you upload your application code (a ZIP, WAR, or JAR — a "source bundle"), select a supported platform, and Beanstalk provisions everything needed to run it — EC2 instances (via an Auto Scaling group), an Elastic Load Balancer, security groups, and (optionally) an RDS database — while still giving you inspectable, tunable access to every one of those resources. This is the key differentiator from pure serverless (Lambda) or from a fully hidden black-box platform: **Beanstalk is a convenience layer over resources you still own and can reach into**, not a new execution model.
+
+### 2.2 Supported platforms
+Beanstalk ships "platforms" for common runtimes: Java SE, Java with Tomcat, Node.js, PHP, Python, Ruby, Go, .NET on Windows Server / .NET Core on Linux, and Docker (single-container). If your stack matches a supported platform, Beanstalk is a fast on-ramp; if it doesn't, you're back to raw EC2 or a container-based service.
+
+### 2.3 Environment tiers — web server vs. worker
+This is a frequently tested, easy-to-miss detail: an EB **environment** comes in one of two tiers, and they behave very differently.
+
+| Tier | Traffic source | Underlying resources | Typical use |
+|---|---|---|---|
+| **Web server tier** | Public HTTP(S) requests via a load balancer | ELB + Auto Scaling group of EC2 instances | Standard web apps and APIs |
+| **Worker tier** | Messages pulled from an **SQS queue** — not direct public traffic | Auto Scaling group of EC2 instances running the "beanstalk worker daemon," an SQS queue (created automatically if you don't supply one), optional \`cron.yaml\` for scheduled/periodic tasks | Background/async processing decoupled from the request path |
+
+**Exam trap:** if a scenario describes an application that needs to process long-running background jobs pulled from a queue, without exposing anything to the public internet, the answer is an EB **worker environment**, not a web server environment with a queue bolted on. The worker tier is purpose-built for this and handles the SQS polling and message deletion for you (including a configurable HTTP path the daemon posts the message body to on your instance).
+
+### 2.4 Environment configuration — \`.ebextensions\` and saved configurations
+- **\`.ebextensions\`**: a folder at the root of your source bundle containing \`.config\` files (YAML or JSON) that customize the environment beyond the defaults — setting environment variables, tuning Auto Scaling group settings, installing OS packages, running commands during deployment, or even declaring additional AWS resources via an embedded \`Resources:\` section (which is literally a CloudFormation snippet merged into the environment's underlying stack).
+- **Saved configurations**: a snapshot of an environment's configuration (platform, instance type, scaling settings, environment variables, etc.) saved as a template (stored in S3) that can be applied when creating new environments — useful for keeping dev/staging/prod environments consistent, or quickly recreating an environment after \`eb terminate\`.
+
+Example \`.ebextensions/01-environment.config\`:
+
+\`\`\`yaml
+option_settings:
+  aws:elasticbeanstalk:application:environment:
+    NODE_ENV: production
+    LOG_LEVEL: info
+  aws:autoscaling:launchconfiguration:
+    InstanceType: t3.small
+    IamInstanceProfile: aws-elasticbeanstalk-ec2-role
+  aws:autoscaling:asg:
+    MinSize: 2
+    MaxSize: 6
+
+container_commands:
+  01_run_migrations:
+    command: "npm run migrate"
+    leader_only: true
+\`\`\`
+
+\`leader_only: true\` ensures a command (like a DB migration) runs on only one instance during a multi-instance deployment, not once per instance.
+
+### 2.5 Deployment policies
+When you deploy a new application version to an existing environment, Beanstalk offers several deployment policies, each trading off deployment speed against downtime/risk and infrastructure cost:
+
+| Policy | How it works | Downtime | Extra cost during deploy | Rollback speed |
+|---|---|---|---|---|
+| **All at once** | Deploys to every instance simultaneously | Brief downtime while instances update | None | Slow — must redeploy previous version |
+| **Rolling** | Deploys in batches; each batch is taken out of service during its update | No full downtime, but reduced capacity during the rollout | None | Slow — must roll forward again |
+| **Rolling with additional batch** | Launches one new batch of instances *before* taking any existing batch out of service, maintaining full capacity throughout | None, and no capacity dip | Yes — temporary extra instances | Slow — must roll forward again |
+| **Immutable** | Launches an entirely new, fully separate Auto Scaling group with the new version, health-checks it, then shifts traffic and terminates the old group | None | Yes — briefly doubles capacity | Fast — just terminate the new (bad) group |
+| **Traffic splitting** | Immutable-style new group, but shifts only a configurable percentage of traffic to it first (canary), monitoring before a full cutover | None | Yes, temporarily | Fast |
+
+**Blue/Green via environment swap** is a related but distinct pattern, not one of the deployment-policy dropdown options above: you create an entirely **new, separate EB environment** running the new application version, test it independently (it has its own URL), and then use **"swap environment URLs"** (an EB CNAME swap) to atomically redirect production traffic to it. This gives you the cleanest possible separation and instant rollback (swap back), at the cost of running two full environments during the transition. The exam sometimes lists this as a fifth deployment "policy" in casual phrasing — know that mechanically it's a CNAME swap between two independent environments, not a same-environment rolling mechanism.
+
+**Exam trap:** "must maintain full capacity throughout the deployment, no reduction in available instances" → **rolling with additional batch** (not plain rolling). "Needs the fastest possible full rollback if something goes wrong, and cost isn't the primary concern" → **immutable** or **blue/green swap**. "Fastest deploy, some downtime acceptable" → **all at once**.
+
+### 2.6 Application versions and version lifecycle
+Every time you deploy, Beanstalk packages your source bundle as an **application version** — a specific, labeled, immutable artifact stored as an object in an EB-managed S3 bucket, associated with a logical **application** (the container for all versions and environments of one product). Because every past version stays in S3, rolling back is as simple as re-deploying an older application version label to an environment (subject to the deployment policy above still applying to *how* that redeploy rolls out).
+
+Regions impose a **soft quota on the number of application versions** you can retain (historically around 1,000 per application per region); left unmanaged, this can be exhausted by frequent CI/CD deploys. Beanstalk supports an **application version lifecycle policy** that automatically expires old versions by age or by count, deleting the S3 source bundle too (with an option to retain versions currently deployed to a running environment even if they'd otherwise expire).
+
+### 2.7 Health monitoring
+- **Basic health reporting** — health is inferred from ELB and Auto Scaling signals (instance status checks, load balancer health checks). Environment health is shown as a simple color: Green (OK), Yellow (Warning/Degraded), Red (Severe), Grey (Info/Pending/Unknown).
+- **Enhanced health reporting** — a health agent on each instance publishes more granular OS-level and application-level metrics (CPU, latency, HTTP status code counts, deployment status) to CloudWatch and to the EB console's health dashboard, giving much richer troubleshooting detail than basic reporting.
+
+### 2.8 CLI and CI/CD parity
+The **EB CLI** (\`eb\`) mirrors what you can do in the console, which matters for automation: \`eb init\` (configure the local project/region/platform), \`eb create\` (create a new environment), \`eb deploy\` (push a new application version to an existing environment), \`eb config\` (edit a saved configuration), \`eb logs\`, \`eb ssh\`, \`eb terminate\`. Because the exact same commands and configuration files (\`.elasticbeanstalk/config.yml\`, \`.ebextensions/*.config\`) work identically whether run by a developer locally, invoked from a CI/CD pipeline (e.g., a CodeBuild buildspec step running \`eb deploy\`, tying back to module 10's CI/CD concepts), or triggered through the console, there's no drift between "how a developer deploys" and "how the pipeline deploys" — this console/CLI/CI parity is itself a testable point: Beanstalk doesn't require a separate automation-only interface.
+
+## 3. AWS Amplify
+
+### 3.1 What it is
+Amplify is a full-stack development framework, CLI, and hosting platform aimed squarely at **frontend-heavy applications** (web and mobile) that need a managed backend without the team hand-building it. A typical Amplify-backed app pairs a frontend (React, Vue, Next.js, Flutter, iOS/Android native, etc.) with a backend Amplify provisions and wires up for you: **Cognito** for authentication, **AppSync** (GraphQL) or **API Gateway** (REST) for the API layer, **S3** for file storage, and **Lambda** for custom business logic — all deployed as CloudFormation stacks that the \`amplify\` CLI manages (\`amplify add auth\`, \`amplify add api\`, \`amplify push\` to provision/update).
+
+### 3.2 Amplify Hosting and branch-based environments
+**Amplify Hosting** is Amplify's fully managed CI/CD and static/SSR web hosting service. You connect a Git repository (GitHub, GitLab, Bitbucket, or CodeCommit), and Amplify automatically builds and deploys on every push. The exam-relevant detail, matching the official exam guide's phrase **"Amplify branches"** under approved-version environments: **each connected Git branch becomes its own deployed environment with its own unique URL** — push to \`main\` and Amplify deploys and serves the \`main\` environment; push to a \`dev\` branch and Amplify deploys a completely separate, independently addressable \`dev\` environment, often with its own backend resources if you've enabled per-branch backend environments. Amplify Hosting can additionally spin up **ephemeral preview environments per pull request**, letting reviewers click through a live, deployed version of a proposed change before merging.
+
+**Exam trap:** "each Git branch should map to an isolated, independently deployed environment reachable at its own URL, with no manual environment-provisioning step" is describing **Amplify Hosting's branch model**, almost word for word — this is one of the exam guide's explicitly named concepts, so expect it tested directly.
+
+### 3.3 Amplify libraries
+The **Amplify client libraries** (JavaScript, iOS, Android, Flutter) give frontend code high-level, category-based APIs — \`Auth\`, \`API\`, \`Storage\`, \`DataStore\`, \`Analytics\`, \`PubSub\` — that talk to the backend resources Amplify provisioned, handling the plumbing a developer would otherwise hand-roll: Cognito token refresh and session management for \`Auth\`, signed request generation for \`API\`/\`Storage\`, and (via \`DataStore\`) local-first offline data with automatic sync and conflict resolution against AppSync/DynamoDB once connectivity returns. This is the piece that makes Amplify a *full-stack* tool rather than just a hosting product — the frontend code and the backend it calls are generated and kept in sync by the same toolchain.
+
+### 3.4 \`amplify.yml\` build settings
+Amplify Hosting builds are driven by an \`amplify.yml\` file (auto-generated, but editable) analogous in spirit to a CodeBuild buildspec — it defines build phases for the frontend (and, if backend deploys are part of the pipeline, a \`backend\` phase too):
+
+\`\`\`yaml
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - amplifyPush --simple
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: build
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+\`\`\`
+
+\`baseDirectory\` tells Amplify Hosting which folder holds the final built static assets to publish; \`cache.paths\` speeds up subsequent builds by persisting dependency caches between runs, just like caching in a CodeBuild buildspec.
+
+## 4. AWS Copilot
+
+### 4.1 What it is
+Copilot is a CLI tool for deploying **containerized applications to ECS on Fargate** (or to **App Runner** for simple request-driven HTTP services) without hand-writing CloudFormation, ECS task definitions, or service definitions. You describe a service declaratively in a \`manifest.yml\`, and Copilot generates and manages the underlying CloudFormation stacks (VPC, ECS cluster, service, task definition, ALB, IAM roles, autoscaling policies) on your behalf — conceptually the container-world sibling of Elastic Beanstalk, aimed at teams who want ECS/Fargate's flexibility without the CloudFormation authoring overhead.
+
+### 4.2 Service types and \`manifest.yml\`
+\`copilot init\` scaffolds an application and a first service, asking you to choose a service type: **Load Balanced Web Service** (public HTTP service behind an ALB), **Backend Service** (internal-only, no public load balancer, reachable from other services via service discovery), **Worker Service** (subscribes to SQS/SNS for async processing — the Copilot analog of Beanstalk's worker tier), or **Request-Driven Web Service** (deploys to App Runner instead of ECS, for the simplest possible container-to-HTTPS-endpoint path).
+
+Example \`copilot/api/manifest.yml\` for a Load Balanced Web Service:
+
+\`\`\`yaml
+name: api
+type: Load Balanced Web Service
+
+image:
+  build: Dockerfile
+  port: 8080
+
+http:
+  path: '/'
+  healthcheck: '/health'
+
+cpu: 256
+memory: 512
+count:
+  range: 1-10
+  cpu_percentage: 70
+
+environments:
+  prod:
+    count: 3
+    variables:
+      LOG_LEVEL: warn
+\`\`\`
+
+The \`environments:\` block lets a single manifest override settings (instance count, environment variables, CPU/memory) per deployment target — which leads directly into Copilot's environment model.
+
+### 4.3 Environments
+A Copilot **environment** (\`copilot env init\`) is a named deployment target — typically \`test\`, \`staging\`, \`prod\` — each backed by its own isolated infrastructure (its own VPC, ECS cluster, and related resources) within the same Copilot **application** (the logical grouping of services and environments, analogous to an EB "application"). This is the exam guide's explicitly named **"Copilot environments"** concept under approved-version environments: a service is deployed independently into each environment via \`copilot deploy --env <name>\`, giving clean separation between dev/test/prod without the team manually provisioning parallel infrastructure by hand each time.
+
+### 4.4 Pipelines
+\`copilot pipeline init\` (backed by CodePipeline and CodeBuild, tying directly into module 10's CI/CD material) sets up an automated promotion pipeline: a commit to your source repo triggers a build (Docker image build + push to ECR), then automatically deploys through your environments in order (e.g., \`test\` → \`staging\` → \`prod\`), optionally requiring manual approval gates between stages. This gives containerized services the same "approved-version environment" promotion story that Amplify branches and Lambda aliases give their respective compute models — the exam's Domain 3.3 grouping isn't a coincidence; all four (Lambda aliases, container image tags, Amplify branches, Copilot environments) are the same underlying pattern — a named, stable pointer to a specific approved build — expressed differently per compute type.
+
+## 5. Choosing the right abstraction — comparison table
+
+| | Elastic Beanstalk | Amplify | Copilot | Raw CloudFormation / SAM / CDK |
+|---|---|---|---|---|
+| **Target app shape** | Traditional web apps/APIs on EC2 (Java, Node, Python, .NET, Docker, etc.) | Frontend-heavy web/mobile apps needing a Cognito+AppSync+S3-style backend | Containerized microservices on ECS/Fargate or App Runner | Anything — no assumptions about app shape |
+| **Underlying compute** | EC2 (ASG + ELB), optional RDS | Static/SSR hosting (frontend) + Lambda/AppSync/Cognito (backend) | ECS Fargate tasks, or App Runner | Whatever you declare |
+| **Abstraction level** | Medium — resources are provisioned for you but fully inspectable/tunable | High for the backend categories (Auth/API/Storage); high for hosting/CI | Medium — CFN generated for you, service concepts exposed via manifest | Low — you author every resource explicitly |
+| **Best-fit team profile** | Teams wanting fast EC2-based deploys with some ops comfort/visibility, not ready for containers or full serverless | Frontend/mobile teams without dedicated backend engineers, wanting managed auth/API/storage and instant Git-based hosting | Platform/backend teams already committed to containers who want ECS without hand-writing CFN | Teams needing full architectural control, complex/custom resource graphs, or resources no higher-level tool models yet |
+| **IaC visibility** | Environment config visible/editable via console, CLI, \`.ebextensions\` | Backend resources are CFN stacks under the hood, mostly abstracted away by the CLI/Studio | CFN generated and managed by Copilot, visible via \`copilot svc show\`/\`copilot app show\` | Full and explicit — you own every template line |
+| **CI/CD story** | \`eb deploy\` from any pipeline; console/CLI/CI parity | Amplify Hosting has CI/CD built in per branch; \`amplify push\` for backend | \`copilot pipeline init\` wires CodePipeline automatically | You build the pipeline yourself (module 10 tools) |
+| **When to reach for it** | "Deploy this app quickly, but let us tune the instance type/scaling/health checks later" | "We're a frontend team, give us auth/API/storage and hosting without backend engineers" | "We're already on containers, stop making us hand-write ECS CloudFormation" | "This doesn't fit any higher-level tool's model, or we need precise control over every resource" |
+
+**Exam trap:** none of these four tools is strictly "better" than the others — the exam almost always frames the choice around the *team's* starting shape (existing EC2 app vs. frontend team vs. containerized microservices team vs. bespoke architecture), not around performance or cost. Picking Copilot for a team with no container images yet, or Amplify for a backend-heavy service with no real frontend, is a classic wrong-answer pattern.
+
+## 6. Worked real-world scenarios
+
+**Scenario A — the EC2 monolith that needs zero-downtime deploys and a background job.** A team is migrating a Node.js monolith off a hand-managed EC2 instance. They want fast, low-effort deploys, the ability to occasionally SSH in to debug, and a separate background worker that processes image-resizing jobs off a queue without being publicly reachable. They set up two Elastic Beanstalk environments in the same application: a **web server tier** environment for the public API (with an \`.ebextensions/01-environment.config\` setting \`NODE_ENV\` and tuning the ASG's min/max size), and a **worker tier** environment pointed at an SQS queue for the image-resizing jobs (Beanstalk provisions the queue automatically and the worker daemon polls it, posting each message to a local HTTP endpoint the app exposes). For deploys to the web tier, they choose **rolling with additional batch** so capacity never dips during business hours; for a major version bump they're nervous about, they instead spin up a parallel environment and use a **CNAME swap** for instant, safe cutover with instant rollback if metrics look wrong. **Lesson:** web vs. worker tier is a real architectural choice, not a checkbox — the worker tier is what turns "SQS + EC2" from something you'd build by hand into a managed pattern.
+
+**Scenario B — the frontend team without backend engineers.** A startup's frontend team is building a customer-facing React app and needs authentication, a GraphQL API, and file uploads, but has no backend engineers and a tight deadline. They use \`amplify add auth\` (provisions Cognito), \`amplify add api\` (provisions AppSync + DynamoDB), and \`amplify add storage\` (provisions S3), then \`amplify push\` to deploy all of it as CloudFormation stacks they never had to write. The frontend calls these through the **Amplify libraries'** \`Auth\`, \`API\`, and \`Storage\` categories, which handle token refresh and signed requests automatically. For hosting, they connect their GitHub repo to **Amplify Hosting**: pushes to \`main\` deploy to the production URL, pushes to \`develop\` deploy to a completely separate, independently testable environment at its own URL, and every pull request gets an automatic preview deployment reviewers can click through before approving. **Lesson:** Amplify's value here isn't any single service — it's that a frontend-only team gets a working, isolated-per-branch backend and hosting pipeline without ever provisioning infrastructure by hand.
+
+**Scenario C — the platform team standardizing on containers.** A platform team is migrating a set of microservices to ECS Fargate and wants consistent \`dev\` → \`staging\` → \`prod\` promotion without every service team hand-writing CloudFormation for task definitions, services, and load balancers. They standardize on Copilot: each service gets a \`manifest.yml\` declaring it as a **Load Balanced Web Service** with autoscaling bounds and a health check path, \`copilot env init\` creates isolated \`dev\`, \`staging\`, and \`prod\` **environments** (separate VPCs/clusters), and \`copilot pipeline init\` wires a CodePipeline that builds each service's Docker image, pushes it to ECR, and promotes it through the three environments with a manual approval gate before \`prod\`. A service-specific override in the manifest's \`environments: prod:\` block bumps \`prod\` to a higher instance count and different log level than \`dev\`/\`staging\` without duplicating the whole manifest. **Lesson:** Copilot environments give containerized services the same "promote a specific, approved build through named stages" story that EB application versions and Amplify branches give their respective compute models — it's the same underlying pattern (a stable, named pointer to an approved build) the exam groups together under Domain 3.3.
+
+## Key exam traps
+
+- EB's **worker tier** (not web server tier) is the answer whenever a scenario describes background processing off an SQS queue with no direct public traffic — Beanstalk provisions the queue and polling daemon for you.
+- Deployment policy nuance: **rolling with additional batch** is the one that maintains full capacity throughout (at extra temporary cost); plain **rolling** briefly reduces capacity; **all at once** has full downtime risk but is fastest; **immutable** (and environment-swap blue/green) give the safest, fastest rollback at the highest temporary resource cost.
+- Blue/green in Beanstalk is a **CNAME swap between two separate environments**, not one of the four same-environment deployment-policy dropdown options — know the distinction if a question tests it precisely.
+- \`.ebextensions\` config files can embed a real CloudFormation \`Resources:\` section — Beanstalk environments are still CloudFormation-backed under the hood, same as Amplify and Copilot.
+- Application version lifecycle policies matter for teams deploying frequently via CI/CD — without one, you can hit the per-region application version quota.
+- The exam guide's exact phrase **"Amplify branches"** maps to Amplify Hosting's Git-branch-per-environment model — memorize this pairing, it's directly testable.
+- The exam guide's exact phrase **"Copilot environments"** maps to named, isolated deployment targets (\`dev\`/\`test\`/\`prod\`) each with their own infrastructure — memorize this pairing too.
+- Lambda aliases, container image tags, Amplify branches, and Copilot environments are grouped together in the official exam guide as the same underlying concept — a stable, named pointer to an approved build — expressed per compute model. Recognizing this pattern helps on scenario questions that swap the compute type but ask the same underlying "how do you promote a tested build to production safely" question.
+- None of EB/Amplify/Copilot is a universally "better" choice — the exam frames the decision around the **team's existing shape and app type** (EC2-comfortable team vs. frontend-only team vs. container-committed team), not around raw performance. When a scenario doesn't fit any of the three cleanly, raw CloudFormation/SAM/CDK (module 13) is the correct fallback answer, not forcing a mismatched higher-level tool.
+- All three tools ultimately provision standard, inspectable AWS resources — none of them is "not real AWS" or a black box you should distrust on the exam; the difference is authoring convenience, not the resulting infrastructure.
+`;
+const QUESTIONS = [
+  {
+    "q": "A software development team wants to deploy a Node.js web application on AWS without manually configuring VPC routing tables, Elastic Load Balancers, or Auto Scaling groups. However, the operations team requires the ability to SSH into the underlying EC2 instances to inspect logs and install custom monitoring tools when troubleshooting. Which AWS service fulfills these requirements?",
+    "o": [
+      "AWS Lambda",
+      "AWS Elastic Beanstalk",
+      "Amazon S3 Static Website Hosting",
+      "AWS Fargate with no execution role"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Elastic Beanstalk automates provisioning of EC2, ASG, and ELB while allowing developers to SSH into the underlying EC2 instances for deep inspection."
+  },
+  {
+    "q": "A developer is deploying a Java Spring Boot application using AWS Elastic Beanstalk. The application must process incoming HTTP requests from the public internet, distribute load across multiple Amazon EC2 instances, and automatically scale out when CPU utilization exceeds 75%. Which Elastic Beanstalk environment tier should the developer create?",
+    "o": [
+      "Worker environment tier",
+      "Web server environment tier",
+      "Batch processing tier",
+      "Edge compute tier"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The Web server environment tier in Elastic Beanstalk is designed for applications that handle public HTTP(S) requests via an Elastic Load Balancer."
+  },
+  {
+    "q": "A media processing company needs to run background video encoding jobs that take 10 to 15 minutes each. The jobs are submitted as messages to an Amazon SQS queue. The processing instances must not accept direct public internet traffic. Which Elastic Beanstalk architecture meets these requirements with the LEAST operational effort?",
+    "o": [
+      "A Web server environment tier with an Application Load Balancer",
+      "A Worker environment tier configured with an SQS queue and the local SQS daemon",
+      "An Amazon CloudFront distribution routing traffic to EC2 instances",
+      "A Lambda function configured with a 30-second execution timeout"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The Worker environment tier is purpose-built for non-public background processing, polling tasks from an SQS queue via the local SQS daemon."
+  },
+  {
+    "q": "Project 3: A legacy Java Tomcat enterprise application running on EC2 requiring Rolling deployments with additional batch to maintain full capacity. Which mapping of AWS deployment tools is correct?",
+    "o": [
+      "Project 1: AWS Copilot; Project 2: AWS Elastic Beanstalk; Project 3: AWS Amplify",
+      "Project 1: AWS Amplify; Project 2: AWS Copilot; Project 3: AWS Elastic Beanstalk",
+      "Project 1: AWS Elastic Beanstalk; Project 2: AWS Amplify; Project 3: AWS Copilot",
+      "Project 1: Raw CloudFormation; Project 2: AWS Amplify; Project 3: AWS Copilot"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The Worker environment tier is purpose-built for non-public background processing, polling tasks from an SQS queue via the local SQS daemon."
+  },
+  {
+    "q": "How does the Elastic Beanstalk worker daemon (SQSD) on an EC2 instance in a worker environment deliver SQS messages to the application code?",
+    "o": [
+      "It writes the message to a local flat file in `/tmp`",
+      "It sends an HTTP POST request containing the message body to a configurable local endpoint (e.g., `http://localhost/`) on the instance",
+      "It opens a persistent WebSocket connection to the application process",
+      "It converts the message into an AWS Lambda invocation"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The Beanstalk SQS daemon (SQSD) polls SQS messages and delivers them by making HTTP POST requests to a local endpoint (e.g., `http://localhost/`) on the instance."
+  },
+  {
+    "q": "A developer wants to customize an Elastic Beanstalk environment by installing an OS package (`htop`), setting custom environment variables (`NODE_ENV=production`), and creating a cron job. Where should these configuration files be placed in the application source bundle?",
+    "o": [
+      "In the root directory named `config.json`",
+      "In a folder named `.ebextensions` at the root of the source bundle, containing `.config` files written in YAML or JSON",
+      "In the `/etc/aws/elasticbeanstalk` directory on an external S3 bucket",
+      "In the `.elasticbeanstalk/saved_configs` directory on the local developer laptop"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Elastic Beanstalk configuration files must be placed in a `.ebextensions/` directory at the root of the source bundle with a `.config` extension (YAML or JSON)."
+  },
+  {
+    "q": "An application deployed on Elastic Beanstalk requires database schema migrations to execute exactly once per deployment across a multi-instance Auto Scaling group. The developer adds a `container_commands` block in an `.ebextensions` configuration file. Which directive ensures the migration script executes on only a single instance rather than every instance in the fleet?",
+    "o": [
+      "`run_once: true`",
+      "`leader_only: true`",
+      "`master: true`",
+      "`singleton: true`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`leader_only: true` inside `container_commands` ensures that the specified command (such as a DB migration) runs on only one instance in the Auto Scaling group."
+  },
+  {
+    "q": "What is the execution order of configuration sections in an `.ebextensions` `.config` file during an Elastic Beanstalk deployment?",
+    "o": [
+      "`container_commands` run before application and web server extraction; `commands` run after",
+      "`commands` run early in the setup process before the application source code is unpacked; `container_commands` run after the application source code has been extracted to the staging directory",
+      "`container_commands` and `commands` execute in parallel",
+      "`container_commands` run only during instance termination"
+    ],
+    "a": [
+      1
+    ],
+    "e": "In `.ebextensions`, `commands` run early in the setup process before application extraction; `container_commands` run after the source bundle is extracted to the staging directory."
+  },
+  {
+    "q": "A developer wants to declare an additional Amazon SQS Dead-Letter Queue directly within an Elastic Beanstalk environment definition so that it is provisioned automatically alongside the environment. How can this be accomplished?",
+    "o": [
+      "It is impossible; Elastic Beanstalk cannot manage additional AWS resources",
+      "Add a `Resources:` section in an `.ebextensions/*.config` file containing the standard CloudFormation resource definition for `AWS::SQS::Queue`",
+      "Write a custom shell script in `cron.yaml`",
+      "Use the EB CLI command `eb sqs create-queue`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "An `.ebextensions/*.config` file can contain a standard CloudFormation `Resources:` section defining additional AWS resources (such as `AWS::SQS::Queue`)."
+  },
+  {
+    "q": "An operations engineer wants to capture an existing Elastic Beanstalk environment’s settings (instance type, environment variables, scaling triggers) to replicate the identical configuration across multiple staging and production environments. Which Elastic Beanstalk feature should the engineer use?",
+    "o": [
+      "Application Version Lifecycle Policy",
+      "Saved Configurations",
+      "CloudWatch Metric Filters",
+      "Elastic Beanstalk CNAME swap"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Saved Configurations capture an Elastic Beanstalk environment's settings as a template stored in S3 to replicate identical environments easily."
+  },
+  {
+    "q": "A developer needs to configure scheduled periodic tasks (e.g., running a cleanup job every midnight) in an Elastic Beanstalk worker environment. What file must be included in the root of the application source bundle?",
+    "o": [
+      "`scheduled_tasks.json`",
+      "`cron.yaml`",
+      "`.ebextensions/cron.config` with root crontab syntax only",
+      "`Procfile`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Periodic scheduled tasks in an Elastic Beanstalk worker environment are configured using a `cron.yaml` file in the root of the application bundle."
+  },
+  {
+    "q": "Which file can be placed in the root directory of an Elastic Beanstalk source bundle to override the default application startup command on platforms like Node.js, Python, or Go?",
+    "o": [
+      "`Startup.sh`",
+      "`Procfile`",
+      "`manifest.yml`",
+      "`AppSpec.yml`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A `Procfile` at the root of the source bundle defines custom application execution commands on modern Elastic Beanstalk platforms."
+  },
+  {
+    "q": "A developer is deploying a single Docker container to AWS Elastic Beanstalk. What file in the source bundle tells Elastic Beanstalk how to build or pull the container image?",
+    "o": [
+      "A `Dockerfile` or a `Dockerrun.aws.json` file placed in the root of the source bundle",
+      "`buildspec.yml`",
+      "`template.yaml`",
+      "`task-definition.json`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A single-container Docker environment in Elastic Beanstalk requires a `Dockerfile` or a `Dockerrun.aws.json` in the root of the source bundle."
+  },
+  {
+    "q": "An application running on Elastic Beanstalk needs to connect to an Amazon RDS database. The developer is deciding whether to provision the RDS database directly inside the Elastic Beanstalk environment or provision it externally and pass the connection string via environment variables. What is the primary disadvantage of creating the RDS database inside the Elastic Beanstalk environment for production workloads?",
+    "o": [
+      "The database cannot use Multi-AZ replication",
+      "If the Elastic Beanstalk environment is terminated or deleted, the RDS database instance is automatically terminated and deleted with it",
+      "Elastic Beanstalk does not support PostgreSQL databases",
+      "The database can only be accessed by one EC2 instance at a time"
+    ],
+    "a": [
+      1
+    ],
+    "e": "If an RDS DB instance is created inside an Elastic Beanstalk environment, deleting or terminating the environment also terminates the database, risking data loss."
+  },
+  {
+    "q": "A development team wants to deploy application updates using the EB CLI (`eb`). Which command initializes a local directory as an Elastic Beanstalk application workspace and configures the default Region and platform?",
+    "o": [
+      "`eb create`",
+      "`eb init`",
+      "`eb config`",
+      "`eb deploy`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`eb init` initializes a local directory as an Elastic Beanstalk application workspace and configures the default Region and platform settings."
+  },
+  {
+    "q": "What are the two distinct IAM roles required for an Elastic Beanstalk environment to function properly? (Select TWO.)",
+    "o": [
+      "A Service Role that Elastic Beanstalk assumes to create, monitor, and manage AWS resources (ELB, ASG, EC2) on your behalf",
+      "An EC2 Instance Profile role attached to the underlying EC2 instances, granting them permissions to download application bundles from S3, write logs to CloudWatch, and communicate with SQS",
+      "An Amazon Cognito Identity Pool Role for guest access",
+      "An AWS Organizations Master Account Role",
+      "An IAM User with root administrator privileges"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Elastic Beanstalk requires a Service Role to manage AWS resources on your behalf, and an EC2 Instance Profile role for instances to access S3, CloudWatch, and SQS."
+  },
+  {
+    "q": "A company has deployed an application on Elastic Beanstalk. The operations team notices that the environment health status changes to Yellow (Degraded) and then Red (Severe). Which feature of Elastic Beanstalk provides detailed OS-level metrics, latency percentiles, and application HTTP status code breakdowns directly in the console for troubleshooting?",
+    "o": [
+      "Basic Health Reporting",
+      "Enhanced Health Reporting",
+      "AWS CloudTrail Data Events",
+      "Amazon Inspector"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Enhanced Health Reporting publishes granular OS metrics, latency distributions, and HTTP response code counts to CloudWatch and the EB console."
+  },
+  {
+    "q": "How does Elastic Beanstalk collect Enhanced Health metrics from EC2 instances in an environment?",
+    "o": [
+      "By running port scans against the instance public IP",
+      "By running an Elastic Beanstalk Health Agent daemon on each EC2 instance that gathers OS and web server metrics and publishes them to the Elastic Beanstalk health service",
+      "By executing an AWS Lambda function every 5 seconds",
+      "By parsing VPC Flow Logs"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Enhanced Health Reporting relies on an Elastic Beanstalk Health Agent running on each EC2 instance that publishes detailed OS and web server metrics."
+  },
+  {
+    "q": "A developer wants to configure environment variables for an Elastic Beanstalk application using `.ebextensions`. Which namespace should be specified in the `.config` file?",
+    "o": [
+      "`aws:elasticbeanstalk:container:nodejs`",
+      "`aws:elasticbeanstalk:application:environment`",
+      "`aws:autoscaling:environment`",
+      "`aws:ec2:env:variables`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Environment variables in `.ebextensions` are specified under the `aws:elasticbeanstalk:application:environment` namespace."
+  },
+  {
+    "q": "A developer runs `eb logs` from the terminal. What information does the EB CLI retrieve by default from the target environment?",
+    "o": [
+      "The full database binlog stream",
+      "The last 100 lines of standard log files from the EC2 instances (such as `/var/log/eb-engine.log`, `/var/log/nginx/error.log`, or application logs)",
+      "The AWS CloudTrail management event history for the past 90 days",
+      "Real-time network packet captures from the Elastic Load Balancer"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`eb logs` retrieves the tail (last 100 lines) of standard system and application logs from the environment's EC2 instances."
+  },
+  {
+    "q": "When creating an Elastic Beanstalk web server environment that requires high availability and automatic scaling, which environment type should be selected?",
+    "o": [
+      "Single-instance environment",
+      "Load-balanced, autoscaling environment",
+      "Serverless environment",
+      "Dedicated Host cluster"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A load-balanced, autoscaling environment distributes traffic across multiple instances and automatically scales capacity based on demand."
+  },
+  {
+    "q": "A developer is deploying a single-instance Elastic Beanstalk environment for a dev testing sandbox. What network and compute resources are created in a single-instance environment?",
+    "o": [
+      "An Application Load Balancer and an Auto Scaling group with minimum size 1",
+      "A single EC2 instance with an Elastic IP address, with no load balancer provisioned",
+      "A fleet of spot instances behind a Network Load Balancer",
+      "An AWS Fargate cluster with an API Gateway endpoint"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A single-instance environment launches a single EC2 instance with an Elastic IP and no load balancer, suitable for development testing."
+  },
+  {
+    "q": "What happens to the application source code when a developer runs `eb deploy` in a git-initialized repository?",
+    "o": [
+      "The EB CLI creates a zip archive of the committed git repository files (or staged files), uploads it to an S3 bucket managed by Elastic Beanstalk, creates a new Application Version, and deploys it to the environment",
+      "The EB CLI commits the code directly to an Amazon EFS mount point",
+      "The EB CLI recompiles the Linux kernel on the EC2 instances",
+      "The EB CLI pushes the code directly to a GitHub public repository"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`eb deploy` packages committed git files into a zip archive, uploads it to S3, creates an Application Version, and deploys it to the environment."
+  },
+  {
+    "q": "A developer wants to customize the Nginx reverse proxy configuration on an Elastic Beanstalk Amazon Linux 2 platform. What is the standard AWS-recommended directory to place custom Nginx configuration files?",
+    "o": [
+      "`.ebextensions/nginx.conf`",
+      "`.platform/nginx/conf.d/` in the application source bundle",
+      "`/etc/httpd/conf.d/`",
+      "`/root/nginx/`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "On Amazon Linux 2 platforms, custom Nginx proxy configuration files should be placed in `.platform/nginx/conf.d/` in the source bundle."
+  },
+  {
+    "q": "What is the difference between `.ebextensions/` and `.platform/` in Elastic Beanstalk on Amazon Linux 2 platforms?",
+    "o": [
+      "`.ebextensions/` is used for resource provisioning and general option settings; `.platform/` provides platform hooks and web server configuration overrides (Nginx/Apache) that run at specific lifecycle stages",
+      "`.platform/` is deprecated and replaced by `.ebextensions/`",
+      "`.platform/` only works on Windows Server instances",
+      "`.ebextensions/` can only contain JSON files, while `.platform/` only accepts XML"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`.ebextensions/` manages general configuration and AWS resources; `.platform/` provides platform hooks and server config files for Amazon Linux 2 platforms."
+  },
+  {
+    "q": "A developer wants to execute custom bash scripts during specific deployment phases on Amazon Linux 2 Beanstalk environments (e.g., `prebuild`, `predeploy`, `postdeploy`). Where should these scripts be located in the source bundle?",
+    "o": [
+      "`.platform/hooks/prebuild/`, `.platform/hooks/predeploy/`, and `.platform/hooks/postdeploy/`",
+      "`/usr/bin/hooks/`",
+      "`.ebextensions/hooks/`",
+      "`scripts/deployment/`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Custom platform lifecycle scripts on Amazon Linux 2 must be placed in `.platform/hooks/prebuild/`, `predeploy/`, or `postdeploy/`."
+  },
+  {
+    "q": "An organization enforces a compliance policy that all EC2 instances must have IMDSv2 (Instance Metadata Service Version 2) required with token hop limit 1. How can this setting be enforced across all instances in an Elastic Beanstalk environment?",
+    "o": [
+      "Modify the setting in `.ebextensions` under the `aws:autoscaling:launchconfiguration` namespace by setting `DisableIMDSv1: true`",
+      "Reboot each EC2 instance manually",
+      "Disable the Elastic Load Balancer",
+      "Delete the IAM Instance Profile"
+    ],
+    "a": [
+      0
+    ],
+    "e": "IMDSv2 requirements can be enforced via `.ebextensions` under the `aws:autoscaling:launchconfiguration` namespace by setting `DisableIMDSv1: true`."
+  },
+  {
+    "q": "A developer is testing an Elastic Beanstalk application and wants to temporarily SSH into an instance. Which EB CLI command automates opening the SSH connection, configuring the security group rule if necessary?",
+    "o": [
+      "`eb connect`",
+      "`eb ssh`",
+      "`eb open-port 22`",
+      "`eb terminal`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`eb ssh` opens an SSH shell into an Elastic Beanstalk EC2 instance, automatically managing temporary security group access."
+  },
+  {
+    "q": "When an Elastic Beanstalk worker environment daemon encounters an HTTP 500 error returned by the local application when processing an SQS message, what does the daemon do?",
+    "o": [
+      "It permanently deletes the message from SQS",
+      "It leaves the message in SQS (or does not delete it), allowing the SQS visibility timeout to expire so the message becomes visible again for retry, eventually moving to a Dead-Letter Queue if configured",
+      "It reboots the EC2 instance immediately",
+      "It converts the message into an email alert via Amazon SES"
+    ],
+    "a": [
+      1
+    ],
+    "e": "When an application returns an error on a worker message, SQSD leaves the message in SQS to be retried after the visibility timeout expires."
+  },
+  {
+    "q": "A developer wants to deploy an Elastic Beanstalk application using a pre-built zip file located in an S3 bucket via the AWS CLI. What two API calls are required? (Select TWO.)",
+    "o": [
+      "`aws elasticbeanstalk create-application-version` referencing the S3 bucket and object key",
+      "`aws elasticbeanstalk update-environment` specifying the environment name and the newly created `VersionLabel`",
+      "`aws ec2 create-image`",
+      "`aws cloudformation delete-stack`",
+      "`aws s3 sync` to the root directory of the EC2 instance"
+    ],
+    "a": [
+      0,
+      1
+    ],
+    "multi": true,
+    "e": "Deploying a pre-built zip via AWS CLI requires `create-application-version` to register the S3 bundle, followed by `update-environment` to deploy it."
+  },
+  {
+    "q": "Which statement accurately describes the underlying infrastructure created by AWS Elastic Beanstalk?",
+    "o": [
+      "Elastic Beanstalk uses a proprietary, non-AWS hypervisor",
+      "Elastic Beanstalk generates standard AWS resources (CloudFormation stack, EC2, ASG, ELB, CloudWatch) that can be inspected, monitored, and modified using standard AWS management tools",
+      "Elastic Beanstalk instances run exclusively in AWS-owned VPCs that are invisible to the customer",
+      "Elastic Beanstalk resources cannot be tagged --- ### Beanstalk Deployment Policies & Version Lifecycles (31–60)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Elastic Beanstalk uses CloudFormation to provision standard AWS resources that can be inspected, tuned, and monitored like any other AWS infrastructure."
+  },
+  {
+    "q": "A company needs to deploy an updated version of a mission-critical web application on Elastic Beanstalk. The application currently runs on 4 EC2 instances. The deployment must maintain 100% full capacity (4 healthy instances) at all times during the deployment, and cannot tolerate any reduction in available compute instances. Which deployment policy should the developer select?",
+    "o": [
+      "All at once",
+      "Rolling",
+      "Rolling with additional batch",
+      "Re-create"
+    ],
+    "a": [
+      2
+    ],
+    "e": "Rolling with additional batch launches an extra batch of instances first to maintain 100% capacity throughout the entire deployment process."
+  },
+  {
+    "q": "An e-commerce platform uses Elastic Beanstalk. The team wants the fastest possible deployment mechanism during a scheduled maintenance window where a brief period of total downtime is acceptable. Which deployment policy is the most suitable?",
+    "o": [
+      "All at once",
+      "Rolling with additional batch",
+      "Immutable",
+      "Traffic splitting"
+    ],
+    "a": [
+      0
+    ],
+    "e": "All at once updates all instances simultaneously; it is the fastest deployment method but incurs downtime during the update."
+  },
+  {
+    "q": "A developer selects the Rolling deployment policy for an Elastic Beanstalk environment with 4 EC2 instances and a batch size of 2. What happens to the environment's total serving capacity during the rollout of the new version?",
+    "o": [
+      "Serving capacity remains at 100% because 2 new instances are launched first",
+      "Serving capacity is reduced to 50% (2 instances) while the first batch of 2 instances is updated, then restored as each batch finishes",
+      "All 4 instances are taken offline simultaneously",
+      "Serving capacity doubles to 8 instances throughout the process"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Standard Rolling deployment updates instances in batches without launching extra instances first, temporarily reducing capacity during the rollout."
+  },
+  {
+    "q": "A financial application requires a deployment strategy that guarantees zero downtime, maintains full capacity, creates an entirely new Auto Scaling group for the new version, and allows instantaneous rollback by simply terminating the new Auto Scaling group if health checks fail. Which deployment policy meets these requirements?",
+    "o": [
+      "All at once",
+      "Rolling",
+      "Immutable",
+      "Single-Instance in-place"
+    ],
+    "a": [
+      2
+    ],
+    "e": "Immutable deployments launch a brand new Auto Scaling group for the new version, ensuring zero downtime, full capacity, and instant rollback on failure."
+  },
+  {
+    "q": "How does an Immutable deployment in Elastic Beanstalk verify the health of the new application version before affecting production traffic?",
+    "o": [
+      "It prompts the developer to click \"Approve\" in the AWS Management Console",
+      "It launches a single temporary instance in a new Auto Scaling group, deploys the new version, tests it against health checks, and if healthy, launches the remaining instances in the new group before shifting the load balancer and terminating the old group",
+      "It runs unit tests in AWS CodeBuild",
+      "It deploys to an S3 bucket and verifies file hashes"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Immutable deployments test a single temporary instance in a new Auto Scaling group; if healthy, they launch the rest of the fleet and terminate the old group."
+  },
+  {
+    "q": "A development team wants to deploy a new version to an Elastic Beanstalk environment and direct 10% of live user traffic to the new version for 15 minutes to monitor error rates in CloudWatch before promoting the version to 100% of the fleet. Which deployment policy provides this canary testing capability?",
+    "o": [
+      "Traffic splitting",
+      "All at once",
+      "Rolling with additional batch",
+      "Re-create"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Traffic splitting shifts a small percentage of live traffic (e.g., 10%) to canary instances in a new Auto Scaling group before full rollout."
+  },
+  {
+    "q": "A company needs to deploy a major version upgrade of a web application on Elastic Beanstalk that includes breaking database schema changes and a new major platform runtime. The team wants to test the new environment independently with a dedicated URL before switching live production traffic, and requires the ability to roll back immediately if issues occur. Which deployment method is recommended?",
+    "o": [
+      "All at once deployment to the existing environment",
+      "Create a second, independent Elastic Beanstalk environment running the new version, perform testing on its unique CNAME, and then use the Elastic Beanstalk \"Swap Environment URLs\" (CNAME swap) feature to redirect live traffic",
+      "Rolling deployment with a batch size of 1",
+      "Modify the Launch Configuration AMI directly on running instances"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Performing a CNAME swap between two independent environments provides a safe, zero-downtime blue/green deployment for major platform/database upgrades."
+  },
+  {
+    "q": "What mechanism does Elastic Beanstalk use to execute a \"Swap Environment URLs\" operation between two environments in the same application?",
+    "o": [
+      "It deletes the old environment's EC2 instances and launches new ones in the new environment",
+      "It performs an atomic DNS CNAME record swap in Route 53 / Elastic Beanstalk DNS, swapping the public URLs assigned to the two environments",
+      "It copies all EBS root volumes between environments",
+      "It reassigns the Elastic IP addresses of the individual EC2 instances"
+    ],
+    "a": [
+      1
+    ],
+    "e": "\"Swap Environment URLs\" performs an atomic DNS CNAME record swap between two environments in the same application, instantly redirecting traffic."
+  },
+  {
+    "q": "What is a key prerequisite when performing a CNAME swap between two Elastic Beanstalk environments connected to an Amazon RDS database?",
+    "o": [
+      "The RDS database must be created inside the source Elastic Beanstalk environment",
+      "The RDS database must be an external database (decoupled from both environments) so that both the existing and new environments can connect to it independently without data migration during the swap",
+      "The database must be converted to DynamoDB",
+      "Both environments must run on Windows Server"
+    ],
+    "a": [
+      1
+    ],
+    "e": "For a seamless CNAME swap, the database must be external to both environments so both versions can connect to it independently without data migration."
+  },
+  {
+    "q": "An automated CI/CD pipeline deploys new application versions to Elastic Beanstalk 20 times per day. After several months, the pipeline begins failing with an error indicating that the application version quota has been reached. What is the root cause and the recommended solution?",
+    "o": [
+      "Elastic Beanstalk accounts have a limit on total application versions (default 1,000 per region); configure an Application Version Lifecycle Policy to automatically delete old, unused application versions by age or count",
+      "S3 storage is full; upgrade S3 account capacity",
+      "EC2 instance limit reached; request a vCPU limit increase",
+      "The pipeline IAM role has expired; generate new access keys"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Regions have a soft quota of 1,000 application versions; configuring an Application Version Lifecycle Policy automatically purges old versions from S3."
+  },
+  {
+    "q": "When configuring an Elastic Beanstalk Application Version Lifecycle Policy, what option should be enabled to prevent deleting an application version that is actively running on a live environment?",
+    "o": [
+      "`Delete source bundle from S3`",
+      "`Retain versions currently deployed to environments` (or `Keep source bundle in S3 if deployed`)",
+      "`Enable Multi-AZ deletion`",
+      "`Force delete active versions`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The lifecycle policy setting \"Retain versions currently deployed to environments\" prevents deleting bundles currently in use by active environments."
+  },
+  {
+    "q": "A developer initiates a deployment to an Elastic Beanstalk environment using the Immutable deployment policy. During the deployment, the health check on the newly launched test instance fails repeatedly with HTTP 500 errors. What automated action does Elastic Beanstalk take?",
+    "o": [
+      "It continues the deployment and terminates the old healthy instances",
+      "It rolls back the deployment by terminating the new Auto Scaling group and temporary instances, leaving the original Auto Scaling group and production traffic completely unaffected",
+      "It reboots the Elastic Load Balancer",
+      "It deletes the entire Elastic Beanstalk application"
+    ],
+    "a": [
+      1
+    ],
+    "e": "If health checks fail during an Immutable deployment, Elastic Beanstalk terminates the new Auto Scaling group, leaving existing production traffic untouched."
+  },
+  {
+    "q": "Which two deployment policies in AWS Elastic Beanstalk result in temporary additional infrastructure costs during the rollout process? (Select TWO.)",
+    "o": [
+      "All at once",
+      "Rolling with additional batch",
+      "Immutable",
+      "Rolling (standard without additional batch)",
+      "Re-create"
+    ],
+    "a": [
+      1,
+      2
+    ],
+    "multi": true,
+    "e": "Rolling with additional batch and Immutable deployments launch temporary additional EC2 instances during the rollout, incurring brief extra costs."
+  },
+  {
+    "q": "A developer wants to roll back an Elastic Beanstalk environment to a previous stable release after a buggy version was deployed. What is the fastest and cleanest way to perform this rollback in Elastic Beanstalk?",
+    "o": [
+      "Re-deploy the previously successful Application Version label to the environment via the console or `eb deploy --version <label>`",
+      "Manually SSH into each instance and use `git checkout`",
+      "Terminate all EC2 instances and let Auto Scaling recreate them from the same bad AMI",
+      "Delete the Elastic Beanstalk application and rebuild from scratch"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Rolling back in Elastic Beanstalk is achieved by re-deploying a previously successful Application Version label to the environment."
+  },
+  {
+    "q": "How does Elastic Beanstalk determine if an instance in an updated batch is healthy before proceeding to the next batch during a Rolling deployment?",
+    "o": [
+      "By checking if the instance has been powered on for 60 seconds",
+      "By waiting for the load balancer health checks to report the instance as `InService` (Healthy) and meeting the configured Command Timeout and Health Check thresholds",
+      "By sending an email to the AWS account administrator",
+      "By inspecting the git commit log on the instance"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Elastic Beanstalk verifies that instances in a batch report as `InService` (Healthy) on the load balancer before proceeding to the next batch."
+  },
+  {
+    "q": "What parameter in Elastic Beanstalk rolling deployment configuration determines whether batches are calculated as a fixed number of instances or a percentage of the total fleet size?",
+    "o": [
+      "`BatchSizeType` (`Fixed` or `Percentage`)",
+      "`RollingPolicyMode`",
+      "`InstanceScaleFactor`",
+      "`DeploymentStepSize`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`BatchSizeType` (`Fixed` or `Percentage`) controls how batch sizes are calculated during rolling deployments."
+  },
+  {
+    "q": "A developer configures an Elastic Beanstalk environment with a Rolling deployment policy. The batch size is set to 50% and the Minimum Instances in Service is set to 50%. The fleet has 4 instances. How many instances are updated in the first batch?",
+    "o": [
+      "1 instance",
+      "2 instances",
+      "4 instances",
+      "0 instances"
+    ],
+    "a": [
+      1
+    ],
+    "e": "With a fleet of 4 instances and a 50% batch size, Elastic Beanstalk updates 2 instances in the first batch."
+  },
+  {
+    "q": "A developer wants to test a new version of an application on Elastic Beanstalk with zero downtime and no DNS TTL propagation delay. The developer is considering between an Immutable deployment and a Blue/Green CNAME swap. What is a key advantage of an Immutable deployment over a CNAME swap?",
+    "o": [
+      "Immutable deployments do not require maintaining or creating a second independent Elastic Beanstalk environment with separate configurations and URLs",
+      "Immutable deployments never launch new EC2 instances",
+      "Immutable deployments do not use CloudFormation",
+      "Immutable deployments are 100% free of charge"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Immutable deployments manage the entire new-instance rollout within a single environment, avoiding the overhead of maintaining two separate environments."
+  },
+  {
+    "q": "What happens if a CNAME swap is executed between two environments located in different AWS Regions?",
+    "o": [
+      "The swap succeeds in under 1 second",
+      "Elastic Beanstalk does not support CNAME swaps between environments in different Regions; both environments must reside in the same Region and application",
+      "The instances in both Regions are merged into a single VPC",
+      "The source environment is migrated to S3 Glacier"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Elastic Beanstalk CNAME swaps are only supported between environments in the same AWS Region and application."
+  },
+  {
+    "q": "A company deploys an update to an Elastic Beanstalk environment using the Traffic Splitting deployment policy with an evaluation period of 10 minutes and a 15% traffic split. During the 10-minute evaluation, CloudWatch alarms report a spike in 5xx errors from the canary instances. What occurs automatically?",
+    "o": [
+      "Elastic Beanstalk shifts 100% of traffic to the canary instances",
+      "Elastic Beanstalk automatically cancels the deployment, routes 100% of traffic back to the original instances, and terminates the canary instances",
+      "Elastic Beanstalk disables all health checks",
+      "Elastic Beanstalk reboots the primary RDS database"
+    ],
+    "a": [
+      1
+    ],
+    "e": "If CloudWatch alarms fire during Traffic Splitting evaluation, Elastic Beanstalk immediately cancels the deployment and routes 100% of traffic back."
+  },
+  {
+    "q": "Which deployment policy should be avoided for production environments that require continuous availability and cannot tolerate reduced capacity during peak traffic hours?",
+    "o": [
+      "Rolling with additional batch",
+      "Immutable",
+      "All at once (and standard Rolling if capacity is tightly provisioned)",
+      "Traffic splitting"
+    ],
+    "a": [
+      2
+    ],
+    "e": "All at once incurs full downtime, and standard Rolling temporarily reduces capacity; both should be avoided for high-availability production systems."
+  },
+  {
+    "q": "In an Elastic Beanstalk application, an Application Version artifact consists of which component?",
+    "o": [
+      "A complete virtual machine disk image (.vmdk)",
+      "A zip file (or WAR/JAR) containing the application source code and deployment descriptors stored in an Amazon S3 bucket managed by Elastic Beanstalk",
+      "A Docker daemon binary",
+      "An AWS CloudTrail log file"
+    ],
+    "a": [
+      1
+    ],
+    "e": "An Application Version is an immutable source bundle (zip/WAR/JAR) stored in an Elastic Beanstalk-managed S3 bucket."
+  },
+  {
+    "q": "An operations engineer wants to configure automated health checks for an Elastic Beanstalk application behind an Application Load Balancer. Where is the health check path (e.g., `/health`) configured?",
+    "o": [
+      "In `.ebextensions` under the `aws:elasticbeanstalk:environment:process:default` namespace with `HealthCheckPath: /health`",
+      "In `route53.json`",
+      "In the database connection pool settings",
+      "In the local `package.json` file only"
+    ],
+    "a": [
+      0
+    ],
+    "e": "ALB health check paths are configured in `.ebextensions` under `aws:elasticbeanstalk:environment:process:default` with `HealthCheckPath`."
+  },
+  {
+    "q": "A team uses Elastic Beanstalk for a microservices architecture. When deploying updates to a service, the team notices that deployments take over 25 minutes because health checks take a long time to stabilize. What setting can be tuned in Elastic Beanstalk deployment options to adjust the maximum wait time for an instance to become healthy before failing?",
+    "o": [
+      "`Timeout` in `aws:elasticbeanstalk:command` namespace",
+      "`TTL` in Route 53",
+      "`MaxDuration` in AWS Lambda",
+      "`RetentionPeriod` in Amazon SQS"
+    ],
+    "a": [
+      0
+    ],
+    "e": "The `Timeout` option in `aws:elasticbeanstalk:command` sets the maximum duration Elastic Beanstalk waits for a command or deployment to complete."
+  },
+  {
+    "q": "Can an Elastic Beanstalk environment be cloned to create a replica with identical configuration settings?",
+    "o": [
+      "No, cloning is not supported in Elastic Beanstalk",
+      "Yes, the \"Clone Environment\" feature provisions a new environment with the same platform, environment variables, tier, and resource configuration as the original",
+      "Yes, but only if the application is written in PHP",
+      "No, cloning requires an AWS Support ticket"
+    ],
+    "a": [
+      1
+    ],
+    "e": "\"Clone Environment\" creates a duplicate environment with identical platform, configuration, and environment variable settings."
+  },
+  {
+    "q": "A developer wants to re-deploy the currently deployed version to an Elastic Beanstalk environment without uploading a new source bundle (e.g., to re-run configuration scripts). Which action in the Elastic Beanstalk console or CLI achieves this?",
+    "o": [
+      "`eb rebuild` or \"Rebuild Environment\"",
+      "`eb terminate`",
+      "`eb delete`",
+      "`eb clone`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "\"Rebuild Environment\" (or `eb rebuild`) re-provisions the environment's resources from scratch using the current version and configuration."
+  },
+  {
+    "q": "What is the effect of the \"Rebuild Environment\" action in AWS Elastic Beanstalk?",
+    "o": [
+      "It deletes the application version from S3",
+      "It terminates all running resources (EC2 instances, ELB, Auto Scaling group) and provisions brand new resources from scratch using the saved configuration and current application version",
+      "It converts the environment to AWS Lambda",
+      "It renames the AWS account"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Rebuilding an environment terminates all underlying EC2/ELB resources and provisions brand new resources using the current configuration."
+  },
+  {
+    "q": "Why is it recommended to decouple state (such as user session data and file uploads) from the EC2 instances in an Elastic Beanstalk environment?",
+    "o": [
+      "EC2 instances in an Elastic Beanstalk Auto Scaling group are ephemeral and can be terminated during scaling in, deployments, or health replacement; storing state in external services like ElastiCache, DynamoDB, or S3 prevents data loss",
+      "Elastic Beanstalk instances do not have local hard drives",
+      "Local session storage disables SSL/TLS",
+      "Storing files locally doubles network latency"
+    ],
+    "a": [
+      0
+    ],
+    "e": "EC2 instances in Auto Scaling groups are ephemeral; externalizing state to DynamoDB, S3, or ElastiCache prevents data loss during scaling and deployments."
+  },
+  {
+    "q": "A developer is deploying a containerized application to Elastic Beanstalk using a multi-container Docker environment. What configuration file defines the container composition and port mappings?",
+    "o": [
+      "`Dockerrun.aws.json` (v2) specifying container definitions, memory allocations, and port mappings",
+      "`docker-compose.yml` only",
+      "`Dockerfile.prod`",
+      "`Kubernetes.yaml`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`Dockerrun.aws.json` (v2) defines multi-container Docker compositions, port mappings, and container memory limits in Elastic Beanstalk."
+  },
+  {
+    "q": "An application deployed on Elastic Beanstalk uses Rolling deployments with a batch size of 1 on a 2-instance fleet. If the deployment to Instance 1 fails, what is the state of the deployment?",
+    "o": [
+      "Elastic Beanstalk immediately updates Instance 2 anyway",
+      "Elastic Beanstalk halts the deployment, marks the command as failed, and leaves Instance 2 running the old stable version while Instance 1 remains in the failed/unhealthy state for investigation",
+      "Elastic Beanstalk deletes the Auto Scaling group",
+      "Elastic Beanstalk triggers an immutable deployment --- ### AWS Amplify Framework, CLI & Client Libraries (61–85)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "If a batch fails during a rolling deployment, Elastic Beanstalk halts the deployment to protect the remaining healthy instances running the old version."
+  },
+  {
+    "q": "A frontend development team is building a single-page React web application that needs user authentication, a GraphQL API, and cloud file storage. The team has no dedicated backend or cloud infrastructure engineers. Which AWS full-stack framework and developer toolchain is specifically designed to accelerate building, configuring, and deploying this architecture?",
+    "o": [
+      "AWS Cloud9",
+      "AWS Amplify",
+      "AWS OpsWorks",
+      "Amazon EMR"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS Amplify is a full-stack development framework, CLI, and hosting platform designed to accelerate frontend and mobile app development on AWS."
+  },
+  {
+    "q": "A developer uses the AWS Amplify CLI to add user registration and login functionality (including email verification and multi-factor authentication) to a mobile application. Which Amplify CLI command provisions these authentication resources?",
+    "o": [
+      "`amplify add api`",
+      "`amplify add auth`",
+      "`amplify add storage`",
+      "`amplify add hosting`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`amplify add auth` configures authentication resources (Amazon Cognito User Pools and Identity Pools) via guided CLI prompts."
+  },
+  {
+    "q": "Which underlying AWS security and directory service is automatically provisioned and configured when a developer executes `amplify add auth`?",
+    "o": [
+      "AWS Identity and Access Management (IAM) Identity Center",
+      "Amazon Cognito (User Pools and Identity Pools)",
+      "AWS Directory Service for Microsoft Active Directory",
+      "Amazon GuardDuty"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`amplify add auth` automatically provisions and configures Amazon Cognito User Pools (for directory/auth) and Identity Pools (for AWS credentials)."
+  },
+  {
+    "q": "A developer executes `amplify add api` and selects \"GraphQL\". Which managed AWS service is provisioned to host the GraphQL API endpoint, resolvers, and connected data sources?",
+    "o": [
+      "Amazon API Gateway",
+      "AWS AppSync",
+      "Amazon CloudFront",
+      "Amazon SNS"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`amplify add api` with GraphQL provisions an AWS AppSync API endpoint with connected DynamoDB data sources and resolvers."
+  },
+  {
+    "q": "After defining new backend features locally using the Amplify CLI (`amplify add auth`, `amplify add api`), what command must the developer run to provision and update the actual cloud resources in AWS?",
+    "o": [
+      "`amplify build`",
+      "`amplify push`",
+      "`amplify deploy-backend`",
+      "`amplify commit`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`amplify push` compiles local backend definitions into CloudFormation stacks and deploys/updates the cloud resources in AWS."
+  },
+  {
+    "q": "What technology does the AWS Amplify CLI use behind the scenes to generate, orchestrate, and deploy backend infrastructure stacks in a repeatable manner?",
+    "o": [
+      "HashiCorp Terraform",
+      "AWS CloudFormation",
+      "Ansible playbooks",
+      "Bash scripts running on EC2 instances"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The Amplify CLI generates and executes nested AWS CloudFormation templates to provision all backend resources."
+  },
+  {
+    "q": "A mobile developer is using the AWS Amplify JavaScript client library to manage user sessions. How does the Amplify `Auth` category simplify authentication code in the client application?",
+    "o": [
+      "It bypasses authentication completely in development",
+      "It provides high-level methods (e.g., `Auth.signUp`, `Auth.signIn`, `Auth.currentAuthenticatedUser`) that automatically handle JWT token acquisition, local secure storage, and token refresh against Amazon Cognito",
+      "It stores user passwords in plain text in browser cookies",
+      "It routes all user passwords through an unencrypted SQS queue"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The Amplify `Auth` client category provides high-level methods that manage authentication flows, tokens, and session refresh against Cognito."
+  },
+  {
+    "q": "A developer wants to enable users to upload and download profile images from an S3 bucket in a React Native app. Which AWS Amplify library category provides simple APIs for managing files in Amazon S3?",
+    "o": [
+      "`Amplify.Analytics`",
+      "`Amplify.Storage` (e.g., `Storage.put`, `Storage.get`, `Storage.remove`)",
+      "`Amplify.PubSub`",
+      "`Amplify.Predictions`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `Amplify.Storage` client category provides simple APIs (`Storage.put`, `Storage.get`, `Storage.remove`) for managing files in Amazon S3."
+  },
+  {
+    "q": "A mobile application needs to provide a seamless offline experience: users must be able to read and write data when disconnected from the internet, and the application must automatically synchronize changes and resolve data conflicts with the backend database when connectivity is restored. Which AWS Amplify feature provides this local-first, offline synchronization?",
+    "o": [
+      "Amplify DataStore (backed by AWS AppSync and Amazon DynamoDB)",
+      "Amplify S3 Static Sync",
+      "Amplify CloudWatch Insights",
+      "AWS DataSync"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Amplify DataStore provides local-first offline storage and automated bidirectional synchronization/conflict resolution via AppSync and DynamoDB."
+  },
+  {
+    "q": "How does Amplify DataStore detect and resolve data conflicts between multiple clients that modify the same record while offline?",
+    "o": [
+      "It deletes both records to prevent corruption",
+      "It uses conflict resolution strategies configured in AWS AppSync (such as Automerge, Optimistic Concurrency, or custom Lambda resolver logic) using record versioning metadata (`_version`, `_lastChangedAt`, `_deleted`)",
+      "It halts the client application until an administrator manually intervenes",
+      "It overrides all server records with the oldest client timestamp"
+    ],
+    "a": [
+      1
+    ],
+    "e": "DataStore utilizes AppSync conflict resolution strategies (Automerge, Optimistic Concurrency, Lambda) backed by versioning metadata."
+  },
+  {
+    "q": "A developer is configuring the build settings for an AWS Amplify application. Where are the frontend build phases, build commands, and output artifact directories defined?",
+    "o": [
+      "In `buildspec.yml`",
+      "In `amplify.yml`",
+      "In `package.json`",
+      "In `template.yaml`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`amplify.yml` defines the frontend and backend build phases, commands, output artifacts, and cache paths for Amplify Hosting."
+  },
+  {
+    "q": "In an `amplify.yml` build configuration file, what does the `frontend.artifacts.baseDirectory` property specify?",
+    "o": [
+      "The directory containing the git source code repository",
+      "The output directory holding the compiled, production-ready static assets (e.g., `build`, `dist`, or `.next`) that Amplify Hosting should publish to the CDN",
+      "The location of the local Node.js executable",
+      "The S3 bucket ARN for database backups"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`frontend.artifacts.baseDirectory` specifies the directory containing compiled static output files that Amplify Hosting publishes to the CDN."
+  },
+  {
+    "q": "A developer wants to speed up build times in AWS Amplify Hosting CI/CD builds by persisting the `node_modules` directory across builds. What section of `amplify.yml` enables this caching?",
+    "o": [
+      "`frontend.cache.paths`",
+      "`backend.storage.cache`",
+      "`global.performance.fast_build`",
+      "`cache.control.headers`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Adding `node_modules/**/*` to `frontend.cache.paths` in `amplify.yml` caches dependencies between builds, significantly reducing build times."
+  },
+  {
+    "q": "An engineer runs `amplify status` from the terminal. What information does the Amplify CLI output?",
+    "o": [
+      "Real-time CPU utilization of backend Lambda functions",
+      "A summary table listing all configured backend categories (Auth, API, Storage, Function), their resource names, operation status (`Create`, `Update`, `No Change`), and the current environment name",
+      "The monthly AWS billing invoice",
+      "The git commit history of the main branch"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`amplify status` displays a summary table of configured backend resources, their categories, operation statuses, and the active environment name."
+  },
+  {
+    "q": "How can multiple developers on the same team collaborate on backend features without interfering with each other's AWS cloud resources when using the Amplify CLI?",
+    "o": [
+      "All developers must share a single root AWS account credential",
+      "Each developer creates their own isolated Amplify backend environment using `amplify env add <env_name>` (e.g., `amplify env add alice_dev`), which provisions a dedicated set of CloudFormation stacks in AWS",
+      "Developers are not allowed to use Amplify simultaneously",
+      "Developers must export CloudFormation templates and edit them manually"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`amplify env add <name>` allows team members to create independent backend environments with dedicated CloudFormation stacks in AWS."
+  },
+  {
+    "q": "A developer wants to switch their local Amplify CLI workspace to an existing shared backend environment named `staging`. Which command should they execute?",
+    "o": [
+      "`amplify env checkout staging`",
+      "`amplify checkout staging`",
+      "`amplify switch staging`",
+      "`amplify pull staging`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`amplify env checkout <name>` switches the local Amplify workspace context to an existing backend environment."
+  },
+  {
+    "q": "An application built with Amplify requires custom server-side business logic to run in response to a REST API endpoint. Which Amplify CLI command adds a serverless AWS Lambda function to the backend project?",
+    "o": [
+      "`amplify add function`",
+      "`amplify add compute`",
+      "`amplify add lambda`",
+      "`amplify add serverless`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`amplify add function` scaffolds a serverless AWS Lambda function and wires it into the Amplify backend project."
+  },
+  {
+    "q": "A developer wants to pull down the cloud backend metadata and generated configuration files (`aws-exports.js` or `amplifyconfiguration.json`) into a new local project workspace. Which command achieves this?",
+    "o": [
+      "`amplify fetch`",
+      "`amplify pull`",
+      "`amplify clone`",
+      "`amplify download`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`amplify pull` downloads cloud backend metadata and regenerates local configuration files (`aws-exports.js` / `amplifyconfiguration.json`)."
+  },
+  {
+    "q": "What is the role of the auto-generated `aws-exports.js` (or `amplifyconfiguration.json`) file in an Amplify client project?",
+    "o": [
+      "It contains the root AWS account password",
+      "It contains the client-side configuration parameters (Cognito User Pool ID, AppSync GraphQL endpoint URL, S3 Bucket name, Region) that initialize the Amplify client libraries (`Amplify.configure(awsExports)`)",
+      "It stores database encryption keys",
+      "It acts as the Docker entrypoint script"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`aws-exports.js` contains client configuration details (Cognito IDs, AppSync endpoints, S3 bucket names) needed to initialize the Amplify SDK."
+  },
+  {
+    "q": "A developer wants to add real-time, bidirectional messaging to a web app using GraphQL subscriptions in AWS Amplify. Which Amplify category and client method handle listening for new data in real time?",
+    "o": [
+      "`Amplify.Auth.subscribe`",
+      "`API.graphql(graphqlOperation(subscriptionQuery)).subscribe({ next: (data) => ... })`",
+      "`Amplify.Storage.listen`",
+      "`Amplify.Analytics.stream`"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Real-time GraphQL subscriptions in Amplify are initiated using `API.graphql(graphqlOperation(...)).subscribe(...)`."
+  },
+  {
+    "q": "A company’s frontend team wants to use the AWS Amplify Studio visual interface to model data types and generate React UI components directly from Figma designs. How does Amplify Studio persist data models created in the visual builder?",
+    "o": [
+      "It saves them as XML files on EC2 instances",
+      "It converts the data models into a GraphQL schema (`schema.graphql`) and generates the corresponding CloudFormation stacks and DynamoDB tables via Amplify CLI integration",
+      "It exports them to a local SQLite database",
+      "It posts them to a public Slack channel"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amplify Studio data models are compiled into a `schema.graphql` file and deployed as CloudFormation stacks and DynamoDB tables."
+  },
+  {
+    "q": "Which command in the Amplify CLI creates mock backend services (AppSync GraphQL API, DynamoDB, Lambda) locally on a developer’s workstation for offline testing without deploying to AWS?",
+    "o": [
+      "`amplify mock`",
+      "`amplify test-local`",
+      "`amplify emulate`",
+      "`amplify dev`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`amplify mock` runs local mock instances of AppSync, DynamoDB, S3, and Lambda on the developer workstation for rapid local testing."
+  },
+  {
+    "q": "A developer wants to configure fine-grained access control on an Amplify GraphQL schema so that only the owner (the user who created the record) can read, update, or delete their own posts. Which Amplify GraphQL authorization directive should be used on the model?",
+    "o": [
+      "`@auth(rules: [{ allow: owner }])`",
+      "`@permission(type: private)`",
+      "`@security(role: user)`",
+      "`@access(level: owner_only)`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`@auth(rules: [{ allow: owner }])` restricts read, update, and delete access to the user who created the record."
+  },
+  {
+    "q": "An Amplify project needs to allow unauthenticated (guest) users to read blog posts, but requires authenticated users (via Cognito) to create posts. Which Amplify authorization rule configuration achieves this?",
+    "o": [
+      "`@auth(rules: [{ allow: public, operations: [read] }, { allow: private, operations: [create, read, update, delete] }])`",
+      "`@auth(rules: [{ allow: all }])`",
+      "`@auth(rules: [{ allow: admin }])`",
+      "`@auth(rules: [{ allow: root }])`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Specifying `{ allow: public, operations: [read] }` alongside `{ allow: private }` permits unauthenticated guest reads while restricting writes to authenticated users."
+  },
+  {
+    "q": "A developer is migrating an Amplify application from one AWS account to another. What is the cleanest approach using the Amplify CLI?",
+    "o": [
+      "Manually copy the CloudFormation JSON templates from the AWS Console",
+      "Initialize the project in the new account using `amplify init` with the target account's AWS credentials, and run `amplify push` to deploy the entire backend stack into the new account",
+      "Use AWS DataSync to copy the Lambda functions",
+      "Re-type all code from scratch --- ### Amplify Hosting, Branch Environments & Ephemeral Previews (86–100)"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Running `amplify init` with new account credentials followed by `amplify push` cleanly reproduces the entire infrastructure stack in the new account."
+  },
+  {
+    "q": "A company hosts a Next.js web application using AWS Amplify Hosting. The repository is connected to GitHub. When a developer pushes code to the `main` Git branch, what actions does Amplify Hosting perform automatically?",
+    "o": [
+      "It sends an email to the AWS account owner requesting manual deployment approval",
+      "It automatically triggers a managed CI/CD build pipeline, executes the build commands defined in `amplify.yml`, and deploys the resulting static assets and SSR Lambda functions to a globally distributed CDN",
+      "It converts the Next.js app to an EC2 AMI",
+      "It deploys the application to an Elastic Beanstalk worker tier"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Pushing to a connected branch triggers Amplify Hosting's CI/CD pipeline, building and deploying static assets and SSR compute to CloudFront."
+  },
+  {
+    "q": "In AWS Amplify Hosting, what is the relationship between connected Git branches and deployed application environments (matching the official exam concept of \"Amplify branches\")?",
+    "o": [
+      "All Git branches share a single production URL and overwrite each other's deployments",
+      "Each connected Git branch (e.g., `main`, `staging`, `dev`, `feature-x`) is automatically mapped to an independent, isolated web hosting environment with its own unique, globally accessible URL",
+      "Only the `main` branch can ever be deployed in Amplify Hosting",
+      "Branches can only be deployed to local developer laptops"
+    ],
+    "a": [
+      1
+    ],
+    "e": "In Amplify Hosting, each connected Git branch maps to an independent, isolated hosting environment with its own unique URL."
+  },
+  {
+    "q": "A development team wants to configure per-branch backend environments in Amplify Hosting. When code is pushed to the `develop` Git branch, the frontend should connect to a dedicated `dev` backend environment (Cognito, AppSync, DynamoDB), while the `main` branch connects to the `prod` backend environment. How is this configured in Amplify Hosting?",
+    "o": [
+      "By hardcoding backend URLs in JavaScript source code",
+      "By linking the `develop` frontend branch to the `dev` Amplify backend environment in the Amplify Hosting console settings",
+      "By deleting the `prod` environment whenever `develop` is updated",
+      "By creating two separate AWS accounts for every Git branch"
+    ],
+    "a": [
+      1
+    ],
+    "e": "In the Amplify Hosting console, developers can map specific frontend Git branches (e.g., `develop`) to dedicated backend environments (e.g., `dev`)."
+  },
+  {
+    "q": "A software team wants to review frontend visual changes for every Pull Request (PR) submitted to their GitHub repository before the PR is merged into `main`. Which feature of AWS Amplify Hosting automatically provisions an ephemeral, fully functioning deployment environment for each opened PR?",
+    "o": [
+      "Amplify Ephemeral Storage",
+      "Amplify Web Previews (Pull Request Previews)",
+      "Route 53 Weighted Routing",
+      "CodeDeploy Blue/Green Canary"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amplify Pull Request Previews automatically spin up an ephemeral deployed environment for every opened PR to facilitate visual review before merging."
+  },
+  {
+    "q": "What happens to the ephemeral preview environment created by Amplify Hosting when a Pull Request in GitHub is closed or merged?",
+    "o": [
+      "The preview environment remains online forever and incurs continuous hosting fees",
+      "Amplify Hosting automatically tears down and deletes the ephemeral preview deployment and releases its associated resources",
+      "The preview environment is archived to an S3 Glacier vault",
+      "The preview environment is promoted to production immediately"
+    ],
+    "a": [
+      1
+    ],
+    "e": "When a Pull Request is closed or merged, Amplify Hosting automatically tears down the ephemeral preview environment."
+  },
+  {
+    "q": "A developer wants to restrict access to a staging environment hosted on AWS Amplify Hosting so that external users cannot view work-in-progress features. Which Amplify Hosting feature provides quick access control without writing custom authentication code?",
+    "o": [
+      "Access Control Lists (ACLs) in S3",
+      "Amplify Hosting Password Protection (Basic HTTP Authentication) enabled on the specific branch",
+      "AWS WAF Rate Limiting rules only",
+      "IAM User credentials required on every HTTP GET request"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amplify Hosting Password Protection enables basic HTTP authentication on specific branches (like staging) with a simple username/password."
+  },
+  {
+    "q": "A single-page application (SPA) built with Vue.js is hosted on AWS Amplify Hosting. When users refresh the page on deep routes like `/dashboard/analytics`, they receive an HTTP 404 error because the static file does not exist at that path. How can this be resolved in Amplify Hosting?",
+    "o": [
+      "Upload dummy HTML files for every route in the application",
+      "Configure a Redirect/Rewrite rule in Amplify Hosting with Source: `</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>`, Target: `/index.html`, and Type: `200 (Rewrite)`",
+      "Switch the hosting provider to Amazon EBS",
+      "Disable client-side routing in Vue.js"
+    ],
+    "a": [
+      1
+    ],
+    "e": "SPAs require a 200 Rewrite rule in Amplify Hosting redirecting all non-file route requests to `/index.html` so client-side routers can handle them."
+  },
+  {
+    "q": "A company purchases a custom domain `www.example.com` through Amazon Route 53. How does Amplify Hosting support custom domains and SSL/TLS certificates?",
+    "o": [
+      "Developers must purchase an SSL certificate from an external third-party vendor and manually install it on EC2 instances",
+      "Amplify Hosting provides managed custom domain configuration with automatic issuance and auto-renewal of free SSL/TLS certificates via AWS Certificate Manager (ACM)",
+      "Amplify Hosting only supports HTTP on custom domains",
+      "Custom domains require setting up an Application Load Balancer in front of Amplify Hosting"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amplify Hosting manages custom domains with automatic issuance and renewal of free SSL/TLS certificates via AWS Certificate Manager (ACM)."
+  },
+  {
+    "q": "A developer needs to pass environment variables (such as `API_URL` or `FEATURE_FLAG_ENABLED`) to the frontend build process in Amplify Hosting. Where should these variables be defined?",
+    "o": [
+      "Hardcoded in the Git repository's `README.md`",
+      "In the Amplify Console under App Settings > Environment Variables, configurable globally or overridden per branch",
+      "In the browser's local storage",
+      "In a public S3 bucket"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Environment variables in Amplify Hosting are configured in App Settings > Environment Variables and can be customized per branch."
+  },
+  {
+    "q": "How does AWS Amplify Hosting distribute static web content to achieve low latency and high availability for global end users?",
+    "o": [
+      "By serving all requests directly from a single EC2 instance in `us-east-1`",
+      "By automatically leveraging Amazon CloudFront's global content delivery network (CDN) of edge locations",
+      "By replicating the S3 bucket to 50 AWS Regions manually",
+      "By sending static assets via Amazon SES email attachments"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amplify Hosting automatically hosts and accelerates web applications globally using Amazon CloudFront edge locations."
+  },
+  {
+    "q": "A company wants to run server-side rendered (SSR) React components using Next.js on AWS Amplify Hosting. How does Amplify Hosting execute the server-side rendering logic?",
+    "o": [
+      "By launching a fleet of dedicated EC2 instances running Node.js",
+      "By automatically provisioning and executing managed AWS Lambda compute functions at edge/regional locations for SSR routes while serving static assets via CloudFront",
+      "By converting the Next.js application into static HTML files only",
+      "By running Docker containers on Amazon EKS"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amplify Hosting runs Next.js server-side rendering using managed AWS Lambda compute functions while serving static files from CloudFront."
+  },
+  {
+    "q": "An operations engineer wants to configure notifications (e.g., Slack or email alerts) whenever an Amplify Hosting build succeeds or fails. Which integration does Amplify Hosting use for build status notifications?",
+    "o": [
+      "AWS CloudTrail and AWS Glue",
+      "Amazon SNS topic integration / Amplify Email Notifications configurable in App Settings",
+      "SQS Dead-Letter Queues only",
+      "Amazon Inspector"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Amplify Hosting integrates with Amazon SNS and email notifications to broadcast build success and failure alerts."
+  },
+  {
+    "q": "A developer wants to trigger an Amplify Hosting build manually or from an external webhook (e.g., from a headless CMS like Contentful when content is published). What feature of Amplify Hosting enables external build triggering?",
+    "o": [
+      "Incoming Webhooks (a unique POST URL generated in Amplify Hosting)",
+      "Amazon RDS Triggers",
+      "S3 Select",
+      "AWS CodeStar Notifications"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Incoming Webhooks in Amplify Hosting provide unique POST URLs that trigger builds from external systems or headless CMS platforms."
+  },
+  {
+    "q": "In an enterprise setting, an auditor requires all web traffic to the Amplify-hosted application to pass through custom security rules that block common SQL injection and cross-site scripting (XSS) attacks. Which AWS security service integrates directly with Amazon CloudFront and AWS Amplify Hosting to enforce these rules?",
+    "o": [
+      "AWS Shield Standard and AWS WAF (Web Application Firewall)",
+      "AWS KMS",
+      "AWS Secrets Manager",
+      "Amazon Macie"
+    ],
+    "a": [
+      0
+    ],
+    "e": "AWS WAF integrates directly with CloudFront and Amplify Hosting to protect applications against web exploits, SQL injection, and XSS."
+  },
+  {
+    "q": "A developer observes that changes pushed to a feature branch (`feature-login`) are not automatically building in Amplify Hosting. What is the most likely reason?",
+    "o": [
+      "The `feature-login` branch has not been connected to Amplify Hosting in the console (branch auto-detection / connected branches setting)",
+      "Amplify only supports branches named `main`",
+      "Git does not support feature branches",
+      "The developer must run `amplify push` from every client machine --- ### AWS Copilot CLI, Service Types, manifest.yml & Pipelines (101–125)"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Branches must be explicitly connected or branch auto-detection enabled in the Amplify Console for pushes to trigger builds."
+  },
+  {
+    "q": "A backend engineering team has packaged their microservices into Docker container images. They want to deploy these containers to Amazon ECS on AWS Fargate without authoring thousands of lines of CloudFormation or managing ECS Task Definitions, Service Definitions, and Application Load Balancers by hand. Which official AWS CLI tool provides this high-level container management experience?",
+    "o": [
+      "AWS SAM CLI",
+      "AWS Copilot CLI",
+      "AWS Elastic Beanstalk CLI (`eb`)",
+      "AWS Amplify CLI"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS Copilot is an opinionated CLI tool for building, releasing, and operating production containerized apps on ECS Fargate and App Runner."
+  },
+  {
+    "q": "What is the fundamental architecture pattern that AWS Copilot builds when creating a new application workspace using `copilot app init`?",
+    "o": [
+      "A single monolithic EC2 instance",
+      "A logical grouping of containerized services, jobs, and shared infrastructure (VPC, subnets, IAM roles) managed through generated CloudFormation stacks across multiple deployment environments",
+      "An Amazon S3 static website",
+      "An AWS Step Functions state machine only"
+    ],
+    "a": [
+      1
+    ],
+    "e": "`copilot app init` sets up an application container holding multiple services, environments (VPCs/clusters), and shared infrastructure managed via CloudFormation."
+  },
+  {
+    "q": "When initializing a new service in AWS Copilot using `copilot svc init`, which service type should a developer choose for a public-facing containerized REST API that requires internet routing, an Application Load Balancer, and path-based routing?",
+    "o": [
+      "Backend Service",
+      "Load Balanced Web Service",
+      "Worker Service",
+      "Request-Driven Web Service"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A Load Balanced Web Service in Copilot provisions an Application Load Balancer in front of an ECS Fargate service for public HTTP(S) traffic."
+  },
+  {
+    "q": "A microservice in an ECS cluster processes internal RPC requests from other services within the same VPC. It must NOT be reachable from the public internet and does not need an external load balancer. Which AWS Copilot service type is designed for this internal service pattern?",
+    "o": [
+      "Load Balanced Web Service",
+      "Backend Service (using AWS Cloud Map service discovery for internal DNS routing)",
+      "Worker Service",
+      "Request-Driven Web Service"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A Backend Service in Copilot creates an internal-only ECS service accessible solely from within the VPC via AWS Cloud Map service discovery."
+  },
+  {
+    "q": "A containerized worker application pulls image-processing tasks from an Amazon SQS queue and writes output to Amazon S3. Which AWS Copilot service type automatically provisions and configures an SQS queue and IAM permissions for the ECS Fargate worker task?",
+    "o": [
+      "Load Balanced Web Service",
+      "Backend Service",
+      "Worker Service",
+      "App Runner Service"
+    ],
+    "a": [
+      2
+    ],
+    "e": "A Worker Service in Copilot provisions an ECS Fargate task with an integrated Amazon SQS queue and IAM policies for asynchronous job processing."
+  },
+  {
+    "q": "A developer wants to deploy a simple, containerized HTTP web service that automatically scales from zero instances up based on incoming requests with zero infrastructure management, utilizing AWS App Runner underneath rather than an ECS Fargate cluster. Which Copilot service type should be selected?",
+    "o": [
+      "Request-Driven Web Service",
+      "Backend Service",
+      "Worker Service",
+      "Scheduled Job"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Request-Driven Web Service in Copilot deploys a containerized service to AWS AppRunner for simple request-driven auto-scaling."
+  },
+  {
+    "q": "Where does AWS Copilot store the declarative infrastructure and deployment configuration for a service?",
+    "o": [
+      "In `copilot/<service_name>/manifest.yml`",
+      "In `Dockerfile`",
+      "In `docker-compose.yml`",
+      "In `.ebextensions/config.yml`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Copilot stores declarative service definitions and infrastructure overrides in `copilot/<service_name>/manifest.yml`."
+  },
+  {
+    "q": "A developer is reviewing the `copilot/api/manifest.yml` file below: ```yaml name: api type: Load Balanced Web Service image: build: Dockerfile port: 8080 http: path: '/' healthcheck: '/health' cpu: 256 memory: 512 count: range: 1-10 cpu_percentage: 70 environments: prod: count: 3 variables: LOG_LEVEL: warn ``` What does the `environments.prod` section in this manifest achieve?",
+    "o": [
+      "It deletes the `prod` environment",
+      "It overrides the base service configuration specifically for the `prod` environment, setting a fixed task count of 3 and `LOG_LEVEL=warn` without modifying other environments",
+      "It converts the production service to run on Amazon EC2 instead of Fargate",
+      "It routes 100% of traffic to a local staging server"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The `environments.prod` block in `manifest.yml` overrides base settings specifically for the `prod` environment (such as setting task count to 3)."
+  },
+  {
+    "q": "What is the definition of a \"Copilot Environment\" (e.g., created via `copilot env init --name test`), matching the official AWS DVA-C02 concept of \"Copilot environments\"?",
+    "o": [
+      "A git branch on GitHub",
+      "A distinct, isolated deployment target containing its own VPC, subnets, ECS cluster, security groups, and shared resources (e.g., `test`, `staging`, `prod`) managed under the same Copilot application",
+      "A Docker container running on a local developer laptop",
+      "An IAM user policy"
+    ],
+    "a": [
+      1
+    ],
+    "e": "A Copilot Environment is an isolated infrastructure target (`dev`, `staging`, `prod`) containing its own VPC, subnets, and ECS cluster."
+  },
+  {
+    "q": "How does a developer deploy an updated container image and manifest configuration to a specific Copilot environment named `staging`?",
+    "o": [
+      "`copilot deploy --env staging` (or `copilot svc deploy --env staging`)",
+      "`copilot push staging`",
+      "`copilot upload staging`",
+      "`git push staging`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`copilot deploy --env staging` deploys the local container and manifest configuration to the specified environment."
+  },
+  {
+    "q": "A developer wants to set up a continuous delivery pipeline that automatically builds a container image upon code commit, runs automated integration tests in a `test` environment, and automatically promotes the container to a `prod` environment upon approval. Which AWS Copilot command generates the pipeline configuration?",
+    "o": [
+      "`copilot pipeline init` (followed by `copilot pipeline deploy`)",
+      "`copilot ci create`",
+      "`copilot action setup`",
+      "`copilot codepipeline build`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`copilot pipeline init` generates automated CI/CD pipeline definitions for multi-environment promotion using AWS CodePipeline."
+  },
+  {
+    "q": "Which underlying AWS CI/CD services are provisioned when a developer deploys a Copilot pipeline using `copilot pipeline deploy`?",
+    "o": [
+      "AWS CodePipeline, AWS CodeBuild, and Amazon ECR (Elastic Container Registry)",
+      "Jenkins on an EC2 instance",
+      "GitHub Actions runners on on-premises hardware",
+      "AWS Elastic Beanstalk worker environments"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Copilot pipelines use AWS CodePipeline to orchestrate stages, AWS CodeBuild to build Docker images, and Amazon ECR to store container images."
+  },
+  {
+    "q": "In an AWS Copilot pipeline definition (`copilot/pipelines/<pipeline_name>/buildspec.yml`), what happens during the build phase?",
+    "o": [
+      "The pipeline downloads a virtual machine image from VirtualBox",
+      "AWS CodeBuild builds the Docker container images for all services in the application, runs unit tests, and pushes the tagged images to Amazon ECR repositories",
+      "S3 buckets are formatted",
+      "The database is deleted"
+    ],
+    "a": [
+      1
+    ],
+    "e": "The CodeBuild build phase in a Copilot pipeline builds Docker images, runs tests, and pushes tagged images to Amazon ECR."
+  },
+  {
+    "q": "A developer wants to run a containerized task on a periodic schedule (e.g., every night at 2:00 AM) in AWS Copilot. Which Copilot job type should be created?",
+    "o": [
+      "Scheduled Job (using Amazon EventBridge and AWS Fargate tasks)",
+      "Worker Service",
+      "Backend Service",
+      "Load Balanced Web Service"
+    ],
+    "a": [
+      0
+    ],
+    "e": "A Scheduled Job in Copilot runs a containerized task on a defined cron schedule using Amazon EventBridge and ECS Fargate."
+  },
+  {
+    "q": "A developer wants to provision an Amazon Aurora Serverless PostgreSQL database or a DynamoDB table and attach it directly to a Copilot service. Which Copilot command adds a managed storage resource to a service manifest?",
+    "o": [
+      "`copilot storage init`",
+      "`copilot db create`",
+      "`copilot add database`",
+      "`copilot rds attach`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`copilot storage init` provisions databases (DynamoDB or Aurora Serverless) or S3 buckets and attaches them to a Copilot service."
+  },
+  {
+    "q": "How does AWS Copilot inject the database credentials and endpoint connection strings of an attached storage resource into a service's running container?",
+    "o": [
+      "It prints the password in the public console log",
+      "It exposes the connection details and secret ARNs as standard environment variables and AWS Secrets Manager secrets within the container's ECS Task Definition",
+      "It writes a text file to `/root/credentials.txt` on the host OS",
+      "It emails the database password to the developer"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Copilot injects storage connection strings and Secrets Manager secret ARNs as standard environment variables inside the ECS Task Definition."
+  },
+  {
+    "q": "An engineer wants to inspect live container logs for an ECS service named `api` running in the `prod` environment directly from their local terminal. Which Copilot command streams these logs?",
+    "o": [
+      "`copilot svc logs --name api --env prod --follow`",
+      "`copilot tail api`",
+      "`copilot monitor prod`",
+      "`docker logs prod`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`copilot svc logs --name <svc> --env <env> --follow` tails real-time CloudWatch logs from running ECS tasks in that environment."
+  },
+  {
+    "q": "A developer wants to open an interactive shell inside a running Fargate container task in the `staging` environment to debug a file permission issue. Which command enables this using ECS Exec?",
+    "o": [
+      "`copilot svc exec --name api --env staging`",
+      "`ssh fargate.amazonaws.com`",
+      "`copilot connect`",
+      "`copilot bash`"
+    ],
+    "a": [
+      0
+    ],
+    "e": "`copilot svc exec` initiates an interactive shell inside a running Fargate container using Amazon ECS Exec."
+  },
+  {
+    "q": "What is the fundamental difference between AWS Elastic Beanstalk, AWS Amplify, and AWS Copilot in terms of target workload and underlying compute?",
+    "o": [
+      "Beanstalk targets traditional web applications on EC2; Amplify targets full-stack frontend/mobile applications backed by serverless (Cognito/AppSync/S3); Copilot targets containerized microservices running on ECS Fargate/App Runner",
+      "Beanstalk is only for mobile apps; Amplify is only for relational databases; Copilot is only for machine learning",
+      "All three tools use the exact same compute model and cannot be distinguished",
+      "Copilot requires managing physical server hardware in an on-premises data center"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Beanstalk targets EC2 web apps; Amplify targets full-stack frontend/serverless apps; Copilot targets containerized services on ECS Fargate/App Runner."
+  },
+  {
+    "q": "A development team with extensive Docker container experience is building a microservice-based application. They do not want to manage EC2 instances or write raw ECS CloudFormation templates. Which tool should they choose?",
+    "o": [
+      "AWS Amplify",
+      "AWS Copilot",
+      "AWS Elastic Beanstalk single-instance worker tier",
+      "Amazon S3 Static Website Hosting"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS Copilot is designed for containerized workflows on ECS Fargate without requiring manual CloudFormation template management."
+  },
+  {
+    "q": "A frontend React developer with no AWS backend experience needs to quickly add user authentication (Cognito), a GraphQL API (AppSync), and cloud hosting with Git-branch preview environments. Which tool should they choose?",
+    "o": [
+      "AWS Copilot",
+      "AWS Amplify",
+      "AWS Elastic Beanstalk Docker platform",
+      "Raw CloudFormation templates"
+    ],
+    "a": [
+      1
+    ],
+    "e": "AWS Amplify provides complete tooling for frontend developers needing managed authentication, GraphQL APIs, and Git-branch hosting."
+  },
+  {
+    "q": "A company is migrating an existing legacy Python Django application running on EC2. The team wants automated provisioning of load balancers and auto-scaling groups while retaining full SSH access to the underlying virtual machines to install proprietary OS packages. Which tool is the best fit?",
+    "o": [
+      "AWS Amplify",
+      "AWS Elastic Beanstalk (Web server tier on Python platform)",
+      "AWS Copilot",
+      "AWS Lambda with container images"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Elastic Beanstalk Python platform provides automated ELB/ASG management while retaining full SSH access to underlying EC2 instances."
+  },
+  {
+    "q": "In the official AWS DVA-C02 exam guide, what core architectural pattern do \"Lambda aliases\", \"container image tags\", \"Amplify branches\", and \"Copilot environments\" all represent?",
+    "o": [
+      "Approved-version environments (stable, named pointers to tested builds enabling safe promotion across development, staging, and production stages)",
+      "Data encryption mechanisms",
+      "Network subnet masks",
+      "Database indexing strategies"
+    ],
+    "a": [
+      0
+    ],
+    "e": "Lambda aliases, container image tags, Amplify branches, and Copilot environments all represent approved-version environments for safe promotion."
+  },
+  {
+    "q": "How does AWS Copilot handle secret configuration values (such as third-party API keys) without exposing them in plain text inside `manifest.yml`?",
+    "o": [
+      "By hardcoding the API keys in git commit messages",
+      "By referencing secret names stored in AWS Secrets Manager or AWS Systems Manager Parameter Store under the `secrets:` section of the `manifest.yml`",
+      "By disabling encryption across all Fargate tasks",
+      "By storing keys in the Docker image layers"
+    ],
+    "a": [
+      1
+    ],
+    "e": "Copilot references secrets in Secrets Manager or Parameter Store under the `secrets:` section in `manifest.yml` without exposing them in plain text."
+  }
+];
+const STORAGE_KEY = "aws-dva-quiz-11";
+
+document.querySelectorAll(".tabbtn").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    document.querySelectorAll(".tabbtn").forEach(function(b){ b.classList.remove("active"); });
+    document.querySelectorAll(".tabpanel").forEach(function(p){ p.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+renderNotes(NOTES_MD);
+initQuiz(QUESTIONS, STORAGE_KEY);
+
+if(location.hash === "#quiz"){ document.querySelector('[data-tab="quiz"]').click(); }
+</script>
+</body>
+</html>
