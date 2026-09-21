@@ -24,6 +24,8 @@ Your one-stop prep set for the **AWS Certified Developer – Associate (DVA-C02)
 | 4. Troubleshooting and Optimization | 18% | 09, 16 |
 
 ## How to use this repo
+**Start at `index.html`** (the study hub: every module's notes + quiz in one place). **The night before the exam, use `cheat-sheet.html`**: every module's traps, the numbers to memorize and the head-to-head comparisons on one page.
+
 Each numbered folder is one module and always has the same three files:
 - **`notes.md`** — read this first. Thorough, beginner-safe explanation of the topic: how it works, key limits/features, pricing gotchas, comparison tables, worked real-world scenarios, and the traps the exam likes to set.
 - **`questions.md`** — 110+ scenario-style practice questions per module, calibrated to AWS's own official sample-question style (multi-sentence business scenarios, not one-line trivia), with an answer key + explanation at the end. Use for offline review, re-reads, and spaced repetition.

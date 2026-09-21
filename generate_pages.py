@@ -165,6 +165,7 @@ footer.hubfoot{{max-width:1040px; margin:0 auto; padding:0 20px 50px; font-size:
   <div class="eyebrow">AWS Certified Developer &ndash; Associate &middot; DVA-C02</div>
   <h1>Study Hub</h1>
   <p class="lede">18 modules, ~2,300 practice questions, and 2 full timed mock exams &mdash; grounded in AWS's official exam guide. Click any module to read its notes and take its quiz in one place.</p>
+  <p style="margin:0 0 22px;"><a class="btn btn-primary" href="cheat-sheet.html">Night-before cheat sheet &rarr;</a> <span style="font-size:13px;color:var(--muted);margin-left:8px;">Every module's traps, numbers and comparisons on one page</span></p>
   <div class="factstrip">
     <div class="fact"><div class="v">65</div><div class="k">Questions</div></div>
     <div class="fact"><div class="v">130</div><div class="k">Minutes</div></div>

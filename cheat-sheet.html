@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DVA-C02 Cheat Sheet</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eceeec; --ink:#141a1f; --muted:#5c6670;
+  --border:#dde1de; --accent:#0d7377; --accent-soft:#e3f1f0;
+  --warn:#9a5a06; --warn-bg:#fbf1e1;
+  --d1:#3d6fd1; --d1-bg:#e8eefb; --d2:#a8730a; --d2-bg:#faf1e0; --d3:#7c5cd6; --d3-bg:#efe9fb; --d4:#c2508a; --d4-bg:#fbe9f3;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+    --border:#2b343c; --accent:#37c9c2; --accent-soft:#173430;
+    --warn:#e7ad55; --warn-bg:#35270f;
+    --d1:#7fa0ea; --d1-bg:#182338; --d2:#e0ab53; --d2-bg:#332510; --d3:#b09aef; --d3-bg:#251c3a; --d4:#e589b8; --d4-bg:#361f2c;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151a; --surface:#171e25; --surface-2:#1d252c; --ink:#edf1f3; --muted:#93a3ac;
+  --border:#2b343c; --accent:#37c9c2; --accent-soft:#173430;
+  --warn:#e7ad55; --warn-bg:#35270f;
+  --d1:#7fa0ea; --d1-bg:#182338; --d2:#e0ab53; --d2-bg:#332510; --d3:#b09aef; --d3-bg:#251c3a; --d4:#e589b8; --d4-bg:#361f2c;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+body{margin:0; background:var(--bg); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased; line-height:1.5;}
+a{color:var(--accent);}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+code{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.88em; background:var(--surface-2); border:1px solid var(--border); border-radius:4px; padding:0 4px; overflow-wrap:anywhere;}
+.wrap{max-width:1180px; margin:0 auto; padding:0 20px;}
+
+header.top{padding:34px 0 18px;}
+.toprow{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600;}
+.hub-link{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--muted); text-decoration:none; border:1px solid var(--border); border-radius:7px; padding:5px 10px;}
+.hub-link:hover{color:var(--accent); border-color:var(--accent);}
+h1{font-size:32px; font-weight:800; letter-spacing:-.015em; margin:8px 0 8px; text-wrap:balance;}
+.lede{font-size:15px; color:var(--muted); max-width:66ch; margin:0 0 18px;}
+.facts{display:flex; flex-wrap:wrap; gap:8px;}
+.fact{font-family:"IBM Plex Mono",monospace; font-size:12.5px; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:5px 12px; font-variant-numeric:tabular-nums;}
+.fact b{color:var(--accent);}
+
+nav.jump{position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border);}
+nav.jump .wrap{display:flex; gap:6px; overflow-x:auto; padding-top:9px; padding-bottom:9px; scrollbar-width:thin;}
+nav.jump a{flex:none; font-size:12.5px; font-weight:600; color:var(--muted); text-decoration:none; padding:5px 11px; border-radius:999px; border:1px solid var(--border); background:var(--surface); white-space:nowrap;}
+nav.jump a:hover{color:var(--accent); border-color:var(--accent);}
+
+section{padding:30px 0 6px; scroll-margin-top:52px;}
+section > h2{font-size:21px; font-weight:800; letter-spacing:-.01em; margin:0 0 4px; text-wrap:balance;}
+.sub{font-size:13.5px; color:var(--muted); margin:0 0 16px; max-width:75ch;}
+
+.grid2{display:grid; grid-template-columns:1fr; gap:14px; align-items:start;}
+@media (min-width:900px){ .grid2{grid-template-columns:1fr 1fr;} }
+
+.block{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px 12px; min-width:0;}
+.block h3{font-size:14px; font-weight:750; margin:0 0 8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.tw{overflow-x:auto;}
+table{border-collapse:collapse; width:100%; font-size:13.3px;}
+th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; padding:6px 8px; border-bottom:1px solid var(--border); background:var(--surface-2);}
+td{padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td:first-child{color:var(--ink);}
+.pick{color:var(--accent); font-weight:700;}
+.num{font-family:"IBM Plex Mono",monospace; font-weight:600; font-variant-numeric:tabular-nums;}
+main, .block, li, td{overflow-wrap:break-word;}
+.cmp td:first-child{font-weight:700; white-space:nowrap; color:var(--muted); font-size:12.5px;}
+.gp li{margin-bottom:6px;}
+
+.calc{margin-top:14px; background:var(--accent-soft); border:1px solid var(--border); border-radius:12px; padding:14px 16px; font-size:13.5px;}
+.calc h3{font-size:14px; margin:0 0 6px;}
+.calc p{margin:4px 0;}
+
+.mod-h{display:flex; align-items:baseline; gap:9px; margin-bottom:6px; flex-wrap:wrap;}
+.mnum{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:600; color:var(--muted);}
+.mtitle{font-size:15px; font-weight:750;}
+.chip{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; border-radius:999px; padding:2px 8px; white-space:nowrap;}
+.c1{background:var(--d1-bg); color:var(--d1);} .c2{background:var(--d2-bg); color:var(--d2);}
+.c3{background:var(--d3-bg); color:var(--d3);} .c4{background:var(--d4-bg); color:var(--d4);}
+.c0{background:var(--surface-2); color:var(--muted);}
+ul.traps{margin:0; padding-left:17px; font-size:13.4px;}
+ul.traps li{margin-bottom:4.5px; line-height:1.48;}
+ul.traps li::marker{color:var(--accent);}
+.note{font-size:12px; color:var(--warn); background:var(--warn-bg); border-radius:6px; padding:1px 6px; white-space:nowrap;}
+
+.checklist{columns:1; gap:24px; font-size:14px; padding-left:18px; margin:0;}
+@media (min-width:900px){ .checklist{columns:2;} }
+.checklist li{margin-bottom:7px; break-inside:avoid;}
+footer{padding:30px 0 50px; font-size:12px; color:var(--muted);}
+
+@media print{
+  :root{--bg:#fff; --surface:#fff; --surface-2:#f1f2f1; --ink:#000; --muted:#444; --border:#bbb; --accent:#0b5f62; --accent-soft:#eef5f5;}
+  body{background:#fff; font-size:11px;}
+  nav.jump, .hub-link{display:none !important;}
+  header.top{padding:0 0 8px;}
+  h1{font-size:22px;}
+  section{padding:12px 0 0;}
+  .grid2{grid-template-columns:1fr 1fr; gap:8px;}
+  .block, .calc{break-inside:avoid; padding:8px 10px;}
+  table{font-size:10px;} ul.traps{font-size:10.2px;}
+  @page{margin:10mm;}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="toprow">
+      <div class="eyebrow">AWS Certified Developer – Associate · DVA-C02 · night-before review</div>
+      <a class="hub-link" id="hubLink" href="index.html" hidden>&#8962; Study Hub</a>
+    </div>
+    <h1>DVA-C02 Cheat Sheet</h1>
+    <p class="lede">All 18 modules on one page, fastest-to-scan sections first. Read the decoder table twice, look over the numbers once, then skim the module traps. Don't open new topics tonight.</p>
+    <div class="facts">
+      <span class="fact"><b>65</b> questions (15 unscored)</span>
+      <span class="fact"><b>130</b> min &asymp; 2 min each</span>
+      <span class="fact">pass <b>720</b>/1000</span>
+      <span class="fact">D1 <b>32%</b> · D2 <b>26%</b> · D3 <b>24%</b> · D4 <b>18%</b></span>
+      <span class="fact">Prints to PDF: Ctrl/Cmd + P</span>
+    </div>
+  </div>
+</header>
+
+<nav class="jump" aria-label="Sections">
+  <div class="wrap">
+    <a href="#plan">Game plan</a>
+    <a href="#decoder">Keyword decoder</a>
+    <a href="#numbers">Numbers</a>
+    <a href="#compare">Head-to-head</a>
+    <a href="#modules">Module traps</a>
+    <a href="#errors">Errors &amp; exceptions</a>
+    <a href="#checklist">Exam-day checklist</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ============ GAME PLAN ============ -->
+<section id="plan">
+  <h2>Game plan</h2>
+  <p class="sub">How to work each question before any AWS knowledge comes into it.</p>
+  <div class="grid2">
+    <div class="block">
+      <h3>Reading a question</h3>
+      <ul class="traps gp">
+        <li>Read the <b>last line first</b> (what's actually asked), then hunt for the <b>constraint words</b>: least overhead, cheapest, most secure, fewest code changes, highly available.</li>
+        <li>List every requirement in the stem. The right option satisfies <b>all</b> of them, not just the loudest one.</li>
+        <li>Two options both work? The tiebreaker is a <b>specific feature</b> (native rotation, free Gateway endpoint, managed retries), not general quality.</li>
+        <li><b>Select TWO/THREE:</b> no partial credit. Pick the options that each stand alone as correct, not two halves of one idea.</li>
+      </ul>
+    </div>
+    <div class="block">
+      <h3>Wrong-answer smells</h3>
+      <ul class="traps gp">
+        <li>Hardcoded/long-lived access keys, secrets in plaintext env vars or code.</li>
+        <li>"Write a custom script/cron/Lambda" when a managed feature already does it (lifecycle rules, DLQs, rotation, ECR lifecycle policies).</li>
+        <li>Legacy options: OAI, Classic Load Balancer, Launch Configurations, IMDSv1, Implicit OAuth grant.</li>
+        <li>Answers that solve a different problem: provisioned concurrency for DB connection floods, more capacity for a hot partition, larger instances for a bad health-check setting.</li>
+        <li>Pacing: answer and <b>flag</b> on the first pass, return later. No penalty for guessing, so never leave a blank.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="block" style="margin-top:14px;">
+    <h3>Constraint phrase &rarr; usual direction</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Phrase in the stem</th><th>Usually points to</th></tr></thead>
+      <tbody>
+        <tr><td>LEAST operational overhead</td><td class="pick">Managed / serverless: Lambda, Fargate, DynamoDB, SQS, managed features over custom code</td></tr>
+        <tr><td>MOST cost-effective</td><td class="pick">Pay-per-use, Spot, lifecycle to cheaper classes, Gateway endpoints (free), fewer API calls (Bucket Keys, batching, long polling)</td></tr>
+        <tr><td>MOST secure</td><td class="pick">IAM roles, least privilege, customer managed KMS key, Secrets Manager, private endpoints, TLS enforced</td></tr>
+        <tr><td>Highly available / survive AZ failure</td><td class="pick">Multi-AZ (RDS Multi-AZ, ASG across AZs, DynamoDB is already multi-AZ)</td></tr>
+        <tr><td>Survive a Region failure / global users</td><td class="pick">Multi-Region: DynamoDB Global Tables, Aurora Global Database, S3 CRR, Route 53 failover</td></tr>
+        <tr><td>FEWEST code changes</td><td class="pick">Drop-in managed feature: DAX, RDS Proxy, S3 Bucket Keys, SDK retry config, API Gateway caching</td></tr>
+        <tr><td>Real-time vs near real-time</td><td class="pick">Kinesis Data Streams vs Amazon Data Firehose</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============ DECODER ============ -->
+<section id="decoder">
+  <h2>Keyword decoder</h2>
+  <p class="sub">"If the question says X, pick Y." These patterns come up most often on the exam.</p>
+  <div class="grid2">
+    <div class="block"><h3>Compute &amp; Lambda</h3><div class="tw"><table>
+      <thead><tr><th>Scenario says</th><th>Pick</th></tr></thead><tbody>
+      <tr><td>Event-driven, bursty, least ops</td><td class="pick">Lambda</td></tr>
+      <tr><td>Job runs longer than 15 minutes</td><td class="pick">ECS/Fargate, AWS Batch, or split into Step Functions</td></tr>
+      <tr><td>Cold starts hurt a latency-sensitive API</td><td class="pick">Provisioned concurrency (Java/Python/.NET: SnapStart)</td></tr>
+      <tr><td>Lambda floods a downstream database</td><td class="pick">Reserved concurrency cap + SQS buffer; RDS Proxy</td></tr>
+      <tr><td>VPC Lambda can't reach the internet</td><td class="pick">NAT Gateway in a public subnet (or VPC endpoints)</td></tr>
+      <tr><td>Share libraries across functions</td><td class="pick">Lambda layers</td></tr>
+      <tr><td>Shift traffic to a new version gradually</td><td class="pick">Alias weighted routing / CodeDeploy canary (SAM <code>DeploymentPreference</code>)</td></tr>
+      <tr><td>Slow CPU-bound function</td><td class="pick">Increase memory (CPU scales with it)</td></tr>
+      <tr><td>Reuse DB connections between invocations</td><td class="pick">Initialize clients outside the handler</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Data stores</h3><div class="tw"><table>
+      <thead><tr><th>Scenario says</th><th>Pick</th></tr></thead><tbody>
+      <tr><td>Microsecond DynamoDB reads, no rewrite</td><td class="pick">DAX</td></tr>
+      <tr><td>Throttling despite spare table capacity</td><td class="pick">High-cardinality partition key / write sharding</td></tr>
+      <tr><td>React to item changes</td><td class="pick">DynamoDB Streams + Lambda</td></tr>
+      <tr><td>Prevent lost updates on concurrent writes</td><td class="pick">Conditional write on a version attribute</td></tr>
+      <tr><td>"Too many connections" from Lambda</td><td class="pick">RDS Proxy</td></tr>
+      <tr><td>Scale RDS reads / survive AZ failure</td><td class="pick">Read replicas / Multi-AZ</td></tr>
+      <tr><td>Leaderboard, sorted rankings</td><td class="pick">ElastiCache (Redis OSS/Valkey) sorted sets</td></tr>
+      <tr><td>Durable Redis-compatible primary DB</td><td class="pick">MemoryDB</td></tr>
+      <tr><td>Give a user temporary S3 access</td><td class="pick">Presigned URL</td></tr>
+      <tr><td>Upload large files reliably/faster</td><td class="pick">Multipart upload (+ Transfer Acceleration for distance)</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Messaging &amp; workflows</h3><div class="tw"><table>
+      <thead><tr><th>Scenario says</th><th>Pick</th></tr></thead><tbody>
+      <tr><td>Decouple, absorb spikes</td><td class="pick">SQS</td></tr>
+      <tr><td>Strict ordering, no duplicates</td><td class="pick">SQS FIFO (MessageGroupId, dedup ID)</td></tr>
+      <tr><td>One event &rarr; many independent consumers</td><td class="pick">SNS &rarr; multiple SQS queues (fan-out)</td></tr>
+      <tr><td>Only some subscribers want some messages</td><td class="pick">SNS subscription filter policy</td></tr>
+      <tr><td>React to AWS service/SaaS events, cron</td><td class="pick">EventBridge (rules / Scheduler)</td></tr>
+      <tr><td>Real-time stream, replay, many readers</td><td class="pick">Kinesis Data Streams</td></tr>
+      <tr><td>Load streaming data into S3/Redshift/OpenSearch, no code</td><td class="pick">Amazon Data Firehose</td></tr>
+      <tr><td>Multi-step workflow, retries, branching</td><td class="pick">Step Functions</td></tr>
+      <tr><td>Pause for human approval / external callback</td><td class="pick">Step Functions <code>.waitForTaskToken</code></td></tr>
+      <tr><td>SQL queries on files in S3</td><td class="pick">Athena</td></tr>
+      <tr><td>GraphQL, real-time subscriptions</td><td class="pick">AppSync</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Security</h3><div class="tw"><table>
+      <thead><tr><th>Scenario says</th><th>Pick</th></tr></thead><tbody>
+      <tr><td>Code on AWS needs AWS permissions</td><td class="pick">IAM role (instance profile / execution role / task role)</td></tr>
+      <tr><td>App users sign up / sign in, get JWTs</td><td class="pick">Cognito user pool</td></tr>
+      <tr><td>App users need AWS credentials directly (S3 upload)</td><td class="pick">Cognito identity pool</td></tr>
+      <tr><td>Rotate DB credentials automatically</td><td class="pick">Secrets Manager</td></tr>
+      <tr><td>Cheap/free config values, hierarchy</td><td class="pick">SSM Parameter Store</td></tr>
+      <tr><td>Encrypt data larger than 4 KB</td><td class="pick">Envelope encryption (<code>GenerateDataKey</code>)</td></tr>
+      <tr><td>Access resources in another account</td><td class="pick">IAM role + <code>sts:AssumeRole</code> (ExternalId for third parties)</td></tr>
+      <tr><td>Block SQL injection / rate-limit IPs</td><td class="pick">AWS WAF</td></tr>
+      <tr><td>HTTPS certificate for CloudFront</td><td class="pick">ACM certificate in <b>us-east-1</b></td></tr>
+      <tr><td>Decode an "encoded authorization failure"</td><td class="pick"><code>aws sts decode-authorization-message</code></td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Deployment</h3><div class="tw"><table>
+      <thead><tr><th>Scenario says</th><th>Pick</th></tr></thead><tbody>
+      <tr><td>Test Lambda / API locally</td><td class="pick">SAM CLI (<code>sam local invoke</code>, <code>sam local start-api</code>)</td></tr>
+      <tr><td>IaC with loops/classes in TypeScript or Python</td><td class="pick">AWS CDK</td></tr>
+      <tr><td>See what a template update will change</td><td class="pick">CloudFormation change set</td></tr>
+      <tr><td>Feature flag / config rollout, no redeploy</td><td class="pick">AWS AppConfig</td></tr>
+      <tr><td>Human sign-off before production</td><td class="pick">CodePipeline manual approval (+ SNS)</td></tr>
+      <tr><td>Auto-undo a bad deployment</td><td class="pick">CodeDeploy rollback on CloudWatch alarm</td></tr>
+      <tr><td>Beanstalk: safest rollback, full capacity</td><td class="pick">Immutable (or blue/green URL swap)</td></tr>
+      <tr><td>Beanstalk: full capacity, cheaper than immutable</td><td class="pick">Rolling with additional batch</td></tr>
+      <tr><td>Containers via a CLI, no CloudFormation</td><td class="pick">AWS Copilot</td></tr>
+      <tr><td>Frontend hosting, environment per Git branch</td><td class="pick">AWS Amplify</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Troubleshooting &amp; networking</h3><div class="tw"><table>
+      <thead><tr><th>Scenario says</th><th>Pick</th></tr></thead><tbody>
+      <tr><td>Which microservice is slow?</td><td class="pick">X-Ray service map</td></tr>
+      <tr><td>Search traces by user/order ID</td><td class="pick">X-Ray annotations</td></tr>
+      <tr><td>Who deleted/changed the resource?</td><td class="pick">CloudTrail</td></tr>
+      <tr><td>EC2 memory or disk usage</td><td class="pick">CloudWatch agent</td></tr>
+      <tr><td>Custom metrics from logs, no API calls</td><td class="pick">Embedded Metric Format (EMF)</td></tr>
+      <tr><td>SDK throttling errors / 429s</td><td class="pick">Exponential backoff with jitter</td></tr>
+      <tr><td>S3/DynamoDB from private subnet, free</td><td class="pick">Gateway VPC endpoint</td></tr>
+      <tr><td>Point domain apex at ALB/CloudFront</td><td class="pick">Route 53 Alias record</td></tr>
+      <tr><td>S3 reachable only through CloudFront</td><td class="pick">Origin Access Control (OAC)</td></tr>
+      <tr><td>Private content, many files per user</td><td class="pick">CloudFront signed cookies</td></tr>
+    </tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ============ NUMBERS ============ -->
+<section id="numbers">
+  <h2>Numbers to memorize</h2>
+  <p class="sub">Limits and defaults the exam likes to test directly. <span class="note">2025 changes</span> marks limits AWS raised recently. The exam may still use the older value.</p>
+  <div class="grid2">
+    <div class="block"><h3>Lambda</h3><div class="tw"><table><tbody>
+      <tr><td>Max timeout</td><td class="num">15 min (900 s)</td></tr>
+      <tr><td>Memory</td><td class="num">128 MB – 10,240 MB</td></tr>
+      <tr><td>1 full vCPU at</td><td class="num">1,769 MB</td></tr>
+      <tr><td>/tmp storage</td><td class="num">512 MB default &rarr; 10,240 MB</td></tr>
+      <tr><td>Package: zip upload / unzipped incl. layers</td><td class="num">50 MB / 250 MB</td></tr>
+      <tr><td>Container image</td><td class="num">10 GB</td></tr>
+      <tr><td>Layers per function</td><td class="num">5</td></tr>
+      <tr><td>Environment variables (total)</td><td class="num">4 KB</td></tr>
+      <tr><td>Concurrency per Region (default, soft)</td><td class="num">1,000</td></tr>
+      <tr><td>Sync payload (request/response)</td><td class="num">6 MB</td></tr>
+      <tr><td>Async payload</td><td class="num">256 KB <span class="note">1 MB since late 2025</span></td></tr>
+      <tr><td>Async retries / max event age</td><td class="num">2 retries / 6 h</td></tr>
+      <tr><td>SQS trigger batch size (standard / FIFO)</td><td class="num">up to 10,000 / 10</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>DynamoDB</h3><div class="tw"><table><tbody>
+      <tr><td>Max item size</td><td class="num">400 KB</td></tr>
+      <tr><td>1 RCU</td><td class="num">1 strong read/s &le; 4 KB (2 eventual)</td></tr>
+      <tr><td>1 WCU</td><td class="num">1 write/s &le; 1 KB</td></tr>
+      <tr><td>Transactional read/write</td><td class="num">2&times; the capacity</td></tr>
+      <tr><td>Query/Scan per call</td><td class="num">1 MB page</td></tr>
+      <tr><td>BatchGetItem / BatchWriteItem</td><td class="num">100 / 25 items (16 MB)</td></tr>
+      <tr><td>Transaction</td><td class="num">100 items / 4 MB</td></tr>
+      <tr><td>LSI (creation time only) / GSI</td><td class="num">5 / 20</td></tr>
+      <tr><td>Streams retention</td><td class="num">24 h</td></tr>
+      <tr><td>Point-in-time recovery</td><td class="num">35 days</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>S3</h3><div class="tw"><table><tbody>
+      <tr><td>Max object / single PUT</td><td class="num">5 TB / 5 GB</td></tr>
+      <tr><td>Multipart</td><td class="num">recommended &gt;100 MB, required &gt;5 GB</td></tr>
+      <tr><td>Requests per prefix per second</td><td class="num">3,500 write / 5,500 read</td></tr>
+      <tr><td>Presigned URL max (SigV4)</td><td class="num">7 days</td></tr>
+      <tr><td>Standard-IA / One Zone-IA</td><td class="num">30-day min, 128 KB min</td></tr>
+      <tr><td>Glacier Instant Retrieval</td><td class="num">90-day min, milliseconds</td></tr>
+      <tr><td>Glacier Flexible Retrieval (90-day min)</td><td class="num">Expedited 1–5 min · Std 3–5 h · Bulk 5–12 h</td></tr>
+      <tr><td>Glacier Deep Archive (180-day min)</td><td class="num">Std &le;12 h · Bulk &le;48 h</td></tr>
+      <tr><td>Durability</td><td class="num">11 nines (all classes)</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>SQS · SNS · Kinesis · Step Functions</h3><div class="tw"><table><tbody>
+      <tr><td>SQS message size</td><td class="num">256 KB <span class="note">1 MiB since Aug 2025</span></td></tr>
+      <tr><td>SQS retention</td><td class="num">4 days default (1 min – 14 days)</td></tr>
+      <tr><td>SQS visibility timeout</td><td class="num">30 s default, max 12 h</td></tr>
+      <tr><td>Long polling wait / delay queue</td><td class="num">up to 20 s / up to 15 min</td></tr>
+      <tr><td>SQS FIFO throughput</td><td class="num">300 msg/s (3,000 batched)</td></tr>
+      <tr><td>FIFO dedup window</td><td class="num">5 min</td></tr>
+      <tr><td>EventBridge targets per rule</td><td class="num">5</td></tr>
+      <tr><td>Kinesis shard write / read</td><td class="num">1 MB/s or 1,000 rec/s / 2 MB/s</td></tr>
+      <tr><td>Enhanced fan-out</td><td class="num">2 MB/s per consumer per shard</td></tr>
+      <tr><td>Kinesis retention</td><td class="num">24 h default &rarr; 365 days</td></tr>
+      <tr><td>Step Functions Standard / Express</td><td class="num">1 year / 5 min</td></tr>
+      <tr><td>Step Functions state payload</td><td class="num">256 KB</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>API Gateway · Security</h3><div class="tw"><table><tbody>
+      <tr><td>API GW integration timeout</td><td class="num">29 s (then 504)</td></tr>
+      <tr><td>API GW payload</td><td class="num">10 MB</td></tr>
+      <tr><td>API GW throttle (account/Region)</td><td class="num">10,000 rps, 5,000 burst</td></tr>
+      <tr><td>API cache TTL / authorizer cache TTL</td><td class="num">300 s default, 3,600 max</td></tr>
+      <tr><td>KMS direct Encrypt</td><td class="num">4 KB</td></tr>
+      <tr><td>KMS key deletion wait</td><td class="num">7–30 days</td></tr>
+      <tr><td>KMS auto rotation (customer managed)</td><td class="num">yearly default (90–2,560 days)</td></tr>
+      <tr><td>Secrets Manager secret size</td><td class="num">64 KB</td></tr>
+      <tr><td>Parameter Store Standard / Advanced</td><td class="num">4 KB free / 8 KB paid</td></tr>
+      <tr><td>RDS IAM auth token</td><td class="num">15 min</td></tr>
+      <tr><td>STS AssumeRole session</td><td class="num">1 h default, &le;12 h (chained &le;1 h)</td></tr>
+      <tr><td>Cognito ID/access token · refresh</td><td class="num">1 h · 30 days default</td></tr>
+      <tr><td>ECR / CodeArtifact auth token</td><td class="num">12 h</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Monitoring · other</h3><div class="tw"><table><tbody>
+      <tr><td>CloudWatch standard / high-res metric</td><td class="num">60 s / 1 s</td></tr>
+      <tr><td>EC2 basic / detailed monitoring</td><td class="num">5 min / 1 min</td></tr>
+      <tr><td>Metric retention</td><td class="num">15 months</td></tr>
+      <tr><td>Log retention default</td><td class="num">Never expire</td></tr>
+      <tr><td>CloudTrail Event history</td><td class="num">90 days</td></tr>
+      <tr><td>X-Ray default sampling</td><td class="num">1 req/s + 5% of the rest</td></tr>
+      <tr><td>X-Ray daemon port</td><td class="num">UDP 2000</td></tr>
+      <tr><td>CloudFront default TTL</td><td class="num">24 h</td></tr>
+      <tr><td>Spot interruption notice</td><td class="num">2 min</td></tr>
+      <tr><td>Beanstalk application versions quota</td><td class="num">1,000</td></tr>
+      <tr><td>RDS / Aurora read replicas</td><td class="num">up to 15</td></tr>
+    </tbody></table></div></div>
+  </div>
+
+  <div class="calc">
+    <h3>DynamoDB capacity math (this shows up as a calculation question)</h3>
+    <p><b>RCU</b> = ceil(item KB &divide; 4) &times; reads/s for strongly consistent · <b>&divide; 2</b> for eventually consistent · <b>&times; 2</b> for transactional.</p>
+    <p><b>WCU</b> = ceil(item KB &divide; 1) &times; writes/s · <b>&times; 2</b> for transactional.</p>
+    <p>Example: 50 strongly consistent reads/s of 6 KB items &rarr; ceil(6/4)=2 &rarr; <span class="num">100 RCU</span> (eventual: <span class="num">50</span>). 20 writes/s of 2.5 KB &rarr; ceil(2.5)=3 &rarr; <span class="num">60 WCU</span>.</p>
+  </div>
+</section>
+
+<!-- ============ COMPARISONS ============ -->
+<section id="compare">
+  <h2>Head-to-head</h2>
+  <p class="sub">The pairs the exam uses as distractors against each other.</p>
+  <div class="grid2">
+    <div class="block"><h3>SQS vs SNS vs EventBridge vs Kinesis</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>SQS</th><th>SNS</th><th>EventBridge</th><th>Kinesis DS</th></tr></thead><tbody>
+      <tr><td>Model</td><td>Queue, pull</td><td>Pub/sub, push</td><td>Event bus + rules</td><td>Stream, pull</td></tr>
+      <tr><td>Readers</td><td>1 per message</td><td>All subscribers</td><td>&le;5 targets/rule</td><td>Many, each reads all</td></tr>
+      <tr><td>Replay</td><td>No</td><td>No</td><td>Archive &amp; replay</td><td>Yes (retention)</td></tr>
+      <tr><td>Order</td><td>FIFO only</td><td>FIFO topics</td><td>No</td><td>Per partition key</td></tr>
+      <tr><td>Pick for</td><td>Decouple, buffer</td><td>Fan-out</td><td>AWS/SaaS events, cron, routing</td><td>Real-time analytics</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Cognito user pool vs identity pool</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>User pool</th><th>Identity pool</th></tr></thead><tbody>
+      <tr><td>Job</td><td>Authentication (user directory)</td><td>Authorization to AWS</td></tr>
+      <tr><td>Gives you</td><td>JWTs: ID, access, refresh</td><td>Temporary AWS creds via STS</td></tr>
+      <tr><td>Guests</td><td>No</td><td>Yes (unauthenticated role)</td></tr>
+      <tr><td>Used by</td><td>API GW Cognito authorizer, ALB auth</td><td>SDK calls straight to S3/DynamoDB</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Secrets Manager vs Parameter Store</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Secrets Manager</th><th>Parameter Store</th></tr></thead><tbody>
+      <tr><td>Rotation</td><td>Native (Lambda templates for RDS etc.)</td><td>None built in</td></tr>
+      <tr><td>Cost</td><td>$0.40/secret/month + API</td><td>Standard tier free</td></tr>
+      <tr><td>Size</td><td>64 KB</td><td>4 KB / 8 KB</td></tr>
+      <tr><td>Extras</td><td>Cross-Region replication, RDS Proxy integration</td><td>Hierarchies, SecureString (KMS), <code>GetParametersByPath</code></td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Lambda reserved vs provisioned concurrency</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Reserved</th><th>Provisioned</th></tr></thead><tbody>
+      <tr><td>Does</td><td>Guarantees and caps concurrency</td><td>Pre-initializes environments</td></tr>
+      <tr><td>Fixes</td><td>Noisy neighbours, protecting a downstream</td><td>Cold-start latency</td></tr>
+      <tr><td>Applies to</td><td>Whole function (0 = stop)</td><td>Version or alias, not $LATEST</td></tr>
+      <tr><td>Cost</td><td>Free</td><td>Charged while configured</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>DynamoDB LSI vs GSI</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>LSI</th><th>GSI</th></tr></thead><tbody>
+      <tr><td>Keys</td><td>Same partition key, new sort key</td><td>Any partition + sort key</td></tr>
+      <tr><td>When</td><td>At table creation only</td><td>Any time</td></tr>
+      <tr><td>Consistency</td><td>Strong or eventual</td><td>Eventual only</td></tr>
+      <tr><td>Capacity</td><td>Shares the table's</td><td>Its own (throttled GSI throttles base-table writes)</td></tr>
+      <tr><td>Limit</td><td>5</td><td>20</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>RDS Multi-AZ vs read replica</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Multi-AZ</th><th>Read replica</th></tr></thead><tbody>
+      <tr><td>Purpose</td><td>High availability</td><td>Read scaling</td></tr>
+      <tr><td>Replication</td><td>Synchronous</td><td>Asynchronous</td></tr>
+      <tr><td>Readable?</td><td>Standby: no</td><td>Yes (own endpoint)</td></tr>
+      <tr><td>Failover</td><td>Automatic, same endpoint</td><td>Manual promotion; can be cross-Region</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Lazy loading vs write-through</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Lazy loading (cache-aside)</th><th>Write-through</th></tr></thead><tbody>
+      <tr><td>Flow</td><td>Read cache &rarr; miss &rarr; read DB &rarr; set cache</td><td>Every write goes to DB and cache</td></tr>
+      <tr><td>Good</td><td>Only requested data cached; node loss not fatal</td><td>Cache is never stale</td></tr>
+      <tr><td>Bad</td><td>Stale data; miss costs 3 trips</td><td>Write penalty; caches unread data</td></tr>
+      <tr><td>Fix</td><td colspan="2">Add a TTL to either. Read-through = the cache layer fetches on a miss (DAX).</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Step Functions Standard vs Express</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Standard</th><th>Express</th></tr></thead><tbody>
+      <tr><td>Duration</td><td>Up to 1 year</td><td>Up to 5 min</td></tr>
+      <tr><td>Semantics</td><td>Exactly-once</td><td>At-least-once (async)</td></tr>
+      <tr><td>Billing</td><td>Per state transition</td><td>Per request + duration</td></tr>
+      <tr><td>History</td><td>Console, 90 days</td><td>CloudWatch Logs</td></tr>
+      <tr><td>Pick for</td><td>Payments, approvals, long jobs</td><td>High-volume event/stream processing</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Elastic Beanstalk deployment policies</h3><div class="tw"><table class="cmp">
+      <thead><tr><th>Policy</th><th>Downtime</th><th>Capacity</th><th>Rollback</th></tr></thead><tbody>
+      <tr><td>All at once</td><td>Yes</td><td>Drops to 0</td><td>Redeploy</td></tr>
+      <tr><td>Rolling</td><td>No</td><td>Reduced</td><td>Redeploy</td></tr>
+      <tr><td>Rolling + batch</td><td>No</td><td>Full</td><td>Redeploy</td></tr>
+      <tr><td>Immutable</td><td>No</td><td>Full (new ASG)</td><td>Fast: drop new ASG</td></tr>
+      <tr><td>Traffic splitting</td><td>No</td><td>Full</td><td>Fast (canary)</td></tr>
+      <tr><td>Blue/green</td><td>No</td><td>Separate env</td><td>Swap URLs back</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>Lambda DLQ vs destinations</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>DLQ</th><th>Destinations (preferred)</th></tr></thead><tbody>
+      <tr><td>For</td><td>Async invocations</td><td>Async + stream event-source failures</td></tr>
+      <tr><td>Captures</td><td>Failures only</td><td>Success and failure</td></tr>
+      <tr><td>Targets</td><td>SQS, SNS</td><td>SQS, SNS, Lambda, EventBridge</td></tr>
+      <tr><td>Contains</td><td>Original event</td><td>Event + result/error details</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>CloudWatch vs X-Ray vs CloudTrail</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Answers</th></tr></thead><tbody>
+      <tr><td>CloudWatch</td><td>How much / how often? Metrics, logs, alarms, dashboards</td></tr>
+      <tr><td>X-Ray</td><td>Where in the call chain is the latency/error? Traces, service map</td></tr>
+      <tr><td>CloudTrail</td><td>Who called which API, when, from where? Audit</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>ECS task role vs task execution role</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Used by</th><th>Fix when</th></tr></thead><tbody>
+      <tr><td>Execution role</td><td>ECS agent: pull ECR image, write logs, fetch injected secrets</td><td>Task won't start</td></tr>
+      <tr><td>Task role</td><td>Your app code calling S3, DynamoDB, etc.</td><td>App gets AccessDenied</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>S3 encryption options</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Key held by</th><th>Notes</th></tr></thead><tbody>
+      <tr><td>SSE-S3</td><td>S3</td><td>Default for all new objects; no per-key audit</td></tr>
+      <tr><td>SSE-KMS</td><td>KMS</td><td>CloudTrail audit, key policy control; KMS quotas &rarr; Bucket Keys</td></tr>
+      <tr><td>SSE-C</td><td>You, sent per request</td><td>HTTPS required; S3 never stores key</td></tr>
+      <tr><td>Client-side</td><td>You</td><td>Encrypted before upload; AWS never sees plaintext</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>API Gateway access control</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Use when</th></tr></thead><tbody>
+      <tr><td>IAM (SigV4)</td><td>AWS principals, cross-account (+ resource policy)</td></tr>
+      <tr><td>Cognito authorizer</td><td>User pool JWT in <code>Authorization</code> header</td></tr>
+      <tr><td>Lambda TOKEN</td><td>Custom check on a bearer token only</td></tr>
+      <tr><td>Lambda REQUEST</td><td>Needs headers, query string, source IP, stage vars</td></tr>
+      <tr><td>API key</td><td>Metering/throttling per client. <b>Never</b> auth.</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>VPC endpoints &amp; edge compute</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>What</th><th>Pick for</th></tr></thead><tbody>
+      <tr><td>Gateway endpoint</td><td>Route-table entry, free</td><td>S3 and DynamoDB only</td></tr>
+      <tr><td>Interface endpoint</td><td>ENI via PrivateLink, hourly + GB</td><td>Every other service</td></tr>
+      <tr><td>CloudFront Functions</td><td>JS, viewer events, sub-ms, no network</td><td>Header rewrites, redirects</td></tr>
+      <tr><td>Lambda@Edge</td><td>Node/Python, origin events, network calls</td><td>Heavier logic, auth calls</td></tr>
+      <tr><td>Signed URL / cookie</td><td>One file / many files</td><td>Paid or private content</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>CloudFormation lookalikes</h3><div class="tw"><table class="cmp">
+      <thead><tr><th></th><th>Means</th></tr></thead><tbody>
+      <tr><td>Ref vs GetAtt</td><td>Ref = physical ID / parameter value. GetAtt = other attributes (ARN, DNS name)</td></tr>
+      <tr><td>DeletionPolicy</td><td>Keep/snapshot the resource when the <b>stack is deleted</b></td></tr>
+      <tr><td>UpdateReplacePolicy</td><td>Keep/snapshot when an <b>update replaces</b> it</td></tr>
+      <tr><td>Nested stack</td><td>Reusable component deployed inside a parent</td></tr>
+      <tr><td>Export / ImportValue</td><td>Share outputs between independent stacks</td></tr>
+      <tr><td>StackSets</td><td>Same stack across many accounts/Regions</td></tr>
+    </tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ============ MODULE TRAPS ============ -->
+<section id="modules">
+  <h2>Module traps</h2>
+  <p class="sub">Every module in study order, reduced to the traps you're most likely to see.</p>
+  <div class="grid2">
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">00</span><span class="mtitle">Exam overview &amp; IAM basics</span><span class="chip c0">Foundations</span></div>
+      <ul class="traps">
+        <li>Survive a data-center outage = <b>multi-AZ</b>; survive a Region outage = <b>multi-Region</b>.</li>
+        <li>Policy logic: <b>explicit Deny</b> &gt; Allow &gt; implicit deny, across identity, resource, SCP and permissions boundary.</li>
+        <li>IAM roles beat access keys, every time. Hardcoded keys are always wrong.</li>
+        <li>Credential chain: code params &rarr; env vars &rarr; <code>~/.aws/credentials</code> &rarr; config &rarr; container/instance role.</li>
+        <li>Handing a role to a service (Lambda, EC2, ECS) needs <code>iam:PassRole</code>.</li>
+        <li>Encoded "UnauthorizedOperation" message &rarr; <code>aws sts decode-authorization-message</code>.</li>
+        <li>MFA for CLI calls &rarr; <code>aws sts get-session-token --serial-number … --token-code …</code>.</li>
+        <li>Third-party cross-account role &rarr; trust policy + <code>sts:ExternalId</code> condition.</li>
+        <li>Permissions boundary caps one identity; SCP caps a whole account. Neither grants anything.</li>
+        <li>Which identity am I? <code>aws sts get-caller-identity</code>. Test permissions safely: IAM policy simulator or <code>--dry-run</code>.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">01</span><span class="mtitle">EC2 &amp; compute</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li><b>IMDSv2</b> (token, <code>HttpTokens=required</code>) over IMDSv1. Metadata lives at <code>169.254.169.254</code>.</li>
+        <li>User data runs <b>once, as root, at first boot</b>.</li>
+        <li>T-instance slows down under sustained load = CPU credits exhausted &rarr; M/C family or Unlimited mode.</li>
+        <li>ASG with only EC2 health checks misses crashed apps &rarr; use <b>ELB health checks</b>.</li>
+        <li>Memory and disk usage need the <b>CloudWatch agent</b>. They aren't collected by default.</li>
+        <li>Client IP behind an ALB &rarr; <code>X-Forwarded-For</code>. Static IP, TCP/UDP &rarr; NLB. Path/host routing &rarr; ALB.</li>
+        <li>Security groups: stateful, allow-only. NACLs: stateless, allow + deny, evaluated in rule-number order.</li>
+        <li>Shell without opening port 22 &rarr; <b>Session Manager</b>.</li>
+        <li>Spot only for interruptible work (2-min notice). Per-socket licensing &rarr; Dedicated Hosts.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">02</span><span class="mtitle">S3 &amp; storage</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li><b>Strong read-after-write consistency</b> for every operation. No "eventual consistency" caveat anymore.</li>
+        <li>Multipart: required &gt;5 GB, recommended &gt;100 MB. Add a lifecycle rule to abort incomplete uploads.</li>
+        <li>Hitting request limits &rarr; spread keys across more prefixes (3,500 writes / 5,500 reads per prefix).</li>
+        <li>Long-distance uploads &rarr; Transfer Acceleration. Parallel downloads &rarr; byte-range GETs.</li>
+        <li>Browser JS from another domain blocked &rarr; configure <b>CORS on the bucket</b>.</li>
+        <li>Enforce HTTPS &rarr; bucket policy Deny when <code>aws:SecureTransport</code> is false.</li>
+        <li>SSE-KMS throttling or high KMS cost &rarr; <b>S3 Bucket Keys</b>.</li>
+        <li>Presigned URLs carry the signer's permissions and expire. They can't grant more than the signer has.</li>
+        <li>Website endpoint is HTTP-only &rarr; CloudFront + ACM for HTTPS.</li>
+        <li>Replication needs versioning on both buckets. Existing objects need Batch Replication.</li>
+        <li>IA classes have a 30-day minimum and retrieval fees, so they're bad for short-lived or hot data. Storage: S3 = objects, EBS = one instance's disk, EFS = shared file system, instance store = scratch space.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">03</span><span class="mtitle">DynamoDB</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li>Throttling with capacity to spare = <b>hot partition</b> &rarr; high-cardinality key or write sharding. More capacity isn't the fix.</li>
+        <li><code>FilterExpression</code> doesn't save RCU: items are read first, then filtered. <code>ProjectionExpression</code> trims the response, not RCU.</li>
+        <li><b>Query</b> needs a partition key and is efficient. <b>Scan</b> reads everything (parallel scan to speed it up).</li>
+        <li>Results come in 1 MB pages &rarr; pass <code>LastEvaluatedKey</code> back as <code>ExclusiveStartKey</code>.</li>
+        <li>Batch calls may return <code>UnprocessedItems/Keys</code> &rarr; retry those with backoff.</li>
+        <li>Optimistic locking = conditional write on a version attribute &rarr; <code>ConditionalCheckFailedException</code> on conflict.</li>
+        <li>Counters &rarr; <code>UpdateItem</code> with <code>ADD</code> (atomic). Multi-item all-or-nothing &rarr; transactions (2&times; cost).</li>
+        <li>TTL: epoch-seconds Number attribute. Deletes lazily (can take days), so expired items can still be read; filter them. Costs no WCU.</li>
+        <li>Streams keep 24 h. Change data capture = Streams + Lambda. Multi-Region active-active = Global Tables.</li>
+        <li>DAX: microsecond reads, write-through, API-compatible. It doesn't help strongly consistent reads or write-heavy loads.</li>
+        <li>On-demand for unpredictable/new traffic; provisioned + auto scaling for steady traffic (cheaper). Per-user rows &rarr; <code>dynamodb:LeadingKeys</code>.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">04</span><span class="mtitle">App patterns &amp; Lambda</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li>"Decouple" / "slow downstream shouldn't hurt caller" &rarr; put <b>SQS</b> (or SNS/EventBridge) between them.</li>
+        <li>Retries &rarr; <b>exponential backoff + jitter</b>. Duplicate side effects &rarr; <b>idempotency key</b>.</li>
+        <li>Sync invoke: no retry, the caller handles errors. Async: <b>2 automatic retries</b>, then DLQ/on-failure destination. Poll sources follow their own rules.</li>
+        <li>SQS trigger: visibility timeout &ge; <b>6&times; function timeout</b>. Partial batch failures &rarr; <code>ReportBatchItemFailures</code>.</li>
+        <li>Kinesis/DynamoDB Streams: a bad record <b>blocks the shard</b> &rarr; <code>BisectBatchOnFunctionError</code>, max retry attempts, max record age, on-failure destination.</li>
+        <li>More than 15 minutes of work &rarr; not Lambda (Fargate, Batch, Step Functions).</li>
+        <li>Slow CPU-bound code &rarr; <b>raise memory</b>. CPU and network scale with it.</li>
+        <li>VPC-attached Lambda loses internet &rarr; NAT Gateway or VPC endpoints. The execution role needs ENI permissions (<code>AWSLambdaVPCAccessExecutionRole</code>).</li>
+        <li><code>Runtime.ImportModuleError</code> = missing dependency &rarr; bundle it or add a layer.</li>
+        <li><b>Versions</b> are immutable, <b>$LATEST</b> is mutable, <b>aliases</b> point at versions and can split traffic between two.</li>
+        <li>Put SDK clients and DB connections outside the handler so warm invocations reuse them. <code>/tmp</code> persists only while the environment stays warm.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">05</span><span class="mtitle">API Gateway &amp; AppSync</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li>Changes do nothing until you <b>deploy the API to a stage</b>.</li>
+        <li>Caching, usage plans/API keys, request validation, resource policies, WAF or a private endpoint &rarr; <b>REST API</b>. Cheapest/simplest Lambda proxy or JWT auth &rarr; <b>HTTP API</b>.</li>
+        <li><b>502</b> = Lambda proxy response malformed (needs <code>statusCode</code>, <code>headers</code>, string <code>body</code>). <b>504</b> = integration took &gt;29 s. <b>429</b> = throttled.</li>
+        <li><b>403 "Missing Authentication Token"</b> = wrong path/method, or an unsigned call to an IAM-auth API.</li>
+        <li>CORS with Lambda proxy &rarr; <b>the Lambda must return</b> <code>Access-Control-Allow-Origin</code>. The console toggle only sets up OPTIONS.</li>
+        <li>Environments &rarr; <b>stage variables</b> pointing at Lambda aliases. Grant <code>lambda:InvokeFunction</code> for each alias.</li>
+        <li>Cross-account IAM access &rarr; resource policy on the API + IAM policy on the caller + SigV4 signing.</li>
+        <li>Cache TTL defaults to 300 s. Clients can bypass it with <code>Cache-Control: max-age=0</code> only if allowed <code>execute-api:InvalidateCache</code>.</li>
+        <li>Backend not built yet &rarr; <b>Mock integration</b>. Gradual rollout on a stage &rarr; canary release. Mapping templates (VTL) only on non-proxy integrations.</li>
+        <li>Real-time GraphQL, subscriptions, offline sync, multiple data sources &rarr; <b>AppSync</b> (several auth modes at once). Custom two-way protocol &rarr; WebSocket API (<code>$connect</code>, <code>@connections</code>).</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">06</span><span class="mtitle">Messaging, streaming &amp; analytics</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li>Standard SQS = at-least-once, best-effort order &rarr; consumers must be idempotent. <b>FIFO</b> = order per <code>MessageGroupId</code> + exactly-once (5-min dedup); queue name ends <code>.fifo</code>.</li>
+        <li>Same message processed twice &rarr; <b>visibility timeout</b> shorter than processing time &rarr; raise it or call <code>ChangeMessageVisibility</code>.</li>
+        <li>Empty receives and cost &rarr; <b>long polling</b> (<code>WaitTimeSeconds</code> up to 20).</li>
+        <li>DLQ: <code>maxReceiveCount</code> lives in the <b>source queue's redrive policy</b>. A FIFO queue needs a FIFO DLQ.</li>
+        <li>Payload too big &rarr; store it in S3 and send a pointer (Extended Client Library).</li>
+        <li>Fan-out: SNS &rarr; many SQS queues (the queue policy must allow SNS). <b>Filter policies</b> live on the subscription.</li>
+        <li>AWS service events, SaaS partner events, schedules, content routing &rarr; <b>EventBridge</b>.</li>
+        <li>Several consumers need the same data, or you need replay &rarr; <b>Kinesis</b>. A deleted SQS message is gone.</li>
+        <li>Kinesis hot shard &rarr; better partition key or more shards. Each consumer needs full speed &rarr; enhanced fan-out.</li>
+        <li><b>Firehose</b> = managed delivery to S3/Redshift/OpenSearch, near real-time, no replay.</li>
+        <li><b>Athena</b> = SQL on S3, billed per data scanned; cut cost with Parquet, compression, partitions. <b>OpenSearch</b> = log search and dashboards.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">07</span><span class="mtitle">Step Functions</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li>"Must never double-process" or longer than 5 min &rarr; <b>Standard</b>. High-volume, short, idempotent &rarr; <b>Express</b>.</li>
+        <li><b>Map</b> = loop over an array of unknown length. <b>Parallel</b> = fixed set of different branches.</li>
+        <li><b>Retry</b> (IntervalSeconds, MaxAttempts, BackoffRate) first, then <b>Catch</b> &rarr; fallback state.</li>
+        <li>A later state lost its input &rarr; missing <code>ResultPath</code> (default overwrites). Use <code>"ResultPath": "$.error"</code> in Catch.</li>
+        <li>Human approval or external callback &rarr; <code>.waitForTaskToken</code> + <code>SendTaskSuccess/Failure</code>. A Wait state only waits a fixed time.</li>
+        <li><code>.sync</code> waits for a job to finish (ECS task, CodeBuild, Glue).</li>
+        <li>Call AWS APIs directly from Task states (SDK integrations) instead of glue Lambdas.</li>
+        <li>State payload is 256 KB &rarr; pass S3 references for big data.</li>
+        <li>Central control, visibility, error handling &rarr; <b>orchestration</b> (Step Functions). Independent reactions &rarr; <b>choreography</b> (EventBridge).</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">08</span><span class="mtitle">RDS, Aurora, ElastiCache, MemoryDB</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li><b>Multi-AZ</b> = synchronous standby for HA, not readable. <b>Read replica</b> = async, readable, scales reads, can be cross-Region.</li>
+        <li>Lambda &rarr; RDS "too many connections" &rarr; <b>RDS Proxy</b>. Not a <code>max_connections</code> bump, not provisioned concurrency.</li>
+        <li>Auto-rotate DB credentials &rarr; <b>Secrets Manager</b>. The rotation Lambda needs a network path to both the DB and Secrets Manager.</li>
+        <li>IAM database authentication &rarr; <b>15-minute token</b> instead of a password (MySQL, PostgreSQL, Aurora).</li>
+        <li>Encrypt an existing unencrypted DB &rarr; snapshot &rarr; encrypted copy &rarr; restore. There's no switch to turn it on.</li>
+        <li>Aurora: reader endpoint for reads, Serverless v2 for spiky load, <b>Global Database</b> for cross-Region DR.</li>
+        <li>Redis OSS/Valkey: replication, persistence, sorted sets, pub/sub. Memcached: multithreaded and simple, no persistence.</li>
+        <li>ElastiCache is a <b>cache</b>. A durable Redis-compatible database of record &rarr; <b>MemoryDB</b>.</li>
+        <li>Joins and multi-table SQL &rarr; relational. Huge scale with known access patterns &rarr; DynamoDB.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">09</span><span class="mtitle">Caching &amp; performance</span><span class="chip c1">D1</span><span class="chip c4">D4</span></div>
+      <ul class="traps">
+        <li>Pseudocode test: <code>get cache &rarr; if null &rarr; query DB &rarr; set cache</code> = <b>lazy loading</b>. Write to DB + cache together = <b>write-through</b>.</li>
+        <li>Read-through = the cache layer loads on a miss for you (DAX). Lazy loading = your code does it.</li>
+        <li>TTL is the staleness safety net on top of any strategy. "At most N seconds stale" is a TTL question.</li>
+        <li>Users see someone else's cached data &rarr; the cache key doesn't include identity &rarr; don't cache it (<code>Cache-Control: private</code>) or add the header to the key.</li>
+        <li>Content varies by language &rarr; add <code>Accept-Language</code> to the cache key. Keep <code>Authorization</code> out of shared caches.</li>
+        <li>Low CPU but high latency &rarr; I/O-bound (DB, network), not a memory problem.</li>
+        <li>Lambda cost = GB-seconds; the cheapest memory setting is found by measuring (Power Tuning), rarely the minimum.</li>
+        <li>Stateless fleet needs sessions &rarr; ElastiCache or DynamoDB, not sticky sessions.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">10</span><span class="mtitle">CI/CD &amp; developer tooling</span><span class="chip c3">D3</span></div>
+      <ul class="traps">
+        <li>Files at the root: <code>buildspec.yml</code> (CodeBuild), <code>appspec.yml</code> (CodeDeploy), <code>.ebextensions/*.config</code> (Beanstalk).</li>
+        <li>Build secrets &rarr; <code>env: parameter-store / secrets-manager</code> in buildspec, never plaintext variables.</li>
+        <li>EC2 hook order: ApplicationStop &rarr; BeforeInstall &rarr; AfterInstall &rarr; ApplicationStart &rarr; <b>ValidateService</b>. Lambda/ECS hooks: <b>BeforeAllowTraffic / AfterAllowTraffic</b>.</li>
+        <li>EC2/on-prem deploys need the <b>CodeDeploy agent</b> and an instance profile that can read the revision from S3.</li>
+        <li>Auto rollback on failure or a <b>CloudWatch alarm</b>. Rollback = redeploy the last good revision (new deployment ID).</li>
+        <li>Lambda/ECS configs: <code>Canary10Percent5Minutes</code>, <code>Linear10PercentEvery1Minute</code>, <code>AllAtOnce</code>. EC2: AllAtOnce, HalfAtATime, OneAtATime.</li>
+        <li>Blue/green = fastest rollback, runs 2 environments. In-place/rolling = cheapest, slow rollback, mixed versions mid-deploy.</li>
+        <li>Human sign-off &rarr; CodePipeline <b>manual approval</b> + SNS.</li>
+        <li>Config/feature-flag rollout with validators and alarm rollback, no code deploy &rarr; <b>AppConfig</b> (Parameter Store can't stage rollouts).</li>
+        <li>Private packages + cached npm/PyPI/Maven &rarr; <b>CodeArtifact</b> (<code>aws codeartifact login</code>). CodeBuild reaching private resources &rarr; run it in the VPC.</li>
+        <li>CodeStar is a legacy project wrapper around the Code* services, not a deployment engine.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">11</span><span class="mtitle">Elastic Beanstalk, Amplify, Copilot</span><span class="chip c3">D3</span></div>
+      <ul class="traps">
+        <li>Background jobs from SQS, no public traffic &rarr; <b>worker tier</b> (<code>cron.yaml</code> for periodic tasks).</li>
+        <li>Full capacity during deploy &rarr; <b>rolling with additional batch</b>. Safest &amp; fastest rollback &rarr; <b>immutable</b> or blue/green.</li>
+        <li>Blue/green = a second environment + <b>Swap environment URLs</b> (CNAME). It isn't one of the in-place policies.</li>
+        <li>Don't create the production RDS instance inside the environment; it dies with the environment. Create it separately and pass the endpoint in.</li>
+        <li><code>.ebextensions</code> can hold CloudFormation <code>Resources</code>. <code>container_commands</code> run after unzip (<code>leader_only</code> for once).</li>
+        <li>Deploying often &rarr; application version <b>lifecycle policy</b> (1,000-version quota).</li>
+        <li>"Amplify branches" = Git branch per environment + PR previews. "Copilot environments" = named dev/test/prod container targets.</li>
+        <li>Lambda aliases, image tags, Amplify branches and Copilot environments all serve as approved-version pointers.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">12</span><span class="mtitle">Containers: ECS, ECR, Fargate, EKS</span><span class="chip c3">D3</span></div>
+      <ul class="traps">
+        <li><b>Execution role</b> = pull image, write logs, fetch secrets (task won't start). <b>Task role</b> = your app's AWS calls (AccessDenied at runtime).</li>
+        <li>Least ops for containers &rarr; <b>Fargate</b> (<code>awsvpc</code> mode, one ENI per task). Cost at scale with host control &rarr; EC2 launch type.</li>
+        <li>Kubernetes, Helm, portability &rarr; <b>EKS</b> (pod permissions via IRSA / EKS Pod Identity). EKS can run on Fargate too.</li>
+        <li>Shell into a running container &rarr; <b>ECS Exec</b>.</li>
+        <li>ECR login: <code>aws ecr get-login-password | docker login --username AWS --password-stdin …</code></li>
+        <li>Old images &rarr; ECR <b>lifecycle policy</b>. Vulnerabilities &rarr; ECR scanning (enhanced = Inspector). Pin deploys to an immutable tag or digest.</li>
+        <li>Placement strategies (binpack, spread, random) and constraints (distinctInstance, memberOf) apply only to the EC2 launch type.</li>
+        <li>ECS blue/green &rarr; CodeDeploy. Safer rolling deploys &rarr; deployment circuit breaker with rollback.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">13</span><span class="mtitle">IaC: CloudFormation, SAM, CDK</span><span class="chip c3">D3</span></div>
+      <ul class="traps">
+        <li>SAM and CDK both end up as CloudFormation stacks: change sets, rollback, drift, DeletionPolicy all apply.</li>
+        <li>Secrets in templates &rarr; dynamic references <code>{{resolve:secretsmanager:…}}</code> / <code>{{resolve:ssm:…}}</code>.</li>
+        <li>Local Lambda code in a template &rarr; <code>aws cloudformation package</code> / <code>sam package</code> uploads it to S3 first.</li>
+        <li>Change sets <b>preview</b>. Drift detection <b>reports only</b> and never fixes anything.</li>
+        <li>You can't delete/change an Export that another stack imports.</li>
+        <li>Stack delete fails on a non-empty S3 bucket. Keep data &rarr; <code>DeletionPolicy: Retain</code> or <code>Snapshot</code>.</li>
+        <li>No native resource type &rarr; Lambda-backed <b>custom resource</b>. Wait for EC2 bootstrap &rarr; <code>CreationPolicy</code> + <code>cfn-signal</code>.</li>
+        <li>SAM: <code>Transform: AWS::Serverless-2016-10-31</code>, <code>sam build</code>, <code>sam local invoke/start-api</code>, <code>sam deploy --guided</code>. New stage &rarr; parameter overrides / config env.</li>
+        <li>SAM <code>AutoPublishAlias</code> + <code>DeploymentPreference</code> &rarr; CodeDeploy canary/linear with PreTraffic/PostTraffic hooks.</li>
+        <li>CDK: <code>cdk bootstrap</code> once per account+Region, <code>cdk synth</code> &rarr; template, <code>cdk diff</code>, <code>cdk deploy</code>. Constructs: L1 (Cfn*), L2, L3 patterns.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">14</span><span class="mtitle">Security deep dive</span><span class="chip c2">D2</span></div>
+      <ul class="traps">
+        <li><b>User pool</b> = sign-in, JWTs (ID for identity claims, access for API scopes, refresh). <b>Identity pool</b> = temporary AWS credentials, guests allowed.</li>
+        <li>Customize sign-up/tokens &rarr; Cognito <b>Lambda triggers</b> (pre sign-up, pre token generation, post confirmation, migrate user).</li>
+        <li>Validate a JWT: signature against the pool's <b>JWKS</b>, then <code>exp</code>, <code>iss</code>, <code>aud</code>/<code>client_id</code>, <code>token_use</code>. SPA/mobile &rarr; Authorization Code + PKCE.</li>
+        <li>Data &gt; 4 KB &rarr; <b>envelope encryption</b> (<code>GenerateDataKey</code>, encrypt locally, store encrypted key alongside). KMS throttling &rarr; data key caching / Bucket Keys.</li>
+        <li>A KMS key needs its <b>key policy</b> to allow access; IAM alone isn't enough. Cross-account &rarr; key policy in owner + IAM policy in caller.</li>
+        <li>Customer managed key when you need your own key policy, per-key audit or the ability to disable. Rotation keeps the same key ID/ARN.</li>
+        <li>Rotating credentials &rarr; <b>Secrets Manager</b>. Static or free config &rarr; <b>Parameter Store</b> (SecureString uses KMS).</li>
+        <li>Lambda env vars are encrypted at rest by default. Hiding them from console viewers &rarr; encryption helpers + customer managed key + decrypt in code.</li>
+        <li>CloudFront cert &rarr; ACM in <b>us-east-1</b>. Free ACM public certs can't go on EC2 &rarr; terminate TLS on ALB/CloudFront/API Gateway.</li>
+        <li><b>WAF</b> for SQLi/XSS/rate limits on CloudFront, ALB, API Gateway (REST), AppSync, Cognito. Not directly on EC2 or S3.</li>
+        <li>Never log secrets or PII &rarr; mask them (CloudWatch Logs data protection policies).</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">15</span><span class="mtitle">Networking for developers</span><span class="chip c1">D1</span></div>
+      <ul class="traps">
+        <li>Internet Gateway = two-way, public subnet. <b>NAT Gateway</b> = outbound-only for private subnets.</li>
+        <li><b>Gateway endpoint</b> = S3 and DynamoDB only, free. Everything else = <b>Interface endpoint</b> (paid). "Cut NAT cost" for S3 traffic &rarr; Gateway endpoint.</li>
+        <li>Lambda needs VPC attachment only to reach private resources (RDS, ElastiCache). It can call S3/DynamoDB/SNS without one.</li>
+        <li>Zone apex &rarr; <b>Alias</b> record (CNAME can't sit at the apex; Alias queries to AWS targets are free).</li>
+        <li>Routing policies: weighted (A/B split), latency, <b>failover + health check</b> (DR), geolocation, multivalue.</li>
+        <li><b>OAC</b> locks S3 to one CloudFront distribution. Restricting <i>viewers</i> needs signed URLs/cookies too.</li>
+        <li>Stale CloudFront content &rarr; versioned file names (best) or invalidation.</li>
+        <li>Simple header/redirect logic &rarr; <b>CloudFront Functions</b>. Network calls or origin events &rarr; <b>Lambda@Edge</b>.</li>
+        <li>Debug accepted/rejected traffic &rarr; <b>VPC Flow Logs</b>.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">16</span><span class="mtitle">Monitoring, logging &amp; observability</span><span class="chip c4">D4</span></div>
+      <ul class="traps">
+        <li>X-Ray <b>annotations</b> are indexed (filter expressions). <b>Metadata</b> isn't indexed. Anything you'll search by goes in an annotation.</li>
+        <li>X-Ray setup: daemon on UDP 2000 (sidecar on ECS), <b>active tracing</b> toggle on Lambda and API Gateway, role needs <code>xray:PutTraceSegments</code>.</li>
+        <li>Custom metrics: <code>PutMetricData</code> or <b>EMF</b> (structured JSON logs, no API calls, high cardinality). High resolution = 1 s.</li>
+        <li>Metric filters only see <b>new</b> log events. Log retention is "never expire" by default &rarr; set it.</li>
+        <li>Real-time log processing &rarr; <b>subscription filter</b> (Lambda/Kinesis/Firehose). Ad-hoc questions &rarr; <b>Logs Insights</b> (<code>fields</code>, <code>filter</code>, <code>stats</code>, <code>sort</code>).</li>
+        <li>CloudTrail logs management events by default (90-day history). <b>Data events</b> (S3 objects, Lambda invokes) must be turned on.</li>
+        <li>Alert on an event (deploy finished, pipeline failed) &rarr; EventBridge + SNS. Alert on a number crossing a line &rarr; CloudWatch alarm + SNS.</li>
+        <li>Deployment failed &rarr; CodeBuild logs, CodeDeploy lifecycle events, CloudFormation stack events. The app logs may be empty because the app never started.</li>
+        <li>CodeGuru <b>Reviewer</b> = static code review. CodeGuru <b>Profiler</b> = runtime hotspots.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="mod-h"><span class="mnum">17</span><span class="mtitle">Well-Architected &amp; strategy</span><span class="chip c0">Review</span></div>
+      <ul class="traps">
+        <li>Six pillars: <b>Operational Excellence</b> (automate, IaC, small reversible changes), <b>Security</b> (least privilege, encryption, traceability), <b>Reliability</b> (multi-AZ, retries, auto-recovery), <b>Performance Efficiency</b> (right service, caching, serverless), <b>Cost Optimization</b> (pay-per-use, right-size, lifecycle), <b>Sustainability</b> (managed services, less idle capacity).</li>
+        <li>Typical trade-offs: Multi-AZ vs cost, KMS customer managed key vs simplicity, provisioned concurrency vs cost.</li>
+        <li>Integrative questions combine two modules, e.g. Lambda concurrency + SQS DLQ, or IAM role + Secrets Manager. Solve each half with its own module's rule.</li>
+        <li>Managed service beats self-built almost every time the stem says "least overhead".</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ ERRORS ============ -->
+<section id="errors">
+  <h2>Errors &amp; exceptions</h2>
+  <p class="sub">What the error means and the fix the exam expects.</p>
+  <div class="grid2">
+    <div class="block"><h3>HTTP status codes</h3><div class="tw"><table>
+      <thead><tr><th>Code</th><th>Meaning &rarr; fix</th></tr></thead><tbody>
+      <tr><td class="num">400</td><td>Bad input (<code>ValidationException</code>) &rarr; fix the request</td></tr>
+      <tr><td class="num">401</td><td>Missing/invalid token at an authorizer &rarr; send a valid JWT</td></tr>
+      <tr><td class="num">403</td><td>Denied by IAM, resource policy, WAF or authorizer. "Missing Authentication Token" = wrong path/method</td></tr>
+      <tr><td class="num">404</td><td>Resource doesn't exist (check name, stage, Region)</td></tr>
+      <tr><td class="num">429</td><td>Throttled &rarr; backoff + jitter, usage plan/quota increase</td></tr>
+      <tr><td class="num">500</td><td>Unhandled exception in your code</td></tr>
+      <tr><td class="num">502</td><td>Bad upstream response: malformed Lambda proxy output, or target closed the connection (ALB)</td></tr>
+      <tr><td class="num">503</td><td>Overloaded / no healthy targets behind the load balancer</td></tr>
+      <tr><td class="num">504</td><td>Upstream too slow: API Gateway 29 s limit, ALB target timeout</td></tr>
+    </tbody></table></div></div>
+
+    <div class="block"><h3>SDK exceptions &amp; runtime errors</h3><div class="tw"><table>
+      <thead><tr><th>Error</th><th>Fix</th></tr></thead><tbody>
+      <tr><td><code>ProvisionedThroughputExceededException</code></td><td>DynamoDB/Kinesis capacity or hot key &rarr; backoff, better key, more capacity/shards, on-demand</td></tr>
+      <tr><td><code>ThrottlingException</code> / <code>TooManyRequestsException</code></td><td>API rate limit (incl. KMS, Lambda) &rarr; exponential backoff + jitter, quota increase</td></tr>
+      <tr><td><code>AccessDeniedException</code></td><td>Fix the role policy (execution/task role) or key policy</td></tr>
+      <tr><td><code>ResourceNotFoundException</code></td><td>Wrong name, ARN or Region</td></tr>
+      <tr><td><code>ConditionalCheckFailedException</code></td><td>Optimistic lock lost &rarr; re-read, retry</td></tr>
+      <tr><td><code>ExpiredTokenException</code></td><td>Temporary credentials expired &rarr; refresh them</td></tr>
+      <tr><td><code>Task timed out after N seconds</code></td><td>Raise the timeout, or fix the slow/unreachable dependency (VPC without NAT)</td></tr>
+      <tr><td><code>Runtime.ImportModuleError</code></td><td>Dependency not packaged &rarr; bundle it or use a layer</td></tr>
+      <tr><td>Encoded authorization message</td><td><code>aws sts decode-authorization-message</code></td></tr>
+    </tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ============ CHECKLIST ============ -->
+<section id="checklist">
+  <h2>Tonight and tomorrow</h2>
+  <p class="sub">Your exam is tomorrow, Tue 22 Sep. Keep tonight light.</p>
+  <div class="block">
+    <ul class="checklist">
+      <li>Tonight: read the <b>keyword decoder</b> twice and the <b>numbers</b> once. Skip new topics.</li>
+      <li>Redo only the questions you missed in the mock exams (the results screen lists them).</li>
+      <li>Online exam: run the Pearson OnVUE system test tonight, clear the desk, plan to check in 30 minutes early.</li>
+      <li>Test center: arrive 15–30 minutes early with government photo ID that matches your registration name.</li>
+      <li>Sleep over cramming. A rested brain parses long stems much better.</li>
+      <li>In the exam: last line first, list every requirement, eliminate, flag and move on after about 2 minutes.</li>
+      <li>Select TWO/THREE: check you picked exactly that many.</li>
+      <li>Leave nothing blank. Wrong answers cost nothing.</li>
+      <li>Use the last 10–15 minutes on flagged questions only. Don't reopen confident ones.</li>
+      <li>Your first instinct was grounded in study. Change it only with a concrete reason.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">Condensed from the 18 modules of this study repo, grounded in AWS's official DVA-C02 exam guide. Limits reflect AWS docs as of 2026; where AWS recently raised a limit, the older value is also shown because exam questions may still use it.</footer>
+
+<script>
+(function(){
+  var local = location.protocol === "file:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  if(local){ var a = document.getElementById("hubLink"); if(a) a.hidden = false; }
+})();
+</script>
+</body>
+</html>
